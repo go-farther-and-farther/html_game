@@ -378,7 +378,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
   const FOOD_R = 5;
   const DEAD_R = 7;
   const BOOST_MIN = 15;
-  const BOOST_CI = 2;  // V6: 加速消耗再减半
+  const BOOST_CI = 16;  // V6: 加速消耗再减半
   const INVULN_T = 120;
   const MAX_BOTS = 18;
   const COPIES_PER_TYPE = 3;
@@ -1259,11 +1259,13 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
 
   function drawSnake(s) {
     const h = s.segs[0];
-    if (Math.abs(h.x - cam.x) > innerWidth / 2 + 300 || Math.abs(h.y - cam.y) > innerHeight / 2 + 300) return;
+    // V6: 放宽渲染范围检查 - 只要蛇身有任何部分在屏幕内就渲染
+    const maxDist = Math.max(innerWidth, innerHeight) + s.segs.length * SG;
+    if (Math.abs(h.x - cam.x) > maxDist || Math.abs(h.y - cam.y) > maxDist) return;
     const n = s.segs.length;
     const skin = getSkin(s.skinId);
     const invulnActive = s.invuln > 0;
-    const W2 = innerWidth / 2 + 120, H2 = innerHeight / 2 + 120;
+    const W2 = innerWidth / 2 + 200, H2 = innerHeight / 2 + 200;
     const huntWeak = settings.huntMode && n <= HUNT_MIN_LEN + 5 && n > HUNT_MIN_LEN;
     const bodyColor = huntWeak ? '#ff3333' : skin.body;
     const stripeColor = huntWeak ? '#cc0000' : skin.stripe;
@@ -1273,7 +1275,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     cx.fillStyle = 'rgba(0,0,0,0.22)';
     for (let i = 0; i < n; i++) {
       const sg = s.segs[i];
-      if (Math.abs(sg.x - cam.x) > W2 || Math.abs(sg.y - cam.y) > H2) break;
+      if (Math.abs(sg.x - cam.x) > W2 || Math.abs(sg.y - cam.y) > H2) continue;  // V6: 用continue代替break
       cx.beginPath();
       cx.arc(sg.x + 2, sg.y + 2, segR + 2, 0, Math.PI * 2);
       cx.fill();
@@ -1282,7 +1284,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     const safeLen = settings.selfBite ? 12 : 0;
     for (let i = 0; i < n; i++) {
       const sg = s.segs[i];
-      if (Math.abs(sg.x - cam.x) > W2 || Math.abs(sg.y - cam.y) > H2) break;
+      if (Math.abs(sg.x - cam.x) > W2 || Math.abs(sg.y - cam.y) > H2) continue;
       // 安全区用绿色高亮，危险区用原色
       if (settings.selfBite && !settings.huntMode && i < safeLen) {
         cx.fillStyle = 'rgba(80,220,120,0.7)';
@@ -1300,7 +1302,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     const dashPeriod = dashOn + dashOff;
     for (let i = 0; i < n; i++) {
       const sg = s.segs[i];
-      if (Math.abs(sg.x - cam.x) > W2 || Math.abs(sg.y - cam.y) > H2) break;
+      if (Math.abs(sg.x - cam.x) > W2 || Math.abs(sg.y - cam.y) > H2) continue;
       if ((i % dashPeriod) < dashOn) {
         cx.beginPath();
         cx.arc(sg.x, sg.y, segR - 1, 0, Math.PI * 2);
@@ -1311,7 +1313,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     cx.fillStyle = 'rgba(255,255,255,0.1)';
     for (let i = 0; i < n; i++) {
       const sg = s.segs[i];
-      if (Math.abs(sg.x - cam.x) > W2 || Math.abs(sg.y - cam.y) > H2) break;
+      if (Math.abs(sg.x - cam.x) > W2 || Math.abs(sg.y - cam.y) > H2) continue;
       cx.beginPath();
       cx.arc(sg.x - segR * 0.2, sg.y - segR * 0.2, segR * 0.45, 0, Math.PI * 2);
       cx.fill();
@@ -2098,16 +2100,10 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
       snakes.push(mkSnake(sb.name, sb.skin, false, sb.aggr, botTeam, sb.type));
     }
 
-    // V6: 困难模式添加Boss（不占普通蛇名额）
+    // V6: 困难模式添加Boss（不占普通蛇名额，仅1条）
     if (settings.difficulty === 'hard') {
       const botTeam = teamOn ? 4 : 0;
       snakes.push(mkSnake(BOSS_CFG.name, BOSS_CFG.skin, false, BOSS_CFG.aggr, botTeam, 'boss'));
-    }
-    // V6: 添加Boss蛇（AI≥12时出现）
-    if (botCount >= 12) {
-      const botTeam = teamOn ? 3 : 0;
-      snakes.push(mkSnake(BOSS_CFG.name, BOSS_CFG.skin, false, BOSS_CFG.aggr, botTeam, 'boss'));
-      created++;
     }
     if (teamOn) player.skinId = 'ocean';
     ensureFood();
