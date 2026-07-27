@@ -1512,10 +1512,11 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
       cx.fillText('得分', 22, 18);
       cx.fillStyle = '#fff';
       cx.font = 'bold 22px sans-serif';
-      cx.fillText('' + player.score, 22, 32);
+      // V6: 分数=长度
+      cx.fillText('' + player.segs.length, 22, 32);
       cx.fillStyle = 'rgba(255,255,255,0.35)';
       cx.font = '11px sans-serif';
-      cx.fillText('长度: ' + player.segs.length + ' 击杀: ' + player.kills, 22, 58);
+      cx.fillText('击杀: ' + player.kills, 22, 58);
       cx.fillStyle = 'rgba(255,100,100,0.7)';
       cx.font = '11px sans-serif';
       if (settings.huntMode) cx.fillText('⚔️ 猎杀模式 · 最低' + HUNT_MIN_LEN + '节', 22, 72);
@@ -1540,7 +1541,8 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
         cx.fillText('🧲 磁铁: ' + mSec + 's', 22, settings.teamMode ? 116 : 102);
       }
     }
-    const alive = snakes.filter(s => s.alive).sort((a, b) => b.score - a.score);
+    // V6: 排行榜按长度排序
+    const alive = snakes.filter(s => s.alive).sort((a, b) => b.segs.length - a.segs.length);
     const lbW = 155, lbH = 28 + alive.length * 22;
     const lbX = W - lbW - 12, lbY = 12;
     cx.fillStyle = 'rgba(0,0,0,0.32)';
@@ -1566,7 +1568,8 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
       cx.fillText(s.name, lbX + 38, y);
       cx.textAlign = 'right';
       cx.fillStyle = isTeam ? '#e94560' : 'rgba(255,255,255,0.35)';
-      cx.fillText('' + s.score, lbX + lbW - 8, y);
+      // V6: 排行榜显示长度
+      cx.fillText('' + s.segs.length, lbX + lbW - 8, y);
       cx.textAlign = 'left';
     });
     drawMinimap(W, H);
@@ -1814,7 +1817,8 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     document.getElementById('endTitle').className = 'title victory-title';
     document.getElementById('deathReason').textContent = settings.teamMode ? '你的队伍消灭了所有对手！' : '你击败了所有AI蛇！';
     captureScreenshot();
-    document.getElementById('fScore').textContent = player.score;
+    // V6: 分数=长度
+    document.getElementById('fScore').textContent = player.segs.length;
     document.getElementById('fLen').textContent = player.segs.length;
     document.getElementById('fKills').textContent = player.kills;
     document.getElementById('gameOverScreen').classList.add('show');
@@ -1833,7 +1837,8 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     document.getElementById('endTitle').textContent = '游戏结束';
     document.getElementById('endTitle').className = 'title';
     document.getElementById('deathReason').textContent = r;
-    document.getElementById('fScore').textContent = s.score;
+    // V6: 分数=长度
+    document.getElementById('fScore').textContent = s.segs.length;
     document.getElementById('fLen').textContent = s.segs.length;
     document.getElementById('fKills').textContent = s.kills;
     document.getElementById('gameOverScreen').classList.add('show');
@@ -2047,10 +2052,11 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
       if (ok) break;
     }
     const a = Math.random() * Math.PI * 2;
-    const reviveLen = settings.huntMode ? Math.max(HUNT_MIN_LEN, Math.floor(player.segs.length / 2)) : INIT_L;
+    // V6: 复活长度减半（最低INIT_L）
+    const reviveLen = Math.max(INIT_L, Math.floor(player.segs.length / 2));
     player.segs = [];
     for (let i = 0; i < reviveLen; i++) player.segs.push({ x: x - Math.cos(a) * i * SG, y: y - Math.sin(a) * i * SG });
-    player.angle = a; player.tAngle = a; player.speed = SPD; player.alive = true; player.boost = false; player.bc = 0; player.score = Math.floor(player.score / 2); player.invuln = INVULN_T * 2; player.permanentDeath = false;
+    player.angle = a; player.tAngle = a; player.speed = SPD; player.alive = true; player.boost = false; player.bc = 0; player.invuln = INVULN_T * 2; player.permanentDeath = false;
     cam.x = player.segs[0].x; cam.y = player.segs[0].y;
     gameActive = true;
     aiAgent = false;
