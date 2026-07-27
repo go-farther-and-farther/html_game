@@ -877,7 +877,8 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
         const odx = tx - o.segs[0].x, ody = ty - o.segs[0].y;
         const maxR = o.segs.length * SG + 150;
         if (odx * odx + ody * ody > maxR * maxR) continue;
-        const startI = (o === s) ? 8 : 0;
+        // V6: 自咬检测从第10节开始（安全区是前12节）
+        const startI = (o === s) ? 10 : 0;
         for (let j = startI; j < o.segs.length; j += 2) {
           const seg = o.segs[j];
           const d2 = (tx - seg.x) ** 2 + (ty - seg.y) ** 2;
@@ -929,10 +930,11 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
           sc += cone * (500 - md) / 500 * 25;
         }
       }
-      // --- 追击（增强：更积极、更远追击） ---
+      // --- 追击（V6增强：更智能的追击策略） ---
       const aggrMul = diffCfg.aggrMul;
       const huntAggr = settings.huntMode ? 2 : 1;
-      if (s.segs.length > 20) {
+      if (s.segs.length > 15) {
+        // 追击玩家（如果足够大）
         const ph = player && player.alive ? player.segs[0] : null;
         if (ph && !(settings.teamMode && s.team > 0 && s.team === player.team)) {
           const dx = ph.x - h.x, dy = ph.y - h.y;
@@ -943,9 +945,24 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
             let diff = a - pa;
             while (diff > Math.PI) diff -= Math.PI * 2;
             while (diff < -Math.PI) diff += Math.PI * 2;
-            if (Math.abs(diff) < 0.6) sc += (1 - Math.abs(diff) / 0.6) * (chaseD - dist) / chaseD * 18 * s.aggr * aggrMul * huntAggr;
+            // V6: 更智能的追击 - 只有在安全时才追击
+            if (Math.abs(diff) < 0.6) {
+              const chaseScore = (1 - Math.abs(diff) / 0.6) * (chaseD - dist) / chaseD * 18 * s.aggr * aggrMul * huntAggr;
+              // 检查追击路径是否安全
+              let safe = true;
+              for (const o2 of snakes) {
+                if (!o2.alive || o2 === s) continue;
+                for (let j = 0; j < o2.segs.length; j += 3) {
+                  const d2 = (tx - o2.segs[j].x) ** 2 + (ty - o2.segs[j].y) ** 2;
+                  if (d2 < 1600) { safe = false; break; }
+                }
+                if (!safe) break;
+              }
+              if (safe) sc += chaseScore;
+            }
           }
         }
+        // 追击其他小蛇
         for (const o of snakes) {
           if (!o.alive || o === s || o.isP) continue;
           if (settings.teamMode && s.team > 0 && o.team === s.team) continue;
@@ -964,12 +981,12 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
           }
         }
       }
-      // --- 逃跑（增强：更快反应、更远感知） ---
+      // --- 逃跑（V6增强：更早逃跑，更聪明的逃跑路径） ---
       for (const o of snakes) {
         if (!o.alive || o === s) continue;
         if (settings.teamMode && s.team > 0 && o.team === s.team) continue;
         const fleeRatio = settings.huntMode ? 1.1 : 1.25;
-        const fleeDist = settings.huntMode ? 320 : 240;
+        const fleeDist = settings.huntMode ? 400 : 300;  // V6: 更早开始逃跑
         if (o.segs.length > s.segs.length * fleeRatio) {
           const dx = o.segs[0].x - h.x, dy = o.segs[0].y - h.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
@@ -978,7 +995,18 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
             let diff = a - pa;
             while (diff > Math.PI) diff -= Math.PI * 2;
             while (diff < -Math.PI) diff += Math.PI * 2;
-            if (Math.abs(diff) > 1.3) sc += ((Math.abs(diff) - 1.3) / 1.7) * (fleeDist - dist) / fleeDist * 28;
+            // V6: 更积极的逃跑 - 逃跑权重提升
+            if (Math.abs(diff) > 1.0) {
+              sc += ((Math.abs(diff) - 1.0) / 2.0) * (fleeDist - dist) / fleeDist * 45;
+            }
+            // 预测敌人移动方向，提前逃跑
+            if (o.segs.length > 1) {
+              const pred = 30;
+              const ox2 = o.segs[0].x + Math.cos(o.angle) * pred;
+              const oy2 = o.segs[0].y + Math.sin(o.angle) * pred;
+              const pd2 = (tx - ox2) ** 2 + (ty - oy2) ** 2;
+              if (pd2 < 2500) sc -= 200;
+            }
           }
         }
       }
