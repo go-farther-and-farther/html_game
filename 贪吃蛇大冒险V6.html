@@ -409,7 +409,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     { name: '超级蛇·玄武', skin: 'ice', aggr: 0.2, type: 'xuanwu', ability: 'magnet', cd: 900, dur: 600 }
   ];
   // V6: Boss配置（困难模式出现，不占普通蛇名额，初始长度200）
-  const BOSS_CFG = { name: 'Boss混沌巨蟒', skin: 'galaxy', aggr: 0.6, type: 'boss', initLen: 200 };
+  const BOSS_CFG = { name: 'Boss混沌巨蟒', skin: 'galaxy', aggr: 0.6, type: 'boss', initLen: 100 };
 
   // 皮肤系统
   function mkSkin(id, name, emoji, body, stripe, head, eye, glow, bg, dash) {
@@ -728,28 +728,42 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
 
     // V6: 超级蛇能力触发
     if (s.type && s.alive && !s.isP) {
-      const cfg = SUPER_BOTS.find(b => b.type === s.type);
-      if (cfg) {
+      if (s.type === 'boss') {
+        // Boss同时有三种效果，隔一段时间获得一次
         s.abilityCD--;
-        if (s.abilityCD <= 0 && !s.abilityActive) {
-          s.abilityActive = true;
-          s.abilityCD = cfg.cd;
-          switch (cfg.ability) {
-            case 'shield':
-              s.shield = true;
-              addKillFeed('🛡️ ' + s.name + ' 获得了护盾');
-              break;
-            case '狂暴':
-              s.infiniteBoost = true;
-              addKillFeed('⚡ ' + s.name + ' 进入狂暴状态');
-              setTimeout(() => { s.infiniteBoost = false; s.abilityActive = false; }, cfg.dur * 16);
-              break;
-            case 'magnet':
-              s.magnet = cfg.dur;
-              addKillFeed('🧲 ' + s.name + ' 启动了磁铁');
-              break;
+        if (s.abilityCD <= 0) {
+          s.abilityCD = 600;  // 每10秒触发一次
+          s.shield = true;
+          s.infiniteBoost = true;
+          s.magnet = 600;
+          addKillFeed('👑 ' + s.name + ' 获得了全部强化！');
+          setTimeout(() => { s.infiniteBoost = false; }, 10000);  // 狂暴10秒
+        }
+      } else {
+        // 普通超级蛇能力
+        const cfg = SUPER_BOTS.find(b => b.type === s.type);
+        if (cfg) {
+          s.abilityCD--;
+          if (s.abilityCD <= 0 && !s.abilityActive) {
+            s.abilityActive = true;
+            s.abilityCD = cfg.cd;
+            switch (cfg.ability) {
+              case 'shield':
+                s.shield = true;
+                addKillFeed('🛡️ ' + s.name + ' 获得了护盾');
+                break;
+              case '狂暴':
+                s.infiniteBoost = true;
+                addKillFeed('⚡ ' + s.name + ' 进入狂暴状态');
+                setTimeout(() => { s.infiniteBoost = false; s.abilityActive = false; }, cfg.dur * 16);
+                break;
+              case 'magnet':
+                s.magnet = cfg.dur;
+                addKillFeed('🧲 ' + s.name + ' 启动了磁铁');
+                break;
+            }
+            setTimeout(() => { s.abilityActive = false; }, cfg.dur * 16);
           }
-          setTimeout(() => { s.abilityActive = false; }, cfg.dur * 16);
         }
       }
     }
@@ -2136,7 +2150,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     const reviveLen = Math.max(INIT_L, Math.floor(player.segs.length / 2));
     player.segs = [];
     for (let i = 0; i < reviveLen; i++) player.segs.push({ x: x - Math.cos(a) * i * SG, y: y - Math.sin(a) * i * SG });
-    player.angle = a; player.tAngle = a; player.speed = SPD; player.alive = true; player.boost = false; player.bc = 0; player.invuln = INVULN_T * 2; player.permanentDeath = false;
+    player.angle = a; player.tAngle = a; player.speed = SPD; player.alive = true; player.boost = false; player.bc = 0; player.invuln = 300; player.permanentDeath = false;  // V6: 复活5秒护盾
     cam.x = player.segs[0].x; cam.y = player.segs[0].y;
     gameActive = true;
     aiAgent = false;
