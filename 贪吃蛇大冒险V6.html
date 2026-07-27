@@ -143,10 +143,10 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
 .ai-btn:active { transform: scale(0.88); }
 
 .rec-btn {
-  position: fixed; top: 14px; right: 66px; width: 44px; height: 44px;
+  position: fixed; bottom: 104px; left: 38px; width: 40px; height: 40px;
   border-radius: 50%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
-  font-size: 18px; display: none; align-items: center; justify-content: center;
-  cursor: pointer; z-index: 60; color: rgba(255,255,255,0.6); transition: all 0.12s;
+  font-size: 16px; display: none; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 50; color: rgba(255,255,255,0.6); transition: all 0.12s;
   -webkit-tap-highlight-color: transparent;
 }
 .rec-btn:hover { background: rgba(255,60,60,0.2); border-color: rgba(255,60,60,0.5); color: #ff6666; }
@@ -230,7 +230,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
   .boost-btn { width: 56px; height: 56px; font-size: 24px; bottom: 20px; right: 20px; }
   .ai-btn { width: 48px; height: 48px; font-size: 20px; bottom: 20px; left: 20px; }
   .exit-btn { width: 36px; height: 36px; font-size: 16px; top: 10px; right: 10px; }
-  .rec-btn { width: 36px; height: 36px; font-size: 14px; top: 10px; right: 52px; }
+  .rec-btn { width: 34px; height: 34px; font-size: 14px; bottom: 74px; left: 26px; }
 }
 </style>
 </head>
@@ -1066,6 +1066,13 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
             // V6: Boss蛇无法被长度不超过它50%的蛇击杀
             if (s.type === 'boss' && o.segs.length <= s.segs.length * 0.5) {
               killSnake(o, o.name + ' 试图攻击Boss，被反杀');
+              s.kills++;
+              dead = false;
+              break;
+            }
+            // V6: 玩家保护 - 无法被小于自己25%的蛇击杀
+            if (s.isP && o.segs.length < s.segs.length * 0.25) {
+              killSnake(o, o.name + ' 太小了，被 ' + s.name + ' 反杀');
               s.kills++;
               dead = false;
               break;
