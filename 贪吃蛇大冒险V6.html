@@ -565,7 +565,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
       });
     }
     for (let i = 0; i < s.segs.length; i += 3) foods.push({
-      x: s.segs[i].x + (Math.random() - 0.5) * 18, y: s.segs[i].y + (Math.random() - 0.5) * 18, r: DEAD_R, color: skin.body, val: 2
+      x: s.segs[i].x + (Math.random() - 0.5) * 18, y: s.segs[i].y + (Math.random() - 0.5) * 18, r: DEAD_R, color: skin.body, val: 2, type: 'dead', emoji: '🍬'
     });
     if (s.isP) {
       addShake(18);
@@ -623,7 +623,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
 
   function spawnFood() {
     foods.push({
-      x: 60 + Math.random() * (MAP - 120), y: 60 + Math.random() * (MAP - 120), r: FOOD_R, color: `hsl(${Math.random() * 360},80%,60%)`, val: 1
+      x: 60 + Math.random() * (MAP - 120), y: 60 + Math.random() * (MAP - 120), r: FOOD_R, color: `hsl(${Math.random() * 360},80%,60%)`, val: 1, type: 'normal'
     });
   }
 
@@ -1032,7 +1032,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     for (let i = 0; i < lose; i++) {
       const seg = victim.segs.pop();
       if (seg) foods.push({
-        x: seg.x + (Math.random() - 0.5) * 10, y: seg.y + (Math.random() - 0.5) * 10, r: DEAD_R, color: getSkin(victim.skinId).body, val: 1
+        x: seg.x + (Math.random() - 0.5) * 10, y: seg.y + (Math.random() - 0.5) * 10, r: DEAD_R, color: getSkin(victim.skinId).body, val: 1, type: 'dead', emoji: '🍬'
       });
     }
     victim.score = Math.max(0, victim.score - lose);
@@ -1257,8 +1257,11 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
 
   function drawFoods() {
     const W2 = innerWidth / 2 + 120, H2 = innerHeight / 2 + 120;
+
+    // 绘制普通食物（圆点）
     cx.globalAlpha = 0.2;
     for (const f of foods) {
+      if (f.type === 'dead') continue;  // 跳过击败掉落
       if (Math.abs(f.x - cam.x) > W2 || Math.abs(f.y - cam.y) > H2) continue;
       cx.fillStyle = f.color;
       cx.beginPath();
@@ -1267,6 +1270,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     }
     cx.globalAlpha = 1;
     for (const f of foods) {
+      if (f.type === 'dead') continue;
       if (Math.abs(f.x - cam.x) > W2 || Math.abs(f.y - cam.y) > H2) continue;
       cx.fillStyle = f.color;
       cx.beginPath();
@@ -1275,10 +1279,40 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     }
     cx.fillStyle = 'rgba(255,255,255,0.3)';
     for (const f of foods) {
+      if (f.type === 'dead') continue;
       if (Math.abs(f.x - cam.x) > W2 || Math.abs(f.y - cam.y) > H2) continue;
       cx.beginPath();
       cx.arc(f.x - f.r * 0.25, f.y - f.r * 0.25, f.r * 0.3, 0, Math.PI * 2);
       cx.fill();
+    }
+
+    // 绘制击败掉落（糖果形状）
+    for (const f of foods) {
+      if (f.type !== 'dead') continue;
+      if (Math.abs(f.x - cam.x) > W2 || Math.abs(f.y - cam.y) > H2) continue;
+      const pulse = Math.sin(Date.now() * 0.005 + f.x + f.y) * 0.15 + 0.85;
+      cx.save();
+      cx.globalAlpha = pulse;
+      // 糖果主体
+      cx.fillStyle = f.color;
+      cx.beginPath();
+      cx.arc(f.x, f.y, f.r * 1.2, 0, Math.PI * 2);
+      cx.fill();
+      // 糖果包装纸效果
+      cx.strokeStyle = 'rgba(255,255,255,0.5)';
+      cx.lineWidth = 1.5;
+      cx.beginPath();
+      cx.moveTo(f.x - f.r * 1.8, f.y);
+      cx.lineTo(f.x - f.r * 1.2, f.y);
+      cx.moveTo(f.x + f.r * 1.2, f.y);
+      cx.lineTo(f.x + f.r * 1.8, f.y);
+      cx.stroke();
+      // 高光
+      cx.fillStyle = 'rgba(255,255,255,0.4)';
+      cx.beginPath();
+      cx.arc(f.x - f.r * 0.3, f.y - f.r * 0.3, f.r * 0.35, 0, Math.PI * 2);
+      cx.fill();
+      cx.restore();
     }
   }
 
