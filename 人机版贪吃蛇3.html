@@ -364,7 +364,7 @@ function mkSnake(name,color,isP,aggr,team){
   for(let i=0;i<INIT_L;i++) segs.push({x:x-Math.cos(a)*i*SG, y:y-Math.sin(a)*i*SG});
   return{segs,angle:a,tAngle:a,speed:SPD,color,name,
     score:0,alive:true,isP,boost:false,bc:0,kills:0,invuln:INVULN_T,rt:0,
-    aggr:aggr||.5,team:team||0,                        // 队伍 0=无 1=蓝 2=红
+    aggr:aggr||.5,team:team||0,permanentDeath:false,  // 队伍 0=无 1=蓝 2=红
     thinkCD:0,lastDir:a,stuckCount:0,lastPos:{x,y},stuckCheck:0};
 }
 
@@ -416,7 +416,7 @@ function respawnBot(s){
   for(let i=0;i<INIT_L;i++) s.segs.push({x:x-Math.cos(a)*i*SG, y:y-Math.sin(a)*i*SG});
   s.angle=a; s.tAngle=a; s.speed=SPD; s.alive=true;
   s.boost=false; s.bc=0; s.score=0; s.kills=0; s.invuln=INVULN_T;
-  s.thinkCD=0; s.stuckCount=0; s.lastPos={x,y}; s.stuckCheck=0; s.lastDir=a;
+  s.permanentDeath=false; s.thinkCD=0; s.stuckCount=0; s.lastPos={x,y}; s.stuckCheck=0; s.lastDir=a;
 }
 
 /* ══════════ 食物（空间网格加速查找） ══════════ */
@@ -702,7 +702,7 @@ function huntShrink(victim, attacker){
     // 长度已经最低，直接永久死亡（不复活）
     killSnake(victim, '被 '+attacker.name+' 吞噬殆尽');
     attacker.kills++;
-    victim.rt=999999; // 不再复活
+    victim.permanentDeath=true; // 不再复活
     return;
   }
   const lose=Math.min(HUNT_SHRINK, victim.segs.length-HUNT_MIN_LEN);
@@ -751,7 +751,7 @@ function checkHit(){
         const sg=o.segs[i];
         const dx=h.x-sg.x, dy=h.y-sg.y;
         if(dx*dx+dy*dy<hitR2){
-          if(hunt){huntShrink(o,s);}else{killSnake(s,'被 '+o.name+' 消灭'); o.kills++;}
+          if(hunt){huntShrink(s,o);}else{killSnake(s,'被 '+o.name+' 消灭'); o.kills++;}
           dead=true; break;
         }
       }
@@ -784,7 +784,13 @@ function checkHit(){
       }
     }
   }
-  [...eaten].sort((a,b)=>b-a).forEach(i=>foods.splice(i,1));
+  // swap-and-pop方式批量删除，比splice更高效
+  const toDelete=[...eaten].sort((a,b)=>b-a);
+  for(let i=0;i<toDelete.length;i++){
+    const idx=toDelete[i];
+    if(idx<foods.length-1) foods[idx]=foods[foods.length-1];
+    foods.pop();
+  }
 }
 
 /* ══════════ 粒子/震动（限制最大粒子数） ══════════ */
@@ -1301,9 +1307,9 @@ document.getElementById('botPlus').onclick=()=>{
 };
 document.querySelectorAll('.diff-btn').forEach(btn=>{
   btn.onclick=()=>{settings.difficulty=btn.dataset.diff; updateSettingsUI();}
-};
-huntModeEl.onchange=()=>{settings.huntMode=huntModeEl.checked; updateSettingsUI();};
-teamModeEl.onchange=()=>{settings.teamMode=teamModeEl.checked; updateSettingsUI();};
+});
+huntModeEl.onchange=()=>{if(huntModeEl.checked){teamModeEl.checked=false;settings.teamMode=false;}settings.huntMode=huntModeEl.checked; updateSettingsUI();};
+teamModeEl.onchange=()=>{if(teamModeEl.checked){huntModeEl.checked=false;settings.huntMode=false;}settings.teamMode=teamModeEl.checked; updateSettingsUI();};
 
 // PC端显示按键提示在控制说明中
 if(isPC){
@@ -1321,7 +1327,7 @@ function loop(){
   updateKeyboardAngle(); // PC键盘输入
   for(const s of snakes){
     if(!s.alive){
-      if(!s.isP){s.rt-=16; if(s.rt<=0) respawnBot(s);}
+      if(!s.isP&&!s.permanentDeath){s.rt-=16; if(s.rt<=0) respawnBot(s);}
       continue;
     }
     if(s.invuln>0) s.invuln--;
