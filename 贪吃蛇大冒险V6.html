@@ -2297,9 +2297,10 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     player = mkSnake('玩家', settings.playerSkin, true, playerAggr, playerTeam, playerType);
     // 如果选择Boss，初始长度100
     if (playerType === 'boss') {
-      player.segs = [];
       const a = player.angle;
-      for (let i = 0; i < 100; i++) player.segs.push({ x: player.segs[0].x - Math.cos(a) * i * SG, y: player.segs[0].y - Math.sin(a) * i * SG });
+      const hx = player.segs[0].x, hy = player.segs[0].y;
+      player.segs = [];
+      for (let i = 0; i < 100; i++) player.segs.push({ x: hx - Math.cos(a) * i * SG, y: hy - Math.sin(a) * i * SG });
     }
     snakes.push(player);
     const botCount = Math.min(settings.botCount, MAX_BOTS);
