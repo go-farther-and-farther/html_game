@@ -128,7 +128,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
   cursor: pointer; z-index: 60; transition: all 0.12s; user-select: none;
   -webkit-tap-highlight-color: transparent; color: rgba(255,255,255,0.6);
 }
-.exit-btn:hover { background: rgba(233,69,96,0.25); border-color: rgba(233,69,96,0.5); color: #fff; }
+.exit-btn:hover { background: rgba(255,215,0,0.25); border-color: rgba(255,215,0,0.5); color: #fff; }
 .exit-btn:active { transform: scale(0.9); }
 
 .ai-btn {
@@ -237,7 +237,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
 <body>
 <canvas id="canvas"></canvas>
 <div id="boostBtn" class="boost-btn">⚡</div>
-<div id="exitBtn" class="exit-btn">✕</div>
+<div id="exitBtn" class="exit-btn">⏸️</div>
 <div id="aiBtn" class="ai-btn" title="AI代理 - 自动操控">🤖</div>
 <div id="recBtn" class="rec-btn" title="录屏1分钟">⏺</div>
 <div id="huntTag" class="mode-tag hunt-mode-tag">⚔️ 猎杀模式</div>
@@ -333,6 +333,16 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     </p>
   </div>
   <button class="btn" id="snakeInfoBack" style="margin-top:15px;">返回</button>
+</div>
+
+<!-- 暂停界面 -->
+<div id="pauseScreen" class="overlay">
+  <div class="icon">⏸️</div>
+  <div class="title">游戏暂停</div>
+  <div style="display:flex;gap:16px;margin-top:20px;">
+    <button class="btn" id="resumeBtn">▶️ 继续游戏</button>
+    <button class="btn" id="menuBtn" style="background:rgba(255,255,255,0.1);">🏠 回到菜单</button>
+  </div>
 </div>
 
 <!-- Game Over 界面 -->
@@ -1885,10 +1895,25 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
       document.getElementById('gameOverScreen').classList.remove('show');
     }
   };
+  // V6: 暂停按钮
   document.getElementById('exitBtn').onclick = () => {
+    if (!gameActive) return;
     gameActive = false;
     if (animId) { cancelAnimationFrame(animId); animId = null; }
-    snakes = []; foods = []; particles = [];
+    document.getElementById('pauseScreen').classList.add('show');
+  };
+
+  // V6: 继续游戏
+  document.getElementById('resumeBtn').onclick = () => {
+    document.getElementById('pauseScreen').classList.remove('show');
+    gameActive = true;
+    animId = requestAnimationFrame(loop);
+  };
+
+  // V6: 回到菜单
+  document.getElementById('menuBtn').onclick = () => {
+    document.getElementById('pauseScreen').classList.remove('show');
+    snakes = []; foods = []; particles = []; magnets = [];
     aiAgent = false;
     document.getElementById('exitBtn').style.display = 'none';
     document.getElementById('aiBtn').style.display = 'none';
