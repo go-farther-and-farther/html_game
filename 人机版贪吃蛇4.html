@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>贪吃蛇大作战</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#060810;overflow:hidden;
+  font-family:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+  touch-action:none;user-select:none;-webkit-user-select:none;
+  overscroll-behavior:none;
+}
+canvas{display:block;position:fixed;top:0;left:0}
+.overlay{
+  position:fixed;inset:0;
+  background:rgba(6,8,16,0.88);
+  display:none;flex-direction:column;
+  justify-content:center;align-items:center;
+  z-index:200;backdrop-filter:blur(8px);
+}
+.overlay.show{display:flex}
+.overlay .icon{font-size:72px;margin-bottom:12px}
+.overlay .title{font-size:34px;font-weight:800;color:#fff;margin-bottom:6px}
+.overlay .sub{font-size:16px;color:rgba(255,255,255,0.45);margin-bottom:28px}
+.overlay .stats{display:flex;gap:32px;margin-bottom:28px}
+.overlay .stat{text-align:center}
+.overlay .stat .val{font-size:30px;font-weight:700;color:#e94560}
+.overlay .stat .lbl{font-size:12px;color:rgba(255,255,255,0.35);margin-top:4px}
+.btn{
+  background:#e94560;color:#fff;border:none;
+  border-radius:12px;padding:14px 44px;
+  font-size:17px;font-weight:700;cursor:pointer;
+  transition:all .15s;letter-spacing:1px;
+}
+.btn:active{transform:scale(.94);background:#d63851}
+.boost-btn{
+  position:fixed;bottom:28px;left:28px;
+  width:68px;height:68px;border-radius:50%;
+  background:rgba(233,69,96,0.25);
+  border:2px solid rgba(233,69,96,0.45);
+  color:rgba(255,255,255,0.6);font-size:26px;
+  display:flex;justify-content:center;align-items:center;
+  z-index:50;cursor:pointer;transition:all .12s;
+  -webkit-tap-highlight-color:transparent;
+  animation:pulse 2.5s infinite;
+}
+.boost-btn.active{
+  background:rgba(233,69,96,0.7);
+  border-color:#e94560;transform:scale(.88);color:#fff;
+  animation:none;
+}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(233,69,96,0.35)}
+  50%{box-shadow:0 0 0 12px rgba(233,69,96,0)}
+}
+.overlay .desc{
+  max-width:320px;text-align:center;
+  font-size:14px;color:rgba(255,255,255,0.35);
+  line-height:1.6;margin-bottom:24px;
+}
+.revive-btn{
+  background:linear-gradient(135deg,#ff6b6b,#e94560);
+  margin-top:12px;display:block;
+  animation:revivePulse 1.5s infinite;
+}
+.revive-btn:disabled{
+  background:#333;color:#666;cursor:not-allowed;
+  animation:none;opacity:0.5;
+}
+@keyframes revivePulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(233,69,96,0.4)}
+  50%{box-shadow:0 0 20px 4px rgba(233,69,96,0.2)}
+}
+.settings-panel{
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:16px;padding:24px;
+  margin-bottom:28px;width:340px;
+}
+.settings-panel h3{
+  color:rgba(255,255,255,0.8);font-size:15px;
+  margin-bottom:16px;text-align:center;
+}
+.setting-row{
+  display:flex;justify-content:space-between;
+  align-items:center;margin-bottom:16px;
+}
+.setting-row:last-child{margin-bottom:0}
+.setting-label{
+  color:rgba(255,255,255,0.6);font-size:13px;
+}
+.setting-value{
+  display:flex;align-items:center;gap:10px;
+}
+.setting-value span{
+  color:#fff;font-size:15px;font-weight:600;
+  min-width:30px;text-align:center;
+}
+.setting-btn{
+  width:32px;height:32px;border-radius:8px;
+  background:rgba(233,69,96,0.2);
+  border:1px solid rgba(233,69,96,0.4);
+  color:#e94560;font-size:18px;font-weight:700;
+  cursor:pointer;display:flex;
+  justify-content:center;align-items:center;
+  transition:all .12s;
+}
+.setting-btn:hover{background:rgba(233,69,96,0.4)}
+.diff-btns{display:flex;gap:6px}
+.diff-btn{
+  padding:6px 14px;border-radius:8px;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.12);
+  color:rgba(255,255,255,0.5);font-size:12px;
+  cursor:pointer;transition:all .12s;
+}
+.diff-btn.active{
+  background:rgba(233,69,96,0.3);
+  border-color:#e94560;color:#fff;
+}
+.key-hints{
+  position:fixed;bottom:80px;left:50%;
+  transform:translateX(-50%);
+  display:none;gap:8px;z-index:100;
+  pointer-events:none;
+}
+.key-hints.show{display:flex}
+.key-hint{
+  background:rgba(0,0,0,0.6);
+  border:1px solid rgba(255,255,255,0.15);
+  border-radius:8px;padding:8px 12px;
+  display:flex;flex-direction:column;
+  align-items:center;gap:4px;
+}
+.key-hint kbd{
+  background:rgba(255,255,255,0.12);
+  border:1px solid rgba(255,255,255,0.2);
+  border-radius:6px;padding:4px 10px;
+  color:#fff;font-size:14px;font-weight:600;
+  font-family:inherit;min-width:36px;
+  text-align:center;
+}
+.key-hint span{
+  color:rgba(255,255,255,0.45);font-size:10px;
+}
+.hunt-toggle{
+  display:flex;align-items:center;gap:10px;
+  margin-top:8px;padding:10px 14px;
+  background:rgba(255,60,60,0.08);
+  border:1px solid rgba(255,60,60,0.2);
+  border-radius:10px;cursor:pointer;
+  transition:all .15s;
+}
+.hunt-toggle:hover{background:rgba(255,60,60,0.15)}
+.hunt-toggle input{display:none}
+.hunt-check{
+  width:22px;height:22px;border-radius:6px;
+  border:2px solid rgba(255,255,255,0.25);
+  display:flex;justify-content:center;align-items:center;
+  transition:all .15s;font-size:13px;
+}
+.hunt-toggle input:checked+.hunt-check{
+  background:#ff4444;border-color:#ff4444;
+}
+.hunt-label{color:rgba(255,255,255,0.7);font-size:13px}
+.hunt-label b{color:#ff6666}
+.hunt-mode-tag{
+  position:fixed;top:12px;left:50%;transform:translateX(-50%);
+  background:rgba(255,60,60,0.25);border:1px solid rgba(255,60,60,0.5);
+  border-radius:20px;padding:6px 18px;
+  color:#ff6666;font-size:13px;font-weight:700;
+  z-index:50;display:none;letter-spacing:1px;
+}
+.hunt-mode-tag.show{display:block}
+.team-toggle{
+  display:flex;align-items:center;gap:10px;
+  margin-top:8px;padding:10px 14px;
+  background:rgba(60,120,255,0.08);
+  border:1px solid rgba(60,120,255,0.2);
+  border-radius:10px;cursor:pointer;
+  transition:all .15s;
+}
+.team-toggle:hover{background:rgba(60,120,255,0.15)}
+.team-toggle input{display:none}
+.team-check{
+  width:22px;height:22px;border-radius:6px;
+  border:2px solid rgba(255,255,255,0.25);
+  display:flex;justify-content:center;align-items:center;
+  transition:all .15s;font-size:13px;
+}
+.team-toggle input:checked+.team-check{
+  background:#4488ff;border-color:#4488ff;
+}
+.team-label{color:rgba(255,255,255,0.7);font-size:13px}
+.team-label b{color:#66aaff}
+.team-tag{
+  position:fixed;top:12px;left:50%;transform:translateX(-50%);
+  background:rgba(60,120,255,0.25);border:1px solid rgba(60,120,255,0.5);
+  border-radius:20px;padding:6px 18px;
+  color:#66aaff;font-size:13px;font-weight:700;
+  z-index:50;display:none;letter-spacing:1px;
+}
+.team-tag.show{display:block}
+.screenshot-box{
+  margin:16px 0;border-radius:12px;overflow:hidden;
+  border:2px solid rgba(255,255,255,0.1);
+  max-width:360px;width:100%;
+}
+.screenshot-box img{width:100%;display:block}
+.victory-title{color:#ffd700!important}
+.download-btn{
+  background:linear-gradient(135deg,#ffd700,#ff8c00);
+  margin-top:8px;display:inline-block;
+}
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+<div id="boostBtn" class="boost-btn">⚡</div>
+<div id="huntTag" class="hunt-mode-tag">⚔️ 猎杀模式</div>
+<div id="teamTag" class="team-tag">👥 队友模式</div>
+
+<div id="keyHints" class="key-hints">
+  <div class="key-hint">
+    <kbd>W</kbd><kbd>↑</kbd>
+    <span>上</span>
+  </div>
+  <div class="key-hint">
+    <kbd>A</kbd><kbd>←</kbd>
+    <span>左</span>
+  </div>
+  <div class="key-hint">
+    <kbd>S</kbd><kbd>↓</kbd>
+    <span>下</span>
+  </div>
+  <div class="key-hint">
+    <kbd>D</kbd><kbd>→</kbd>
+    <span>右</span>
+  </div>
+  <div class="key-hint" style="margin-left:16px">
+    <kbd>Space</kbd>
+    <span>加速</span>
+  </div>
+</div>
+
+<div id="startScreen" class="overlay show">
+  <div class="icon">🐍</div>
+  <div class="title">贪吃蛇大作战</div>
+  <div class="sub" id="botInfo">与 6 条 AI 蛇同场竞技！</div>
+  <div class="settings-panel">
+    <h3>⚙️ 游戏设置</h3>
+    <div class="setting-row">
+      <span class="setting-label">AI 数量</span>
+      <div class="setting-value">
+        <button class="setting-btn" id="botMinus">-</button>
+        <span id="botCount">6</span>
+        <button class="setting-btn" id="botPlus">+</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">AI 难度</span>
+      <div class="diff-btns">
+        <button class="diff-btn" data-diff="easy">简单</button>
+        <button class="diff-btn active" data-diff="normal">普通</button>
+        <button class="diff-btn" data-diff="hard">困难</button>
+      </div>
+    </div>
+    <label class="hunt-toggle">
+      <input type="checkbox" id="huntMode">
+      <span class="hunt-check">✓</span>
+      <span class="hunt-label"><b>猎杀模式</b> · 可穿过自己 · 被撞变小</span>
+    </label>
+    <label class="team-toggle">
+      <input type="checkbox" id="teamMode">
+      <span class="team-check">✓</span>
+      <span class="team-label"><b>队友模式</b> · 分队对抗 · 队友不会互吃</span>
+    </label>
+  </div>
+  <div class="desc" id="controlDesc">
+    移动鼠标/触摸屏幕 控制方向<br>
+    点击/按住 加速（消耗长度）<br>
+    撞到边界或其他蛇的身体即死亡
+  </div>
+  <button class="btn" id="startBtn">开始游戏</button>
+</div>
+
+<div id="gameOverScreen" class="overlay">
+  <div class="icon" id="endIcon">💀</div>
+  <div class="title" id="endTitle">游戏结束</div>
+  <div class="sub" id="deathReason">-</div>
+  <div class="screenshot-box" id="screenshotBox" style="display:none">
+    <img id="screenshotImg" src="" alt="screenshot">
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="val" id="fScore">0</div><div class="lbl">得分</div></div>
+    <div class="stat"><div class="val" id="fLen">0</div><div class="lbl">长度</div></div>
+    <div class="stat"><div class="val" id="fKills">0</div><div class="lbl">击杀</div></div>
+  </div>
+  <button class="btn download-btn" id="downloadBtn" style="display:none">📥 保存截图</button>
+  <button class="btn" id="restartBtn">再来一局</button>
+  <button class="btn revive-btn" id="reviveBtn">❤️ 复活 (<span id="reviveCount">3</span>/3)</button>
+</div>
+
+<script>
+(()=>{
+'use strict';
+
+/* ══════════ 常量 ══════════ */
+const MAP=3000, FOOD_N=250, BOT_N=6;
+const SR=10, SG=16, SPD=2.5, BSPD=5.2, TURN=.07;
+const INIT_L=20, FOOD_R=5, DEAD_R=7;
+const BOOST_MIN=15, BOOST_CI=8, INVULN_T=120;
+
+const BOT_CFG=[
+  {name:'小青龙',  color:'#00d2ff', aggr:.5},
+  {name:'贪吃鬼',  color:'#ff8c00', aggr:.8},
+  {name:'闪电蛇',  color:'#ffd700', aggr:.6},
+  {name:'毒液',    color:'#7cfc00', aggr:.4},
+  {name:'粉色风暴',color:'#ff69b4', aggr:.7},
+  {name:'暗影忍者',color:'#9b59b6', aggr:.3}
+];
+
+/* ══════════ 状态 ══════════ */
+const cv=document.getElementById('canvas');
+const cx=cv.getContext('2d');
+const DPR=window.devicePixelRatio||1;
+
+let snakes=[],foods=[],particles=[];
+let cam={x:MAP/2,y:MAP/2};
+let player=null, running=false, animId=null;
+let tAngle=0, boostHeld=false;
+let shakeAmt=0, shakeX=0, shakeY=0;
+let revives=0, MAX_REVIVES=3;
+
+/* ══════════ 难度设置 ══════════ */
+const MAX_BOTS=18, COPIES_PER_TYPE=3;
+const HUNT_SHRINK=10, HUNT_MIN_LEN=8; // 猎杀模式：每次被撞减少10节，最低8节不能复活
+let settings={botCount:6, difficulty:'normal', huntMode:false, teamMode:false};
+const TEAM_COLORS=['#4488ff','#ff4444']; // 蓝队 红队
+const DIFF_CFG={
+  easy:  {aggrMul:0.5, thinkCD:5, lookMul:0.7, label:'简单'},
+  normal:{aggrMul:1.0, thinkCD:3, lookMul:1.0, label:'普通'},
+  hard:  {aggrMul:1.5, thinkCD:2, lookMul:1.3, label:'困难'}
+};
+
+/* ══════════ 设备检测 ══════════ */
+const isPC=!('ontouchstart' in window)||navigator.maxTouchPoints===0;
+
+/* ══════════ 画布尺寸 ══════════ */
+function resize(){
+  cv.width=innerWidth*DPR; cv.height=innerHeight*DPR;
+  cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
+  cx.setTransform(DPR,0,0,DPR,0,0);
+}
+addEventListener('resize',resize); resize();
+
+/* ══════════ 蛇 ══════════ */
+function mkSnake(name,color,isP,aggr,team){
+  const x=300+Math.random()*(MAP-600), y=300+Math.random()*(MAP-600);
+  const a=Math.random()*Math.PI*2, segs=[];
+  for(let i=0;i<INIT_L;i++) segs.push({x:x-Math.cos(a)*i*SG, y:y-Math.sin(a)*i*SG});
+  return{segs,angle:a,tAngle:a,speed:SPD,color,name,
+    score:0,alive:true,isP,boost:false,bc:0,kills:0,invuln:INVULN_T,rt:0,
+    aggr:aggr||.5,team:team||0,permanentDeath:false,  // 队伍 0=无 1=蓝 2=红
+    thinkCD:0,lastDir:a,stuckCount:0,lastPos:{x,y},stuckCheck:0};
+}
+
+function moveSnake(s){
+  let d=s.tAngle-s.angle;
+  while(d>Math.PI)d-=Math.PI*2; while(d<-Math.PI)d+=Math.PI*2;
+  if(Math.abs(d)>TURN) s.angle+=Math.sign(d)*TURN; else s.angle=s.tAngle;
+  while(s.angle>Math.PI)s.angle-=Math.PI*2; while(s.angle<-Math.PI)s.angle+=Math.PI*2;
+  const h=s.segs[0];
+  h.x+=Math.cos(s.angle)*s.speed; h.y+=Math.sin(s.angle)*s.speed;
+  for(let i=1;i<s.segs.length;i++){
+    const p=s.segs[i-1],c=s.segs[i];
+    const dx=p.x-c.x, dy=p.y-c.y, dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist>SG){const r=(dist-SG)/dist; c.x+=dx*r; c.y+=dy*r;}
+  }
+}
+
+function killSnake(s,reason){
+  if(!s.alive) return;
+  s.alive=false;
+  // 限制死亡粒子数量（长蛇太多粒子影响性能）
+  const maxParts=Math.min(s.segs.length,60);
+  const step=Math.max(1,Math.floor(s.segs.length/maxParts));
+  for(let i=0;i<s.segs.length;i+=step){
+    const sg=s.segs[i];
+    for(let j=0;j<2;j++)
+      particles.push({x:sg.x,y:sg.y,vx:(Math.random()-.5)*7,vy:(Math.random()-.5)*7,
+        life:1,dec:.014+Math.random()*.014,sz:3+Math.random()*3,color:s.color});
+  }
+  for(let i=0;i<s.segs.length;i+=3)
+    foods.push({x:s.segs[i].x+(Math.random()-.5)*18,y:s.segs[i].y+(Math.random()-.5)*18,
+      r:DEAD_R,color:s.color,val:2});
+  if(s.isP){addShake(18); setTimeout(()=>showOver(reason,s),600);}
+  else s.rt=3000+Math.random()*3000;
+  if(s.isP) s.deathReason=reason;
+}
+
+function respawnBot(s){
+  let x,y,ok;
+  for(let t=0;t<50;t++){
+    x=300+Math.random()*(MAP-600); y=300+Math.random()*(MAP-600); ok=true;
+    for(const o of snakes){
+      if(!o.alive||o===s) continue;
+      if((x-o.segs[0].x)**2+(y-o.segs[0].y)**2<280*280){ok=false;break;}
+    }
+    if(ok) break;
+  }
+  const a=Math.random()*Math.PI*2; s.segs=[];
+  for(let i=0;i<INIT_L;i++) s.segs.push({x:x-Math.cos(a)*i*SG, y:y-Math.sin(a)*i*SG});
+  s.angle=a; s.tAngle=a; s.speed=SPD; s.alive=true;
+  s.boost=false; s.bc=0; s.score=0; s.kills=0; s.invuln=INVULN_T;
+  s.permanentDeath=false; s.thinkCD=0; s.stuckCount=0; s.lastPos={x,y}; s.stuckCheck=0; s.lastDir=a;
+}
+
+/* ══════════ 食物（空间网格加速查找） ══════════ */
+const GRID_SIZE=200;
+let foodGrid={};
+function buildFoodGrid(){
+  foodGrid={};
+  for(let i=0;i<foods.length;i++){
+    const f=foods[i];
+    const key=((f.x/GRID_SIZE|0)<<16)|(f.y/GRID_SIZE|0);
+    if(!foodGrid[key]) foodGrid[key]=[];
+    foodGrid[key].push(i);
+  }
+}
+function getNearFoodIndices(x,y,r){
+  const results=[];
+  const gx0=Math.max(0,(x-r)/GRID_SIZE|0), gy0=Math.max(0,(y-r)/GRID_SIZE|0);
+  const gx1=(MAP<(x+r)/GRID_SIZE?MAP:(x+r)/GRID_SIZE|0), gy1=(MAP<(y+r)/GRID_SIZE?MAP:(y+r)/GRID_SIZE|0);
+  for(let gx=gx0;gx<=gx1;gx++){
+    for(let gy=gy0;gy<=gy1;gy++){
+      const key=(gx<<16)|gy;
+      const arr=foodGrid[key];
+      if(arr) results.push(...arr);
+    }
+  }
+  return results;
+}
+
+function spawnFood(){
+  foods.push({x:60+Math.random()*(MAP-120),y:60+Math.random()*(MAP-120),
+    r:FOOD_R,color:`hsl(${Math.random()*360},80%,60%)`,val:1});
+}
+function ensureFood(){
+  while(foods.length>FOOD_N*2.5) foods.splice(Math.floor(Math.random()*foods.length),1);
+  while(foods.length<FOOD_N) spawnFood();
+  buildFoodGrid(); // 每帧重建食物网格
+}
+
+/* ═══════════════════════════════════════════════════
+   智能 AI  —— 360° 方向评分系统
+   ═══════════════════════════════════════════════════ */
+
+function updateAI(s){
+  const h=s.segs[0];
+
+  // ---- 防卡死检测 ----
+  s.stuckCheck++;
+  if(s.stuckCheck>60){
+    s.stuckCheck=0;
+    const dx=h.x-s.lastPos.x, dy=h.y-s.lastPos.y;
+    if(dx*dx+dy*dy<9){s.stuckCount++;} else {s.stuckCount=0;}
+    s.lastPos={x:h.x,y:h.y};
+  }
+  // 如果连续卡住，随机跳一个方向
+  if(s.stuckCount>=3){
+    s.stuckCount=0;
+    s.tAngle=s.angle+(Math.random()-.5)*2.5;
+    s.boost=true;
+    return;
+  }
+
+  // ---- 决策频率：根据难度调整 ----
+  const diffCfg=DIFF_CFG[settings.difficulty];
+  s.thinkCD--;
+  if(s.thinkCD>0) return;
+  s.thinkCD=diffCfg.thinkCD;
+
+  const numDirs=36;                    // 36个采样方向（每10°一个）
+  const step=Math.PI*2/numDirs;
+  const lookDist=(130+s.segs.length*0.5)*diffCfg.lookMul; // 越长看得越远，难度影响视野
+  const scores=new Array(numDirs);
+
+  for(let i=0;i<numDirs;i++){
+    const a=i*step;
+    const cosA=Math.cos(a), sinA=Math.sin(a);
+    let sc=0;
+
+    /* ---- 1. 边界安全 ---- */
+    const testX=h.x+cosA*lookDist;
+    const testY=h.y+sinA*lookDist;
+    const wallD=Math.min(testX,MAP-testX,testY,MAP-testY);
+    if(wallD<0)       sc-=9999;                      // 已经超界
+    else if(wallD<60)  sc-=(60-wallD)*60;            // 非常危险
+    else if(wallD<130) sc-=(130-wallD)*12;           // 有风险
+    else               sc+=5;                         // 安全加分
+
+    // 多层预测
+    const testX2=h.x+cosA*lookDist*1.8;
+    const testY2=h.y+sinA*lookDist*1.8;
+    const wallD2=Math.min(testX2,MAP-testX2,testY2,MAP-testY2);
+    if(wallD2<80) sc-=400;
+
+    /* ---- 2. 蛇身避障（快速距离预判） ---- */
+    for(const o of snakes){
+      if(!o.alive) continue;
+      // 快速判断：测试点是否在该蛇的范围内
+      const odx=testX-o.segs[0].x, ody=testY-o.segs[0].y;
+      const maxR=o.segs.length*SG+80;
+      if(odx*odx+ody*ody>maxR*maxR) continue;
+      const startI=o===s?8:0;           // 自身跳过前8节（可穿过）
+      for(let j=startI;j<o.segs.length;j+=2){
+        const seg=o.segs[j];
+        const dx=testX-seg.x, dy=testY-seg.y;
+        const d2=dx*dx+dy*dy;
+        if(d2<400)       sc-=9999;                    // 必死
+        else if(d2<2500) sc-=((50-Math.sqrt(d2))*25); // 危险
+        else if(d2<6400) sc-=((80-Math.sqrt(d2))*4);  // 注意
+      }
+      // 预判对方蛇头走向
+      if(o!==s&&o.alive&&o.segs.length>1){
+        const oh=o.segs[0];
+        const oa=o.angle;
+        const ox2=oh.x+Math.cos(oa)*60;
+        const oy2=oh.y+Math.sin(oa)*60;
+        const dx1=testX-ox2, dy1=testY-oy2;
+        if(dx1*dx1+dy1*dy1<2500) sc-=200;
+      }
+    }
+
+    /* ---- 3. 食物吸引力（空间网格加速） ---- */
+    let foodScore=0;
+    const nearFood=getNearFoodIndices(h.x,h.y,400);
+    for(const fi of nearFood){
+      const f=foods[fi];
+      const fdx=f.x-h.x, fdy=f.y-h.y;
+      const fd2=fdx*fdx+fdy*fdy;
+      if(fd2>160000) continue;
+      const fd=Math.sqrt(fd2);
+      let fa=Math.atan2(fdy,fdx);
+      let diff=a-fa;
+      while(diff>Math.PI)diff-=Math.PI*2;
+      while(diff<-Math.PI)diff+=Math.PI*2;
+      if(Math.abs(diff)<0.6){
+        const cone=1-Math.abs(diff)/0.6;
+        foodScore+=cone*(400-fd)/400*8*f.val;
+      }
+    }
+    sc+=foodScore;
+
+    /* ---- 4. 追杀其他玩家（队友模式跳过队友） ---- */
+    const aggrMul=DIFF_CFG[settings.difficulty].aggrMul;
+    const huntAggr=settings.huntMode?2:1;
+    if(!s.isP&&s.segs.length>25){
+      const playerHead=player&&player.alive?player.segs[0]:null;
+      // 队友模式跳过追杀玩家
+      if(playerHead&&!(settings.teamMode&&s.team>0&&s.team===player.team)){
+        const dx=playerHead.x-h.x, dy=playerHead.y-h.y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        const chaseDist=settings.huntMode?500:350;
+        if(dist<chaseDist){
+          let pa=Math.atan2(dy,dx);
+          let diff=a-pa;
+          while(diff>Math.PI)diff-=Math.PI*2;
+          while(diff<-Math.PI)diff+=Math.PI*2;
+          if(Math.abs(diff)<0.5){
+            sc+=((1-Math.abs(diff)/0.5)*(chaseDist-dist)/chaseDist)*15*s.aggr*aggrMul*huntAggr;
+          }
+        }
+      }
+      // 追杀其他短蛇（跳过队友）
+      for(const o of snakes){
+        if(!o.alive||o===s||o.isP) continue;
+        if(settings.teamMode&&s.team>0&&o.team===s.team) continue;
+        const huntTarget=settings.huntMode?1.2:0.6;
+        if(o.segs.length<s.segs.length*huntTarget){
+          const dx=o.segs[0].x-h.x, dy=o.segs[0].y-h.y;
+          const dist=Math.sqrt(dx*dx+dy*dy);
+          const chaseDist=settings.huntMode?400:280;
+          if(dist<chaseDist){
+            let pa=Math.atan2(dy,dx);
+            let diff=a-pa;
+            while(diff>Math.PI)diff-=Math.PI*2;
+            while(diff<-Math.PI)diff+=Math.PI*2;
+            if(Math.abs(diff)<0.4){
+              sc+=((1-Math.abs(diff)/0.4)*(chaseDist-dist)/chaseDist)*10*s.aggr*aggrMul*huntAggr;
+            }
+          }
+        }
+      }
+    }
+
+    /* ---- 5. 逃跑（遇到长蛇要躲，队友除外） ---- */
+    for(const o of snakes){
+      if(!o.alive||o===s) continue;
+      if(settings.teamMode&&s.team>0&&o.team===s.team) continue;
+      const fleeRatio=settings.huntMode?1.1:1.3;
+      const fleeDist=settings.huntMode?280:200;
+      if(o.segs.length>s.segs.length*fleeRatio){
+        const dx=o.segs[0].x-h.x, dy=o.segs[0].y-h.y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<fleeDist){
+          let pa=Math.atan2(dy,dx);
+          let diff=a-pa;
+          while(diff>Math.PI)diff-=Math.PI*2;
+          while(diff<-Math.PI)diff+=Math.PI*2;
+          if(Math.abs(diff)>1.5){
+            sc+=((Math.abs(diff)-1.5)/1.5)*(fleeDist-dist)/fleeDist*20;
+          }
+        }
+      }
+    }
+
+    /* ---- 6. 方向惯性（不要乱抖） ---- */
+    let adiff=a-s.lastDir;
+    while(adiff>Math.PI)adiff-=Math.PI*2;
+    while(adiff<-Math.PI)adiff+=Math.PI*2;
+    sc-=Math.abs(adiff)*6;
+
+    /* ---- 7. 前方开阔度 ---- */
+    let openScore=0;
+    for(let r=1;r<=3;r++){
+      const rd=r*50;
+      for(let da=-0.4;da<=0.4;da+=0.4){
+        const cx=h.x+Math.cos(a+da)*rd;
+        const cy=h.y+Math.sin(a+da)*rd;
+        const wd=Math.min(cx,MAP-cx,cy,MAP-cy);
+        if(wd>50) openScore+=r;
+        for(const o of snakes){
+          if(!o.alive) continue;
+          const si=o===s?10:0;
+          for(let j=si;j<o.segs.length;j+=4){
+            const sg=o.segs[j];
+            if((cx-sg.x)**2+(cy-sg.y)**2<900){openScore-=r*2; break;}
+          }
+        }
+      }
+    }
+    sc+=openScore;
+
+    scores[i]=sc;
+  }
+
+  // 找最高分方向
+  let bestI=0;
+  for(let i=1;i<numDirs;i++) if(scores[i]>scores[bestI]) bestI=i;
+  s.tAngle=bestI*step;
+  s.lastDir=s.tAngle;
+
+  // ---- 加速决策 ----
+  s.boost=false;
+  if(s.segs.length>BOOST_MIN+5){
+    // 追食物加速
+    for(const f of foods){
+      const fd=Math.sqrt((f.x-h.x)**2+(f.y-h.y)**2);
+      if(fd<110&&fd>20&&f.val>=2){
+        let fa=Math.atan2(f.y-h.y,f.x-h.x);
+        let diff=s.angle-fa;
+        while(diff>Math.PI)diff-=Math.PI*2;
+        while(diff<-Math.PI)diff+=Math.PI*2;
+        if(Math.abs(diff)<0.4){s.boost=true; break;}
+      }
+    }
+    // 逃跑加速
+    if(!s.boost){
+      for(const o of snakes){
+        if(!o.alive||o===s) continue;
+        if(o.segs.length>s.segs.length*1.2){
+          const dist=Math.sqrt((o.segs[0].x-h.x)**2+(o.segs[0].y-h.y)**2);
+          if(dist<130){s.boost=true; break;}
+        }
+      }
+    }
+  }
+}
+
+/* ══════════ 加速 ══════════ */
+function updateBoost(s){
+  if(s.isP) s.boost=boostHeld;
+  if(s.boost&&s.alive&&s.segs.length>BOOST_MIN){
+    s.speed=BSPD; s.bc++;
+    if(s.bc>=BOOST_CI){
+      s.bc=0;
+      const t=s.segs.pop();
+      if(t) foods.push({x:t.x,y:t.y,r:3,color:s.color,val:1});
+      if(s.isP) s.score=Math.max(0,s.score-1);
+    }
+  }else{ s.speed=SPD; s.boost=false; s.bc=0; }
+}
+
+/* ══════════ 猎杀模式：蛇撞蛇变小 ══════════ */
+function huntShrink(victim, attacker){
+  if(victim.segs.length<=HUNT_MIN_LEN){
+    // 长度已经最低，直接永久死亡（不复活）
+    killSnake(victim, '被 '+attacker.name+' 吞噬殆尽');
+    attacker.kills++;
+    victim.permanentDeath=true; // 不再复活
+    return;
+  }
+  const lose=Math.min(HUNT_SHRINK, victim.segs.length-HUNT_MIN_LEN);
+  // 被撞方失去节段（掉落为食物）
+  for(let i=0;i<lose;i++){
+    const seg=victim.segs.pop();
+    if(seg) foods.push({x:seg.x+(Math.random()-.5)*10,y:seg.y+(Math.random()-.5)*10,
+      r:DEAD_R,color:victim.color,val:1});
+  }
+  victim.score=Math.max(0,victim.score-lose);
+  // 攻击方获得部分长度
+  const gain=Math.floor(lose*0.6);
+  for(let i=0;i<gain;i++){
+    const t=attacker.segs[attacker.segs.length-1];
+    if(t) attacker.segs.push({x:t.x,y:t.y});
+  }
+  attacker.score+=gain;
+  addShake(8);
+  // 粒子效果
+  for(let j=0;j<12;j++)
+    particles.push({x:victim.segs[0].x,y:victim.segs[0].y,
+      vx:(Math.random()-.5)*6,vy:(Math.random()-.5)*6,
+      life:1,dec:.03,sz:3+Math.random()*3,color:victim.color});
+}
+
+/* ══════════ 碰撞（队友模式+性能优化） ══════════ */
+function checkHit(){
+  const eaten=new Set();
+  const hunt=settings.huntMode;
+  const teamOn=settings.teamMode;
+  const hitR2=SR*SR*1.5, selfR2=SR*SR*.9;
+  for(const s of snakes){
+    if(!s.alive||s.invuln>0) continue;
+    const h=s.segs[0];
+    if(h.x<0||h.x>MAP||h.y<0||h.y>MAP){killSnake(s,'撞到了边界');continue;}
+    let dead=false;
+    for(const o of snakes){
+      if(!o.alive||o===s) continue;
+      // 队友模式：同队不碰撞
+      if(teamOn&&s.team>0&&o.team===s.team) continue;
+      // 快速距离预判
+      const dx0=h.x-o.segs[0].x, dy0=h.y-o.segs[0].y;
+      const maxRange=o.segs.length*SG+SR*2;
+      if(dx0*dx0+dy0*dy0>maxRange*maxRange) continue;
+      for(let i=0;i<o.segs.length;i++){
+        const sg=o.segs[i];
+        const dx=h.x-sg.x, dy=h.y-sg.y;
+        if(dx*dx+dy*dy<hitR2){
+          if(hunt){huntShrink(s,o);}else{killSnake(s,'被 '+o.name+' 消灭'); o.kills++;}
+          dead=true; break;
+        }
+      }
+      if(dead) break;
+    }
+    if(dead) continue;
+    // 自身碰撞（猎杀模式可穿过自己）
+    if(!hunt&&s.segs.length>12){
+      for(let i=12;i<s.segs.length;i++){
+        const sg=s.segs[i];
+        const dx=h.x-sg.x, dy=h.y-sg.y;
+        if(dx*dx+dy*dy>2500) continue;
+        if(dx*dx+dy*dy<selfR2){killSnake(s,'咬到了自己'); dead=true; break;}
+      }
+    }
+    if(dead) continue;
+    // 食物碰撞（用空间网格加速）
+    const eatR=SR+FOOD_R+5;
+    const nearIdx=getNearFoodIndices(h.x,h.y,eatR);
+    for(const i of nearIdx){
+      if(eaten.has(i)) continue;
+      const f=foods[i];
+      const fdx=h.x-f.x, fdy=h.y-f.y;
+      if(fdx*fdx+fdy*fdy<(SR+f.r)*(SR+f.r)){
+        eaten.add(i); s.score+=f.val;
+        for(let j=0;j<f.val;j++){const t=s.segs[s.segs.length-1]; s.segs.push({x:t.x,y:t.y});}
+        for(let j=0;j<5;j++)
+          particles.push({x:f.x,y:f.y,vx:(Math.random()-.5)*4,vy:(Math.random()-.5)*4,
+            life:1,dec:.04,sz:2+Math.random()*2,color:f.color});
+      }
+    }
+  }
+  // swap-and-pop方式批量删除，比splice更高效
+  const toDelete=[...eaten].sort((a,b)=>b-a);
+  for(let i=0;i<toDelete.length;i++){
+    const idx=toDelete[i];
+    if(idx<foods.length-1) foods[idx]=foods[foods.length-1];
+    foods.pop();
+  }
+}
+
+/* ══════════ 粒子/震动（限制最大粒子数） ══════════ */
+const MAX_PARTICLES=300;
+function updateParts(){
+  // 超出上限时移除最老的粒子
+  while(particles.length>MAX_PARTICLES) particles.shift();
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i]; p.x+=p.vx; p.y+=p.vy;
+    p.vx*=.94; p.vy*=.94; p.life-=p.dec;
+    if(p.life<=0) particles.splice(i,1);
+  }
+}
+function addShake(a){shakeAmt=a;}
+function updateShake(){
+  if(shakeAmt>.5){shakeX=(Math.random()-.5)*shakeAmt; shakeY=(Math.random()-.5)*shakeAmt; shakeAmt*=.88;}
+  else shakeX=shakeY=shakeAmt=0;
+}
+
+/* ══════════ 镜头 ══════════ */
+function updateCam(){
+  if(!player||!player.alive) return;
+  cam.x+=(player.segs[0].x-cam.x)*.09;
+  cam.y+=(player.segs[0].y-cam.y)*.09;
+}
+
+/* ══════════ 渲染 ══════════ */
+function render(){
+  const W=innerWidth, H=innerHeight;
+  cx.fillStyle='#060810'; cx.fillRect(0,0,W,H);
+  cx.save();
+  cx.translate(W/2-cam.x+shakeX, H/2-cam.y+shakeY);
+  drawWorld(W,H); drawFoods(); drawSnakes(); drawParts();
+  cx.restore();
+  drawUI(W,H);
+}
+
+function drawWorld(W,H){
+  cx.fillStyle='#0c1020'; cx.fillRect(0,0,MAP,MAP);
+  cx.strokeStyle='rgba(255,255,255,0.025)'; cx.lineWidth=1;
+  const gs=80;
+  const sx=Math.max(0,Math.floor((cam.x-W/2)/gs)*gs);
+  const sy=Math.max(0,Math.floor((cam.y-H/2)/gs)*gs);
+  const ex=Math.min(MAP,sx+W+gs*2), ey=Math.min(MAP,sy+H+gs*2);
+  cx.beginPath();
+  for(let x=sx;x<=ex;x+=gs){cx.moveTo(x,sy);cx.lineTo(x,ey);}
+  for(let y=sy;y<=ey;y+=gs){cx.moveTo(sx,y);cx.lineTo(ex,y);}
+  cx.stroke();
+  cx.strokeStyle='rgba(233,69,96,0.25)'; cx.lineWidth=4; cx.strokeRect(0,0,MAP,MAP);
+  cx.strokeStyle='rgba(233,69,96,0.06)'; cx.lineWidth=35; cx.strokeRect(0,0,MAP,MAP);
+}
+
+function drawFoods(){
+  const W2=innerWidth/2+60, H2=innerHeight/2+60;
+  // 按颜色分组批量绘制，减少状态切换
+  cx.globalAlpha=.2;
+  for(const f of foods){
+    if(Math.abs(f.x-cam.x)>W2||Math.abs(f.y-cam.y)>H2) continue;
+    cx.fillStyle=f.color;
+    cx.beginPath(); cx.arc(f.x,f.y,f.r*2.4,0,Math.PI*2); cx.fill();
+  }
+  cx.globalAlpha=1;
+  for(const f of foods){
+    if(Math.abs(f.x-cam.x)>W2||Math.abs(f.y-cam.y)>H2) continue;
+    cx.fillStyle=f.color;
+    cx.beginPath(); cx.arc(f.x,f.y,f.r,0,Math.PI*2); cx.fill();
+  }
+  cx.fillStyle='rgba(255,255,255,0.3)';
+  for(const f of foods){
+    if(Math.abs(f.x-cam.x)>W2||Math.abs(f.y-cam.y)>H2) continue;
+    cx.beginPath(); cx.arc(f.x-f.r*.25,f.y-f.r*.25,f.r*.3,0,Math.PI*2); cx.fill();
+  }
+}
+
+function drawSnakes(){
+  const sorted=snakes.filter(s=>s.alive);
+  sorted.sort((a,b)=>(a.isP?1:0)-(b.isP?1:0));
+  sorted.forEach(drawSnake);
+}
+
+function drawSnake(s){
+  const h=s.segs[0];
+  if(Math.abs(h.x-cam.x)>innerWidth/2+250||Math.abs(h.y-cam.y)>innerHeight/2+250) return;
+  const n=s.segs.length, blink=s.invuln>0&&Math.floor(s.invuln/5)%2===0;
+  const W2=innerWidth/2+30, H2=innerHeight/2+30;
+  // 猎杀模式：低血量蛇闪烁红光
+  const huntWeak=settings.huntMode&&n<=HUNT_MIN_LEN+5&&n>HUNT_MIN_LEN;
+  // 长蛇跳帧绘制（性能优化）
+  const drawStep=n>80?3:n>40?2:1;
+
+  for(let i=n-1;i>=0;i-=drawStep){
+    const sg=s.segs[i];
+    if(Math.abs(sg.x-cam.x)>W2||Math.abs(sg.y-cam.y)>H2) continue;
+    const t=n>1?i/(n-1):0;
+    const r=i===0?SR*1.15:SR*(.72+.28*t);
+    const stripe=Math.floor(i/3)%2===0;
+    const br=stripe?(.62+.38*t):(.48+.38*t);
+    if(blink) continue;
+    cx.globalAlpha=.12; cx.fillStyle='#000';
+    cx.beginPath(); cx.arc(sg.x+2,sg.y+2,r,0,Math.PI*2); cx.fill();
+    cx.globalAlpha=br; cx.fillStyle=huntWeak?'#ff3333':s.color;
+    cx.beginPath(); cx.arc(sg.x,sg.y,r,0,Math.PI*2); cx.fill();
+    cx.globalAlpha=br*.13; cx.fillStyle='#fff';
+    cx.beginPath(); cx.arc(sg.x-r*.22,sg.y-r*.22,r*.42,0,Math.PI*2); cx.fill();
+  }
+  cx.globalAlpha=1;
+
+  if(s.alive&&!blink){
+    const eo=SR*.42,er=SR*.28,pr=er*.55,perp=s.angle+Math.PI/2;
+    for(let side=-1;side<=1;side+=2){
+      const ex=h.x+Math.cos(s.angle)*eo*.6+Math.cos(perp)*eo*side;
+      const ey=h.y+Math.sin(s.angle)*eo*.6+Math.sin(perp)*eo*side;
+      cx.fillStyle='#fff'; cx.beginPath(); cx.arc(ex,ey,er,0,Math.PI*2); cx.fill();
+      cx.fillStyle='#111'; cx.beginPath();
+      cx.arc(ex+Math.cos(s.angle)*pr*.3,ey+Math.sin(s.angle)*pr*.3,pr,0,Math.PI*2); cx.fill();
+    }
+    const teamIcon=settings.teamMode&&s.team>0?(s.team===1?'🔵 ':'🔴 '):'';
+    const label=teamIcon+s.name+' ('+n+')';
+    cx.font='bold 12px "Segoe UI","PingFang SC",sans-serif';
+    cx.textAlign='center'; cx.textBaseline='bottom';
+    const tw=cx.measureText(label).width;
+    cx.fillStyle='rgba(0,0,0,0.4)';
+    rrect(h.x-tw/2-6, h.y-SR-24, tw+12, 18, 4); cx.fill();
+    cx.fillStyle=s.isP?'#fff':(settings.teamMode&&s.team>0&&player&&s.team===player.team?'#88bbff':'rgba(255,255,255,0.75)');
+    cx.fillText(label, h.x, h.y-SR-8);
+  }
+
+  if(s.boost&&s.alive&&!blink){
+    const tail=s.segs[n-1];
+    cx.globalAlpha=.15; cx.fillStyle=s.color;
+    cx.beginPath(); cx.arc(tail.x,tail.y,SR*1.5,0,Math.PI*2); cx.fill();
+    cx.globalAlpha=1;
+  }
+}
+
+function rrect(x,y,w,h,r){
+  cx.beginPath(); cx.moveTo(x+r,y); cx.lineTo(x+w-r,y);
+  cx.quadraticCurveTo(x+w,y,x+w,y+r); cx.lineTo(x+w,y+h-r);
+  cx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); cx.lineTo(x+r,y+h);
+  cx.quadraticCurveTo(x,y+h,x,y+h-r); cx.lineTo(x,y+r);
+  cx.quadraticCurveTo(x,y,x+r,y); cx.closePath();
+}
+
+function drawParts(){
+  const W2=innerWidth/2+30, H2=innerHeight/2+30;
+  // 按颜色分组批量绘制
+  const groups={};
+  for(const p of particles){
+    if(Math.abs(p.x-cam.x)>W2||Math.abs(p.y-cam.y)>H2) continue;
+    const a=Math.max(0,p.life);
+    if(a<.05) continue;
+    if(!groups[p.color]) groups[p.color]=[];
+    groups[p.color].push(p);
+  }
+  for(const color in groups){
+    cx.fillStyle=color;
+    for(const p of groups[color]){
+      cx.globalAlpha=Math.max(0,p.life);
+      cx.beginPath(); cx.arc(p.x,p.y,p.sz*Math.max(.2,p.life),0,Math.PI*2); cx.fill();
+    }
+  }
+  cx.globalAlpha=1;
+}
+
+/* ══════════ 边界警告 ══════════ */
+function drawBorderWarning(W,H){
+  if(!player||!player.alive) return;
+  const px=player.segs[0].x, py=player.segs[0].y;
+  const warnDist=200;
+  const left=Math.max(0,(warnDist-px)/warnDist);
+  const right=Math.max(0,(warnDist-(MAP-px))/warnDist);
+  const top=Math.max(0,(warnDist-py)/warnDist);
+  const bottom=Math.max(0,(warnDist-(MAP-py))/warnDist);
+  const maxA=Math.max(left,right,top,bottom);
+  if(maxA<=0) return;
+  // 红色渐变边框警告
+  const grad=cx.createLinearGradient(0,0,W,0);
+  if(left>0){grad.addColorStop(0,`rgba(255,40,40,${left*.4})`);grad.addColorStop(.15,'transparent');}
+  if(right>0){grad.addColorStop(.85,'transparent');grad.addColorStop(1,`rgba(255,40,40,${right*.4})`);}
+  cx.fillStyle=left>0||right>0?grad:'transparent';
+  cx.fillRect(0,0,W,H);
+  const grad2=cx.createLinearGradient(0,0,0,H);
+  if(top>0){grad2.addColorStop(0,`rgba(255,40,40,${top*.4})`);grad2.addColorStop(.15,'transparent');}
+  if(bottom>0){grad2.addColorStop(.85,'transparent');grad2.addColorStop(1,`rgba(255,40,40,${bottom*.4})`);}
+  cx.fillStyle=top>0||bottom>0?grad2:'transparent';
+  cx.fillRect(0,0,W,H);
+}
+
+/* ══════════ UI ══════════ */
+function drawUI(W,H){
+  drawBorderWarning(W,H);
+  if(player&&player.alive){
+    const panelH=settings.teamMode?100:78;
+    cx.fillStyle='rgba(0,0,0,0.32)';
+    rrect(12,12,155,panelH,10); cx.fill();
+    cx.textAlign='left'; cx.textBaseline='top';
+    cx.fillStyle='rgba(255,255,255,0.4)'; cx.font='11px sans-serif';
+    cx.fillText('得分',22,18);
+    cx.fillStyle='#fff'; cx.font='bold 22px sans-serif';
+    cx.fillText(''+player.score,22,32);
+    cx.fillStyle='rgba(255,255,255,0.35)'; cx.font='11px sans-serif';
+    cx.fillText('长度: '+player.segs.length+'  击杀: '+player.kills,22,58);
+    cx.fillStyle='rgba(255,100,100,0.7)'; cx.font='11px sans-serif';
+    if(settings.huntMode){
+      cx.fillText('⚔️ 猎杀模式 · 最低'+HUNT_MIN_LEN+'节',22,72);
+    }else{
+      cx.fillText('❤️ 复活: '+(MAX_REVIVES-revives)+'/'+MAX_REVIVES,22,72);
+    }
+    if(settings.teamMode){
+      cx.fillStyle='rgba(68,136,255,0.8)'; cx.font='bold 11px sans-serif';
+      cx.fillText('🔵 蓝队',22,88);
+    }
+    // 距边界距离提示
+    const px=player.segs[0].x, py=player.segs[0].y;
+    const minWall=Math.min(px,MAP-px,py,MAP-py);
+    if(minWall<200){
+      cx.fillStyle=`rgba(255,80,80,${0.3+(200-minWall)/200*0.7})`; cx.font='bold 11px sans-serif';
+      cx.fillText('⚠ 距边界: '+Math.floor(minWall)+'m',22,88);
+    }
+  }
+
+  const alive=snakes.filter(s=>s.alive).sort((a,b)=>b.score-a.score);
+  const lbW=155, lbH=28+alive.length*22;
+  const lbX=W-lbW-12, lbY=12;
+  cx.fillStyle='rgba(0,0,0,0.32)'; rrect(lbX,lbY,lbW,lbH,10); cx.fill();
+  cx.textAlign='center'; cx.fillStyle='rgba(255,255,255,0.55)'; cx.font='bold 12px sans-serif';
+  cx.fillText('🏆 排行榜',lbX+lbW/2,lbY+10);
+  cx.textAlign='left'; cx.font='12px sans-serif';
+  alive.forEach((s,i)=>{
+    const y=lbY+30+i*22;
+    const isTeam=s.isP||(settings.teamMode&&s.team>0&&player&&s.team===player.team);
+    cx.fillStyle=isTeam?'#e94560':'rgba(255,255,255,0.35)';
+    cx.fillText(''+(i+1),lbX+8,y);
+    cx.fillStyle=s.color; cx.beginPath(); cx.arc(lbX+28,y+5,4,0,Math.PI*2); cx.fill();
+    cx.fillStyle=isTeam?'#fff':'rgba(255,255,255,0.6)';
+    cx.fillText(s.name,lbX+38,y);
+    cx.textAlign='right';
+    cx.fillStyle=isTeam?'#e94560':'rgba(255,255,255,0.35)';
+    cx.fillText(''+s.score,lbX+lbW-8,y);
+    cx.textAlign='left';
+  });
+
+  // ══════════ 增强小地图 ══════════
+  const ms=150,mx=W-ms-14,my=H-ms-14,sx=ms/MAP,sy=ms/MAP;
+  // 背景
+  cx.fillStyle='rgba(0,0,0,0.6)'; rrect(mx-4,my-4,ms+8,ms+8,12); cx.fill();
+  cx.fillStyle='#0c1020'; rrect(mx,my,ms,ms,8); cx.fill();
+  // 网格线
+  cx.strokeStyle='rgba(255,255,255,0.04)'; cx.lineWidth=.5;
+  for(let g=0;g<=MAP;g+=600){
+    cx.beginPath(); cx.moveTo(mx+g*sx,my); cx.lineTo(mx+g*sx,my+ms); cx.stroke();
+    cx.beginPath(); cx.moveTo(mx,my+g*sy); cx.lineTo(mx+ms,my+g*sy); cx.stroke();
+  }
+  // 边界（醒目红色发光）
+  cx.strokeStyle='rgba(233,69,96,0.6)'; cx.lineWidth=2.5;
+  cx.shadowColor='#e94560'; cx.shadowBlur=6;
+  cx.strokeRect(mx+1,my+1,ms-2,ms-2);
+  cx.shadowBlur=0;
+  // 绘制所有蛇（简化轨迹）
+  const teamOn=settings.teamMode;
+  for(const s of snakes){
+    if(!s.alive) continue;
+    const headX=mx+s.segs[0].x*sx, headY=my+s.segs[0].y*sy;
+    if(!s.isP){
+      const isTeammate=teamOn&&s.team>0&&player&&s.team===player.team;
+      cx.globalAlpha=isTeammate?.75:.45;
+      cx.fillStyle=isTeammate?'#4488ff':s.color;
+      cx.beginPath(); cx.arc(headX,headY,isTeammate?3.5:2.5,0,Math.PI*2); cx.fill();
+    }
+  }
+  cx.globalAlpha=1;
+  // 玩家（大号白色闪烁点+方向箭头）
+  if(player&&player.alive){
+    const px=mx+player.segs[0].x*sx, py=my+player.segs[0].y*sy;
+    // 发光光晕
+    const glowR=8+Math.sin(Date.now()/300)*2;
+    cx.globalAlpha=.25; cx.fillStyle='#e94560';
+    cx.beginPath(); cx.arc(px,py,glowR,0,Math.PI*2); cx.fill();
+    cx.globalAlpha=.12; cx.fillStyle='#fff';
+    cx.beginPath(); cx.arc(px,py,glowR*.6,0,Math.PI*2); cx.fill();
+    // 白色实心点
+    cx.globalAlpha=1; cx.fillStyle='#fff';
+    cx.beginPath(); cx.arc(px,py,4,0,Math.PI*2); cx.fill();
+    cx.fillStyle='#e94560';
+    cx.beginPath(); cx.arc(px,py,2.5,0,Math.PI*2); cx.fill();
+    // 方向箭头
+    const arrLen=14;
+    const ax=px+Math.cos(player.angle)*arrLen;
+    const ay=py+Math.sin(player.angle)*arrLen;
+    cx.strokeStyle='#fff'; cx.lineWidth=2; cx.globalAlpha=.85;
+    cx.beginPath(); cx.moveTo(px,py); cx.lineTo(ax,ay); cx.stroke();
+    // 箭头尖
+    const aL=5, aA=player.angle+Math.PI;
+    cx.beginPath();
+    cx.moveTo(ax,ay);
+    cx.lineTo(ax+Math.cos(aA-.5)*aL, ay+Math.sin(aA-.5)*aL);
+    cx.moveTo(ax,ay);
+    cx.lineTo(ax+Math.cos(aA+.5)*aL, ay+Math.sin(aA+.5)*aL);
+    cx.stroke();
+  }
+  cx.globalAlpha=1;
+  // 视野框（白色半透明）
+  cx.strokeStyle='rgba(255,255,255,0.3)'; cx.lineWidth=1.5;
+  cx.strokeRect(mx+(cam.x-W/2)*sx, my+(cam.y-H/2)*sy, W*sx, H*sy);
+  // 危险方向指示（附近长蛇用红色箭头指向）
+  if(player&&player.alive){
+    const px=player.segs[0].x, py=player.segs[0].y;
+    for(const s of snakes){
+      if(!s.alive||s.isP) continue;
+      const dx=s.segs[0].x-px, dy=s.segs[0].y-py;
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist>800||dist<150) continue;
+      // 在小地图边缘画红色箭头指向危险
+      const angle=Math.atan2(dy,dx);
+      const edgeX=mx+ms/2+Math.cos(angle)*(ms/2+6);
+      const edgeY=my+ms/2+Math.sin(angle)*(ms/2+6);
+      // 限制在小地图范围内
+      const clampedX=Math.max(mx-2,Math.min(mx+ms+2,edgeX));
+      const clampedY=Math.max(my-2,Math.min(my+ms+2,edgeY));
+      cx.fillStyle='rgba(255,80,80,0.7)';
+      cx.beginPath();
+      cx.moveTo(clampedX+Math.cos(angle)*5,clampedY+Math.sin(angle)*5);
+      cx.lineTo(clampedX+Math.cos(angle+2.5)*4,clampedY+Math.sin(angle+2.5)*4);
+      cx.lineTo(clampedX+Math.cos(angle-2.5)*4,clampedY+Math.sin(angle-2.5)*4);
+      cx.closePath(); cx.fill();
+    }
+  }
+  // 小地图标题
+  cx.fillStyle='rgba(255,255,255,0.45)'; cx.font='bold 10px sans-serif'; cx.textAlign='center';
+  cx.fillText('MAP',mx+ms/2,my-6);
+
+  cx.fillStyle='rgba(255,255,255,0.12)'; cx.font='11px sans-serif'; cx.textAlign='center';
+  cx.fillText(isPC?'WASD/方向键移动 · 空格加速':'触摸屏幕控制方向 · 点击加速按钮',W/2,H-8);
+  cx.textAlign='left';
+}
+
+/* ══════════ 输入 ══════════ */
+const keys={w:false,a:false,s:false,d:false,up:false,left:false,down:false,right:false,space:false};
+
+cv.addEventListener('mousemove',e=>{
+  if(!player||!player.alive) return;
+  const dx=e.clientX-innerWidth/2, dy=e.clientY-innerHeight/2;
+  if(dx*dx+dy*dy>225){tAngle=Math.atan2(dy,dx); player.tAngle=tAngle;}
+});
+cv.addEventListener('mousedown',()=>{boostHeld=true;});
+addEventListener('mouseup',()=>{boostHeld=false;});
+
+/* 键盘输入（PC） */
+addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();
+  if(k==='w'||k==='arrowup') keys.w=keys.up=true;
+  if(k==='a'||k==='arrowleft') keys.a=keys.left=true;
+  if(k==='s'||k==='arrowdown') keys.s=keys.down=true;
+  if(k==='d'||k==='arrowright') keys.d=keys.right=true;
+  if(k===' '||k==='spacebar') {keys.space=true; boostHeld=true; e.preventDefault();}
+});
+addEventListener('keyup',e=>{
+  const k=e.key.toLowerCase();
+  if(k==='w'||k==='arrowup') keys.w=keys.up=false;
+  if(k==='a'||k==='arrowleft') keys.a=keys.left=false;
+  if(k==='s'||k==='arrowdown') keys.s=keys.down=false;
+  if(k==='d'||k==='arrowright') keys.d=keys.right=false;
+  if(k===' '||k==='spacebar') {keys.space=false; boostHeld=false;}
+});
+
+function updateKeyboardAngle(){
+  if(!player||!player.alive) return;
+  let dx=0, dy=0;
+  if(keys.w||keys.up) dy=-1;
+  if(keys.s||keys.down) dy=1;
+  if(keys.a||keys.left) dx=-1;
+  if(keys.d||keys.right) dx=1;
+  if(dx!==0||dy!==0){
+    tAngle=Math.atan2(dy,dx);
+    player.tAngle=tAngle;
+  }
+}
+
+cv.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  if(!player||!player.alive) return;
+  const t=e.touches[0];
+  const dx=t.clientX-innerWidth/2, dy=t.clientY-innerHeight/2;
+  tAngle=Math.atan2(dy,dx); player.tAngle=tAngle;
+},{passive:false});
+cv.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  if(!player||!player.alive) return;
+  const t=e.touches[0];
+  const dx=t.clientX-innerWidth/2, dy=t.clientY-innerHeight/2;
+  tAngle=Math.atan2(dy,dx); player.tAngle=tAngle;
+},{passive:false});
+
+const bb=document.getElementById('boostBtn');
+bb.addEventListener('mousedown',e=>{e.stopPropagation();boostHeld=true;bb.classList.add('active');});
+bb.addEventListener('mouseup',()=>{boostHeld=false;bb.classList.remove('active');});
+bb.addEventListener('mouseleave',()=>{boostHeld=false;bb.classList.remove('active');});
+bb.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();boostHeld=true;bb.classList.add('active');},{passive:false});
+bb.addEventListener('touchend',()=>{boostHeld=false;bb.classList.remove('active');});
+
+/* ══════════ 截图 ══════════ */
+function captureScreenshot(){
+  try{
+    // 先渲染一帧完整画面到canvas
+    const W=innerWidth, H=innerHeight;
+    render();
+    const dataURL=cv.toDataURL('image/png');
+    document.getElementById('screenshotImg').src=dataURL;
+    document.getElementById('screenshotBox').style.display='block';
+    document.getElementById('downloadBtn').style.display='inline-block';
+    // 下载按钮
+    document.getElementById('downloadBtn').onclick=()=>{
+      const a=document.createElement('a');
+      a.href=dataURL; a.download='贪吃蛇_'+Date.now()+'.png';
+      a.click();
+    };
+  }catch(e){console.log('截图失败',e);}
+}
+
+/* ══════════ 胜利检测 ══════════ */
+function checkVictory(){
+  if(!player||!player.alive) return false;
+  // 团队模式：敌方全灭
+  if(settings.teamMode){
+    const enemies=snakes.filter(s=>s.alive&&!s.isP&&s.team!==player.team);
+    if(enemies.length===0) return true;
+  }
+  // 自由模式：所有AI死亡且玩家存活
+  const aliveBots=snakes.filter(s=>s.alive&&!s.isP);
+  if(aliveBots.length===0&&snakes.length>1) return true;
+  return false;
+}
+
+function showVictory(){
+  document.getElementById('endIcon').textContent='🏆';
+  document.getElementById('endTitle').textContent='胜利！';
+  document.getElementById('endTitle').className='title victory-title';
+  document.getElementById('deathReason').textContent=
+    settings.teamMode?'你的队伍消灭了所有对手！':'你击败了所有AI蛇！';
+  captureScreenshot();
+  document.getElementById('fScore').textContent=player.score;
+  document.getElementById('fLen').textContent=player.segs.length;
+  document.getElementById('fKills').textContent=player.kills;
+  document.getElementById('gameOverScreen').classList.add('show');
+  document.getElementById('reviveBtn').style.display='none';
+  document.getElementById('restartBtn').textContent='再来一局';
+}
+
+/* ══════════ 结束/重开 ══════════ */
+function showOver(r,s){
+  document.getElementById('endIcon').textContent='💀';
+  document.getElementById('endTitle').textContent='游戏结束';
+  document.getElementById('endTitle').className='title';
+  document.getElementById('deathReason').textContent=r;
+  document.getElementById('fScore').textContent=s.score;
+  document.getElementById('fLen').textContent=s.segs.length;
+  document.getElementById('fKills').textContent=s.kills;
+  document.getElementById('gameOverScreen').classList.add('show');
+  const reviveBtn=document.getElementById('reviveBtn');
+  const reviveCountEl=document.getElementById('reviveCount');
+  const canRevive=revives<MAX_REVIVES&&(!settings.huntMode||s.segs.length>=HUNT_MIN_LEN);
+  reviveCountEl.textContent=MAX_REVIVES-revives;
+  reviveBtn.disabled=!canRevive;
+  reviveBtn.style.display=canRevive?'block':'none';
+  if(settings.huntMode&&s.segs.length<HUNT_MIN_LEN){
+    document.getElementById('deathReason').textContent+='（太短了，无法复活）';
+  }
+  // 截图
+  captureScreenshot();
+  // 隐藏标签
+  const keyHintsEl=document.getElementById('keyHints');
+  if(keyHintsEl) keyHintsEl.classList.remove('show');
+  document.getElementById('huntTag').classList.remove('show');
+  document.getElementById('teamTag').classList.remove('show');
+}
+document.getElementById('restartBtn').onclick=()=>{
+  document.getElementById('gameOverScreen').classList.remove('show'); startGame();
+};
+document.getElementById('startBtn').onclick=()=>{
+  document.getElementById('startScreen').classList.remove('show'); startGame();
+};
+document.getElementById('reviveBtn').onclick=()=>{
+  if(revives<MAX_REVIVES){
+    revives++;
+    revivePlayer();
+    document.getElementById('gameOverScreen').classList.remove('show');
+  }
+};
+
+/* ══════════ 设置界面逻辑 ══════════ */
+const botCountEl=document.getElementById('botCount');
+const botInfoEl=document.getElementById('botInfo');
+const huntModeEl=document.getElementById('huntMode');
+const teamModeEl=document.getElementById('teamMode');
+
+function updateSettingsUI(){
+  botCountEl.textContent=settings.botCount;
+  let modeTxt='';
+  if(settings.teamMode) modeTxt+=' · 队友模式';
+  if(settings.huntMode) modeTxt+=' · 猎杀模式';
+  botInfoEl.textContent='与 '+settings.botCount+' 条 AI 蛇同场竞技！（'+DIFF_CFG[settings.difficulty].label+'难度'+modeTxt+'）';
+  document.querySelectorAll('.diff-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.diff===settings.difficulty);
+  });
+  huntModeEl.checked=settings.huntMode;
+  teamModeEl.checked=settings.teamMode;
+}
+
+document.getElementById('botMinus').onclick=()=>{
+  if(settings.botCount>2){settings.botCount--; updateSettingsUI();}
+};
+document.getElementById('botPlus').onclick=()=>{
+  if(settings.botCount<MAX_BOTS){settings.botCount++; updateSettingsUI();}
+};
+document.querySelectorAll('.diff-btn').forEach(btn=>{
+  btn.onclick=()=>{settings.difficulty=btn.dataset.diff; updateSettingsUI();}
+};
+huntModeEl.onchange=()=>{settings.huntMode=huntModeEl.checked; updateSettingsUI();};
+teamModeEl.onchange=()=>{settings.teamMode=teamModeEl.checked; updateSettingsUI();};
+
+// PC端显示按键提示在控制说明中
+if(isPC){
+  document.getElementById('controlDesc').innerHTML=
+    'WASD / 方向键 控制方向<br>'+
+    '空格键 加速（消耗长度）<br>'+
+    '撞到边界或其他蛇的身体即死亡';
+}
+// 隐藏移动端加速按钮（PC端用空格）
+if(isPC) document.getElementById('boostBtn').style.display='none';
+
+/* ══════════ 主循环 ══════════ */
+let victoryChecked=false;
+function loop(){
+  updateKeyboardAngle(); // PC键盘输入
+  for(const s of snakes){
+    if(!s.alive){
+      if(!s.isP&&!s.permanentDeath){s.rt-=16; if(s.rt<=0) respawnBot(s);}
+      continue;
+    }
+    if(s.invuln>0) s.invuln--;
+    if(!s.isP) updateAI(s);
+    updateBoost(s); moveSnake(s);
+  }
+  checkHit(); ensureFood(); updateParts(); updateShake(); updateCam(); render();
+  // 胜利检测（每60帧检测一次，避免频繁）
+  if(!victoryChecked&&player&&player.alive&&snakes.length>1){
+    if(checkVictory()){
+      victoryChecked=true;
+      setTimeout(()=>showVictory(),500);
+    }
+  }
+  animId=requestAnimationFrame(loop);
+}
+
+/* ══════════ 启动 ══════════ */
+function revivePlayer(){
+  let x,y,ok;
+  for(let t=0;t<50;t++){
+    x=300+Math.random()*(MAP-600); y=300+Math.random()*(MAP-600); ok=true;
+    for(const o of snakes){
+      if(!o.alive||o===player) continue;
+      if((x-o.segs[0].x)**2+(y-o.segs[0].y)**2<280*280){ok=false;break;}
+    }
+    if(ok) break;
+  }
+  const a=Math.random()*Math.PI*2;
+  // 猎杀模式复活保留当前一半长度，普通模式重置
+  const reviveLen=settings.huntMode?Math.max(HUNT_MIN_LEN,Math.floor(player.segs.length/2)):INIT_L;
+  player.segs=[];
+  for(let i=0;i<reviveLen;i++) player.segs.push({x:x-Math.cos(a)*i*SG, y:y-Math.sin(a)*i*SG});
+  player.angle=a; player.tAngle=a; player.speed=SPD; player.alive=true;
+  player.boost=false; player.bc=0; player.score=Math.floor(player.score/2); player.invuln=INVULN_T*2;
+  cam.x=player.segs[0].x; cam.y=player.segs[0].y;
+  document.getElementById('huntTag').classList.toggle('show',settings.huntMode);
+  document.getElementById('teamTag').classList.toggle('show',settings.teamMode);
+  // 复活后重新显示按键提示
+  const keyHintsEl=document.getElementById('keyHints');
+  if(keyHintsEl) keyHintsEl.classList.toggle('show', isPC);
+}
+
+function startGame(){
+  snakes=[]; foods=[]; particles=[];
+  revives=0; victoryChecked=false;
+  const teamOn=settings.teamMode;
+  const playerTeam=teamOn?1:0;
+  player=mkSnake('玩家','#e94560',true,.5,playerTeam);
+  snakes.push(player);
+  // 根据设置创建AI蛇（每种最多3条，总共最多18条）
+  const botCount=Math.min(settings.botCount, MAX_BOTS);
+  const typesNeeded=Math.ceil(botCount/COPIES_PER_TYPE);
+  let created=0;
+  for(let t=0;t<typesNeeded&&created<botCount;t++){
+    const b=BOT_CFG[t%BOT_CFG.length];
+    const copies=Math.min(COPIES_PER_TYPE, botCount-created);
+    for(let c=0;c<copies;c++){
+      const suffix=c===0?'':'·'+(c+1);
+      // 队伍分配：前半蓝队，后半红队
+      const botTeam=teamOn?(created<botCount/2?1:2):0;
+      const botColor=teamOn?TEAM_COLORS[botTeam-1]:b.color;
+      snakes.push(mkSnake(b.name+suffix,botColor,false,b.aggr,botTeam));
+      created++;
+    }
+  }
+  // 队友模式下玩家颜色改为队伍色
+  if(teamOn) player.color=TEAM_COLORS[0];
+  ensureFood();
+  cam.x=player.segs[0].x; cam.y=player.segs[0].y;
+  running=true;
+  // 标签显示
+  document.getElementById('huntTag').classList.toggle('show',settings.huntMode);
+  document.getElementById('teamTag').classList.toggle('show',teamOn);
+  // 显示/隐藏按键提示
+  const keyHintsEl=document.getElementById('keyHints');
+  if(keyHintsEl) keyHintsEl.classList.toggle('show', isPC&&running);
+  // 隐藏截图
+  document.getElementById('screenshotBox').style.display='none';
+  document.getElementById('downloadBtn').style.display='none';
+  if(animId) cancelAnimationFrame(animId);
+  animId=requestAnimationFrame(loop);
+}
+
+/* 初始背景渲染 */
+(function initBg(){
+  resize();
+  cx.fillStyle='#0c1020'; cx.fillRect(0,0,innerWidth,innerHeight);
+  cx.strokeStyle='rgba(255,255,255,0.02)'; cx.lineWidth=1;
+  cx.beginPath();
+  for(let x=0;x<innerWidth;x+=80){cx.moveTo(x,0);cx.lineTo(x,innerHeight);}
+  for(let y=0;y<innerHeight;y+=80){cx.moveTo(0,y);cx.lineTo(innerWidth,y);}
+  cx.stroke();
+  // 初始隐藏按键提示（游戏开始后才显示）
+  const keyHintsEl=document.getElementById('keyHints');
+  if(keyHintsEl) keyHintsEl.classList.remove('show');
+})();
+
+})();
+</script>
+</body>
+</html>
