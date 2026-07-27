@@ -335,7 +335,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
 
     <h3 style="color:#880088;margin:15px 0 5px;">👑 Boss蛇（仅困难模式）</h3>
     <table style="width:100%;border-collapse:collapse;">
-      <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)"><b style="color:#880088">Boss混沌巨蟒</b></td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">初始长度200 · 不占名额</td></tr>
+      <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)"><b style="color:#880088">Boss混沌巨蟒</b></td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">初始长度100 · 每30秒全部强化 · 不占名额</td></tr>
     </table>
     <p style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.6);">
       ⚠️ <b>击杀规则</b>：你的长度必须超过Boss的50%才能击杀它<br>
@@ -1440,11 +1440,27 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     const stripeColor = huntWeak ? '#cc0000' : skin.stripe;
     // 蛇身圆点半径，段间距SG=16，圆半径约9.2确保重叠连贯
     const segR = SG * 0.58;
+
+    // V6: 蛇身连接线（让蛇看起来更连贯）
+    cx.strokeStyle = bodyColor;
+    cx.lineWidth = segR * 1.6;
+    cx.lineCap = 'round';
+    cx.lineJoin = 'round';
+    cx.beginPath();
+    let started = false;
+    for (let i = 0; i < n; i++) {
+      const sg = s.segs[i];
+      if (Math.abs(sg.x - cam.x) > W2 || Math.abs(sg.y - cam.y) > H2) continue;
+      if (!started) { cx.moveTo(sg.x, sg.y); started = true; }
+      else cx.lineTo(sg.x, sg.y);
+    }
+    cx.stroke();
+
     // 阴影层 — 沿身体曲线的投影
     cx.fillStyle = 'rgba(0,0,0,0.22)';
     for (let i = 0; i < n; i++) {
       const sg = s.segs[i];
-      if (Math.abs(sg.x - cam.x) > W2 || Math.abs(sg.y - cam.y) > H2) continue;  // V6: 用continue代替break
+      if (Math.abs(sg.x - cam.x) > W2 || Math.abs(sg.y - cam.y) > H2) continue;
       cx.beginPath();
       cx.arc(sg.x + 2, sg.y + 2, segR + 2, 0, Math.PI * 2);
       cx.fill();
@@ -1464,27 +1480,25 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
       cx.arc(sg.x, sg.y, segR, 0, Math.PI * 2);
       cx.fill();
     }
-    // 条纹层 — 交替画深色圆环形成分段效果
+    // 蛇鳞效果 — V6: 添加鳞片纹理
     cx.fillStyle = stripeColor;
-    const stripeDash = skin.dash || [SG * 0.5, SG * 0.5];
-    const dashOn = stripeDash[0], dashOff = stripeDash[1];
-    const dashPeriod = dashOn + dashOff;
     for (let i = 0; i < n; i++) {
       const sg = s.segs[i];
       if (Math.abs(sg.x - cam.x) > W2 || Math.abs(sg.y - cam.y) > H2) continue;
-      if ((i % dashPeriod) < dashOn) {
+      // 每隔一节画鳞片
+      if (i % 2 === 0) {
         cx.beginPath();
-        cx.arc(sg.x, sg.y, segR - 1, 0, Math.PI * 2);
+        cx.arc(sg.x, sg.y, segR * 0.7, 0, Math.PI * 2);
         cx.fill();
       }
     }
-    // 高光层
-    cx.fillStyle = 'rgba(255,255,255,0.1)';
+    // 高光层 — 蛇身光泽
+    cx.fillStyle = 'rgba(255,255,255,0.15)';
     for (let i = 0; i < n; i++) {
       const sg = s.segs[i];
       if (Math.abs(sg.x - cam.x) > W2 || Math.abs(sg.y - cam.y) > H2) continue;
       cx.beginPath();
-      cx.arc(sg.x - segR * 0.2, sg.y - segR * 0.2, segR * 0.45, 0, Math.PI * 2);
+      cx.arc(sg.x - segR * 0.25, sg.y - segR * 0.25, segR * 0.5, 0, Math.PI * 2);
       cx.fill();
     }
     // 加速光晕 — 沿身体尾部渐变光圈，跟随曲线
@@ -2165,7 +2179,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
       'dragon': '🐉 龙王：攻击性0.9，每10秒获得护盾',
       'thunder': '⚡ 雷神：攻击性0.7，每12秒获得狂暴（无限加速）',
       'xuanwu': '🐢 玄武：攻击性0.2，每15秒获得磁铁',
-      'boss': '👑 混沌巨蟒：初始长度100，每10秒获得全部强化'
+      'boss': '👑 混沌巨蟒：初始长度100，每30秒获得全部强化'
     };
     document.getElementById('typeDesc').textContent = typeDescs[settings.playerType] || '';
   }
@@ -2225,7 +2239,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
         if (s.type === 'boss') {
           s.abilityCD--;
           if (s.abilityCD <= 0) {
-            s.abilityCD = 600;
+            s.abilityCD = 1800;  // V6: Boss CD改为30秒
             s.shield = true;
             s.infiniteBoost = true;
             s.magnet = 600;
