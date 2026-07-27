@@ -1082,51 +1082,46 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
               break;
             }
 
-            // V6: 击杀比例限制 - s的头碰到o的身体
-            const ratio = s.segs.length / o.segs.length;
-
-            // Boss不能被比他小的蛇击杀
-            if (o.type === 'boss' && s.segs.length <= o.segs.length) {
-              killSnake(s, s.name + ' 试图攻击Boss，被反杀');
-              o.kills++;
-              dead = true;
-              break;
-            }
-
-            // 小蛇不能秒杀太大的蛇（需要超过被攻击者50%长度）
-            if (ratio < 0.5) {
-              // s太小，反弹死亡
-              killSnake(s, s.name + ' 太小了，被 ' + o.name + ' 反杀');
-              o.kills++;
-              dead = true;
-              break;
-            }
-
             if (hunt) {
-              huntShrink(o, s);
-            } else {
-              // V6: 击杀时的质量变化
-              // 击杀者(s)获得被击杀者(o)的50%质量
-              const gain = Math.floor(o.segs.length * 0.5);
-              // 击杀者(s)损失被击杀者(o)的25%质量（代价）
-              const lose = Math.floor(o.segs.length * 0.25);
+              // ========== 猎杀模式：身体包围击杀 ==========
+              const ratio = s.segs.length / o.segs.length;
 
-              // s获得质量
+              // Boss不能被比他小的蛇击杀
+              if (o.type === 'boss' && s.segs.length <= o.segs.length) {
+                killSnake(s, s.name + ' 试图攻击Boss，被反杀');
+                o.kills++;
+                dead = true;
+                break;
+              }
+
+              // 小蛇不能秒杀大蛇（需要超过被攻击者50%长度）
+              if (ratio < 0.5) {
+                killSnake(s, s.name + ' 太小了，被 ' + o.name + ' 反杀');
+                o.kills++;
+                dead = true;
+                break;
+              }
+
+              // 击杀：获得50%质量，损失25%质量
+              const gain = Math.floor(o.segs.length * 0.5);
+              const lose = Math.floor(o.segs.length * 0.25);
               for (let j = 0; j < gain; j++) {
                 const tail = s.segs[s.segs.length - 1];
                 if (tail) s.segs.push({ x: tail.x, y: tail.y });
               }
-
-              // s损失质量（代价）
               for (let j = 0; j < lose && s.segs.length > 5; j++) {
                 s.segs.pop();
               }
-
-              // o死亡
               killSnake(o, o.name + ' 被 ' + s.name + ' 包围击杀');
               s.kills++;
+              dead = false;
+            } else {
+              // ========== 普通模式：碰到别人身体 ==========
+              // 普通模式不能随便撞人，碰到别人身体自己死亡
+              killSnake(s, s.name + ' 撞到了 ' + o.name + ' 的身体');
+              o.kills++;
+              dead = true;
             }
-            dead = false;  // s不死
             break;
           }
         }
