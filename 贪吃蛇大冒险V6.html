@@ -232,22 +232,6 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
   .exit-btn { width: 36px; height: 36px; font-size: 16px; top: 10px; right: 10px; }
   .rec-btn { width: 36px; height: 36px; font-size: 14px; top: 10px; right: 52px; }
 }
-
-/* V6: 蛇类型说明页面样式 */
-#snakeInfoScreen {
-  overflow-y: auto;
-  padding: 20px;
-}
-#snakeInfoScreen table {
-  margin: 5px 0;
-}
-#snakeInfoScreen td {
-  vertical-align: top;
-}
-#snakeInfoScreen h3 {
-  font-size: 16px;
-  font-weight: 700;
-}
 </style>
 </head>
 <body>
@@ -324,28 +308,8 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
       <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)"><b>粉色风暴</b></td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">攻击性0.7 · 较激进</td></tr>
       <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)"><b>暗影忍者</b></td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">攻击性0.3 · 保守型</td></tr>
     </table>
-
-    <h3 style="color:#ffd700;margin:15px 0 5px;">⭐ 超级蛇（AI≥9时出现）</h3>
-    <table style="width:100%;border-collapse:collapse;">
-      <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)"><b style="color:#ff0000">龙王</b></td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">攻击性0.9 · 每10秒获得护盾</td></tr>
-      <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)"><b style="color:#ffdd00">雷神</b></td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">攻击性0.7 · 每12秒获得狂暴</td></tr>
-      <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)"><b style="color:#004488">玄武</b></td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">攻击性0.2 · 每15秒获得磁铁</td></tr>
-    </table>
-
-    <h3 style="color:#880088;margin:15px 0 5px;">👑 Boss蛇（AI≥12时出现）</h3>
-    <table style="width:100%;border-collapse:collapse;">
-      <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)"><b style="color:#880088">混沌巨蟒</b></td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">初始长度50 · 无法被比它小的蛇击杀</td></tr>
-    </table>
-
-    <h3 style="color:#00ff88;margin:15px 0 5px;">✨ 道具系统</h3>
-    <table style="width:100%;border-collapse:collapse;">
-      <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">🛡️ 护盾</td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">抵挡一次致命攻击</td></tr>
-      <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">⚡ 狂暴</td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">10秒无限加速</td></tr>
-      <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">🧲 磁铁</td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">吸引附近食物15秒</td></tr>
-    </table>
-
     <p style="margin-top:15px;font-size:12px;color:rgba(255,255,255,0.5);">
-      💡 提示：击杀超级蛇/Boss会掉落对应道具！
+      💡 攻击性越高，AI越倾向于主动追击其他蛇
     </p>
   </div>
   <button class="btn" id="snakeInfoBack" style="margin-top:15px;">返回</button>
@@ -383,9 +347,9 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
   'use strict';
   
   // 常量定义
-  const MAP = 2500;  // V6: 缩小地图
+  const MAP = 2500;
   const FOOD_N = 250;
-  const SR = 14;  // V6: 增大渲染范围
+  const SR = 14;
   const SG = 16;
   const SPD = 2.5;
   const BSPD = 5.2;
@@ -394,7 +358,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
   const FOOD_R = 5;
   const DEAD_R = 7;
   const BOOST_MIN = 15;
-  const BOOST_CI = 4;  // V6: 加速消耗减半
+  const BOOST_CI = 4;
   const INVULN_T = 120;
   const MAX_BOTS = 18;
   const COPIES_PER_TYPE = 3;
@@ -408,16 +372,13 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
   const MAGNET_PULL = 3.5;
   const MAGNET_DUR = 900;
   const MAGNET_SPAWN_CD = 900;
-
-  // V6新增：超级蛇和Boss配置
+  const SUFFIX_甲乙丙丁 = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
   const SUPER_BOTS = [
-    { name: '龙王', skin: 'crimson', aggr: 0.9, type: 'dragon', ability: 'shield', cd: 600, dur: 180, drop: 'shield' },
-    { name: '雷神', skin: 'gold', aggr: 0.7, type: 'thunder', ability: '狂暴', cd: 720, dur: 300, drop: '狂暴' },
-    { name: '玄武', skin: 'ice', aggr: 0.2, type: 'xuanwu', ability: 'magnet', cd: 900, dur: 600, drop: 'magnet' }
+    { name: '龙王', skin: 'crimson', aggr: 0.9, type: 'dragon', ability: 'shield', cd: 600, dur: 180 },
+    { name: '雷神', skin: 'gold', aggr: 0.7, type: 'thunder', ability: '狂暴', cd: 720, dur: 300 },
+    { name: '玄武', skin: 'ice', aggr: 0.2, type: 'xuanwu', ability: 'magnet', cd: 900, dur: 600 }
   ];
   const BOSS_CFG = { name: '混沌巨蟒', skin: 'galaxy', aggr: 0.6, type: 'boss', initLen: 50 };
-  const SUFFIX_甲乙丙丁 = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
-  const POWERUP_TYPES = ['shield', '狂暴', 'magnet'];
 
   // 皮肤系统
   function mkSkin(id, name, emoji, body, stripe, head, eye, glow, bg, dash) {
@@ -533,11 +494,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     for (let i = 0; i < initLen; i++) segs.push({ x: x - Math.cos(a) * i * SG, y: y - Math.sin(a) * i * SG });
     return {
       segs, angle: a, tAngle: a, speed: SPD, skinId, name, score: 0, alive: true, isP, boost: false, bc: 0, kills: 0, invuln: INVULN_T, rt: 0, aggr: aggr || 0.5, team: team || 0, permanentDeath: false, thinkCD: 0, lastDir: a, stuckCount: 0, lastPos: { x, y }, stuckCheck: 0, magnet: 0,
-      // V6新增：超级蛇/Boss属性
-      type: type || null,  // 'dragon','thunder','xuanwu','boss',null
-      abilityCD: 0, abilityDur: 0, abilityActive: false,
-      shield: false,  // 护盾（无敌一次）
-      infiniteBoost: false  // 无限加速
+      type: type || null, abilityCD: 0, abilityActive: false, shield: false, infiniteBoost: false
     };
   }
 
@@ -654,94 +611,6 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     });
   }
 
-  // V6新增：通用道具系统
-  let powerups = [];
-  function spawnPowerup(x, y, type) {
-    powerups.push({
-      x: x || 100 + Math.random() * (MAP - 200),
-      y: y || 100 + Math.random() * (MAP - 200),
-      type: type || POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)],
-      pulse: 0,
-      life: 1800  // 30秒后消失
-    });
-  }
-
-  function updatePowerups() {
-    // 道具脉冲动画和生命周期
-    for (let i = powerups.length - 1; i >= 0; i--) {
-      powerups[i].pulse = (powerups[i].pulse + 0.06) % (Math.PI * 2);
-      powerups[i].life--;
-      if (powerups[i].life <= 0) {
-        powerups.splice(i, 1);
-        continue;
-      }
-    }
-    // 道具拾取检测
-    for (const s of snakes) {
-      if (!s.alive) continue;
-      const hx = s.segs[0].x, hy = s.segs[0].y;
-      for (let i = powerups.length - 1; i >= 0; i--) {
-        const p = powerups[i];
-        const dx = hx - p.x, dy = hy - p.y;
-        if (dx * dx + dy * dy < 900) {  // 拾取范围30
-          applyPowerup(s, p.type);
-          powerups.splice(i, 1);
-          addKillFeed('✨ ' + s.name + ' 获得了' + getPowerupName(p.type));
-        }
-      }
-    }
-    // 随机生成道具
-    if (Math.random() < 0.002 && powerups.length < 3) {
-      spawnPowerup();
-    }
-  }
-
-  function applyPowerup(s, type) {
-    switch (type) {
-      case 'shield':
-        s.shield = true;
-        break;
-      case '狂暴':
-        s.infiniteBoost = true;
-        setTimeout(() => { s.infiniteBoost = false; }, 10000);  // 10秒
-        break;
-      case 'magnet':
-        s.magnet = MAGNET_DUR;
-        break;
-    }
-  }
-
-  function getPowerupName(type) {
-    const names = { 'shield': '🛡️ 护盾', '狂暴': '⚡ 狂暴', 'magnet': '🧲 磁铁' };
-    return names[type] || type;
-  }
-
-  function drawPowerups() {
-    for (const p of powerups) {
-      const sx = (p.x - cam.x) * zoom + cx.canvas.width / (2 * DPR);
-      const sy = (p.y - cam.y) * zoom + cx.canvas.height / (2 * DPR);
-      if (sx < -30 || sx > innerWidth + 30 || sy < -30 || sy > innerHeight + 30) continue;
-      const sz = 14 + Math.sin(p.pulse) * 3;
-      cx.save();
-      cx.globalAlpha = Math.min(1, p.life / 180);
-      // 绘制道具背景光圈
-      cx.beginPath();
-      cx.arc(sx, sy, sz + 6, 0, Math.PI * 2);
-      const grd = cx.createRadialGradient(sx, sy, 0, sx, sy, sz + 6);
-      grd.addColorStop(0, 'rgba(255,255,255,0.15)');
-      grd.addColorStop(1, 'rgba(255,255,255,0)');
-      cx.fillStyle = grd;
-      cx.fill();
-      // 绘制道具图标
-      cx.font = `${sz}px sans-serif`;
-      cx.textAlign = 'center';
-      cx.textBaseline = 'middle';
-      const icons = { 'shield': '🛡️', '狂暴': '⚡', 'magnet': '🧲' };
-      cx.fillText(icons[p.type] || '?', sx, sy);
-      cx.restore();
-    }
-  }
-
   function updateMagnets(dt) {
     // 磁铁保底：始终至少1个
     if (magnets.length === 0) {
@@ -826,7 +695,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     const h = s.segs[0];
     const diffCfg = DIFF_CFG[settings.difficulty];
 
-    // V6: 超级蛇/Boss能力触发
+    // V6: 超级蛇能力触发
     if (s.type && s.alive && !s.isP) {
       const cfg = SUPER_BOTS.find(b => b.type === s.type);
       if (cfg) {
@@ -834,7 +703,6 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
         if (s.abilityCD <= 0 && !s.abilityActive) {
           s.abilityActive = true;
           s.abilityCD = cfg.cd;
-          // 触发能力
           switch (cfg.ability) {
             case 'shield':
               s.shield = true;
@@ -853,6 +721,12 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
           setTimeout(() => { s.abilityActive = false; }, cfg.dur * 16);
         }
       }
+    }
+
+    // V6: 无限加速
+    if (s.infiniteBoost && s.alive) {
+      s.speed = BSPD;
+      s.boost = true;
     }
 
     // 卡住检测
@@ -1094,7 +968,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
   // 加速系统
   function updateBoost(s) {
     if (s.isP) s.boost = boostHeld && gameActive;
-    // V6: 无限加速状态
+    // V6: 无限加速
     if (s.infiniteBoost && s.alive) {
       s.speed = BSPD;
       s.boost = true;
@@ -1105,8 +979,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
       s.bc++;
       if (s.bc >= BOOST_CI) {
         s.bc = 0;
-        // V6: 加速不再掉落果实，但消耗减半（BOOST_CI已改为4）
-        s.segs.pop();
+        s.segs.pop();  // V6: 加速不再掉落果实
         if (s.isP) s.score = Math.max(0, s.score - 1);
       }
     } else {
@@ -1156,10 +1029,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
       if (!s.alive || s.invuln > 0) continue;
       const h = s.segs[0];
       if (h.x < 0 || h.x > MAP || h.y < 0 || h.y > MAP) {
-        // V6: Boss不会撞边界死亡
-        if (s.type !== 'boss') {
-          killSnake(s, s.name + ' 撞到了边界');
-        }
+        if (s.type !== 'boss') killSnake(s, s.name + ' 撞到了边界');
         continue;
       }
       let dead = false;
@@ -1174,15 +1044,16 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
           if (dx * dx + dy * dy < hitR2) {
             // V6: Boss蛇无法被比他小的蛇击杀
             if (s.type === 'boss' && o.segs.length <= s.segs.length) {
-              // 反弹效果：攻击者死亡
               killSnake(o, o.name + ' 试图攻击Boss，被反杀');
               s.kills++;
+              dead = false;
               break;
             }
-            // V6: 护盾效果（无敌一次）
+            // V6: 护盾效果
             if (s.shield) {
               s.shield = false;
               addKillFeed('🛡️ ' + s.name + ' 的护盾抵挡了致命一击');
+              dead = false;
               break;
             }
             if (hunt) {
@@ -1190,11 +1061,6 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
             } else {
               killSnake(s, s.name + ' 被 ' + o.name + ' 消灭');
               o.kills++;
-              // V6: 超级蛇/Boss被击杀时掉落道具
-              if (s.type && POWERUP_TYPES.includes(SUPER_BOTS.find(b => b.type === s.type)?.drop)) {
-                const dropType = SUPER_BOTS.find(b => b.type === s.type).drop;
-                spawnPowerup(s.segs[0].x, s.segs[0].y, dropType);
-              }
             }
             dead = true;
             break;
@@ -1302,7 +1168,6 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     drawWorld(W, H);
     drawFoods();
     drawMagnets();
-    drawPowerups();  // V6: 绘制道具
     drawSnakes();
     drawParts();
     cx.restore();
@@ -1472,9 +1337,8 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     }
     // V6: 护盾道具效果
     if (s.shield && s.alive) {
-      const pulse = Math.sin(Date.now() * 0.006) * 0.2 + 0.4;
       cx.save();
-      cx.globalAlpha = pulse;
+      cx.globalAlpha = 0.5;
       cx.strokeStyle = '#00ff88';
       cx.lineWidth = 4;
       cx.shadowColor = '#00ff88';
@@ -1482,60 +1346,18 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
       cx.beginPath();
       cx.arc(h.x, h.y, SR * 2.0, 0, Math.PI * 2);
       cx.stroke();
-      // 护盾图标
-      cx.font = '16px sans-serif';
-      cx.textAlign = 'center';
-      cx.fillStyle = '#00ff88';
-      cx.fillText('🛡️', h.x, h.y - SR * 2.5);
-      cx.restore();
-    }
-    // V6: 狂暴效果
-    if (s.infiniteBoost && s.alive) {
-      const pulse = Math.sin(Date.now() * 0.01) * 0.15 + 0.35;
-      cx.save();
-      cx.globalAlpha = pulse;
-      cx.strokeStyle = '#ffdd00';
-      cx.lineWidth = 3;
-      cx.shadowColor = '#ffdd00';
-      cx.shadowBlur = 12;
-      cx.beginPath();
-      cx.arc(h.x, h.y, SR * 1.9, 0, Math.PI * 2);
-      cx.stroke();
-      // 闪电图标
-      cx.font = '14px sans-serif';
-      cx.textAlign = 'center';
-      cx.fillStyle = '#ffdd00';
-      cx.fillText('⚡', h.x, h.y - SR * 2.5);
       cx.restore();
     }
     // V6: 超级蛇/Boss特殊光环
     if (s.type && s.alive) {
-      const time = Date.now() * 0.003;
-      const pulse = Math.sin(time) * 0.15 + 0.35;
+      const pulse = Math.sin(Date.now() * 0.003) * 0.15 + 0.35;
       cx.save();
       cx.globalAlpha = pulse;
-      let glowColor, glowSize;
-      switch (s.type) {
-        case 'dragon':
-          glowColor = '#ff0000';
-          glowSize = SR * 2.2;
-          break;
-        case 'thunder':
-          glowColor = '#ffdd00';
-          glowSize = SR * 2.0;
-          break;
-        case 'xuanwu':
-          glowColor = '#004488';
-          glowSize = SR * 2.4;
-          break;
-        case 'boss':
-          glowColor = '#880088';
-          glowSize = SR * 2.8;
-          break;
-        default:
-          glowColor = '#fff';
-          glowSize = SR * 1.8;
-      }
+      let glowColor = '#fff', glowSize = SR * 1.8;
+      if (s.type === 'dragon') { glowColor = '#ff0000'; glowSize = SR * 2.2; }
+      if (s.type === 'thunder') { glowColor = '#ffdd00'; glowSize = SR * 2.0; }
+      if (s.type === 'xuanwu') { glowColor = '#004488'; glowSize = SR * 2.4; }
+      if (s.type === 'boss') { glowColor = '#880088'; glowSize = SR * 2.8; }
       cx.strokeStyle = glowColor;
       cx.lineWidth = s.type === 'boss' ? 5 : 3;
       cx.shadowColor = glowColor;
@@ -1543,13 +1365,6 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
       cx.beginPath();
       cx.arc(h.x, h.y, glowSize, 0, Math.PI * 2);
       cx.stroke();
-      // Boss特殊标记
-      if (s.type === 'boss') {
-        cx.font = '20px sans-serif';
-        cx.textAlign = 'center';
-        cx.fillStyle = '#880088';
-        cx.fillText('👑', h.x, h.y - SR * 3);
-      }
       cx.restore();
     }
     // 无敌时整体半透明
@@ -2012,7 +1827,6 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
   }
 
   // 按钮事件
-  // V6: 蛇类型说明按钮
   document.getElementById('snakeInfoBtn').onclick = () => {
     document.getElementById('startScreen').classList.remove('show');
     document.getElementById('snakeInfoScreen').classList.add('show');
@@ -2021,7 +1835,6 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     document.getElementById('snakeInfoScreen').classList.remove('show');
     document.getElementById('startScreen').classList.add('show');
   };
-
   document.getElementById('startBtn').onclick = () => {
     document.getElementById('startScreen').classList.remove('show');
     startGame();
@@ -2177,7 +1990,6 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     checkHit();
     ensureFood();
     updateMagnets();
-    updatePowerups();  // V6: 更新道具系统
     updateParts();
     updateShake();
     updateCam();
@@ -2238,7 +2050,6 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
         const b = BOT_CFG[t];
         const copies = Math.min(COPIES_PER_TYPE, botCount - created);
         for (let c = 0; c < copies && created < botCount; c++) {
-          // V6: 超过6条蛇时用甲乙丙丁命名
           let suffix = '';
           if (botCount > BOT_CFG.length) {
             suffix = SUFFIX_甲乙丙丁[suffixIndex % SUFFIX_甲乙丙丁.length];
@@ -2253,7 +2064,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
         }
       }
     }
-    // V6: 添加超级蛇（如果bot数量足够）
+    // V6: 添加超级蛇（AI≥9时出现）
     if (botCount >= 9) {
       for (const sb of SUPER_BOTS) {
         if (created >= botCount) break;
@@ -2262,9 +2073,9 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
         created++;
       }
     }
-    // V6: 添加Boss蛇（如果bot数量足够）
+    // V6: 添加Boss蛇（AI≥12时出现）
     if (botCount >= 12) {
-      const botTeam = teamOn ? 3 : 0;  // Boss单独一队
+      const botTeam = teamOn ? 3 : 0;
       snakes.push(mkSnake(BOSS_CFG.name, BOSS_CFG.skin, false, BOSS_CFG.aggr, botTeam, 'boss'));
       created++;
     }
