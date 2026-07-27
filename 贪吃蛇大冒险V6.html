@@ -453,7 +453,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
   const cv = document.getElementById('canvas');
   const cx = cv.getContext('2d');
   const DPR = window.devicePixelRatio || 1;
-  let snakes = [], foods = [], particles = [], magnets = [];
+  let snakes = [], foods = [], particles = [], magnets = [], powerups = [];
   let magnetSpawnCD = MAGNET_SPAWN_CD;
   let cam = { x: MAP / 2, y: MAP / 2 };
   let player = null;
@@ -708,6 +708,93 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
       cx.fillText('🧲', m.x, m.y);
     }
     cx.globalAlpha = 1;
+  }
+
+  // V6: 道具系统
+  const POWERUP_TYPES = ['shield', '狂暴', 'magnet'];
+  function spawnPowerup() {
+    powerups.push({
+      x: 100 + Math.random() * (MAP - 200),
+      y: 100 + Math.random() * (MAP - 200),
+      type: POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)],
+      pulse: 0,
+      life: 1800  // 30秒后消失
+    });
+  }
+
+  function updatePowerups() {
+    // 道具脉冲动画和生命周期
+    for (let i = powerups.length - 1; i >= 0; i--) {
+      powerups[i].pulse = (powerups[i].pulse + 0.06) % (Math.PI * 2);
+      powerups[i].life--;
+      if (powerups[i].life <= 0) {
+        powerups.splice(i, 1);
+        continue;
+      }
+    }
+    // 道具拾取检测
+    for (const s of snakes) {
+      if (!s.alive) continue;
+      const hx = s.segs[0].x, hy = s.segs[0].y;
+      for (let i = powerups.length - 1; i >= 0; i--) {
+        const p = powerups[i];
+        const dx = hx - p.x, dy = hy - p.y;
+        if (dx * dx + dy * dy < 900) {  // 拾取范围30
+          applyPowerup(s, p.type);
+          powerups.splice(i, 1);
+          addKillFeed('✨ ' + s.name + ' 获得了' + getPowerupName(p.type));
+        }
+      }
+    }
+    // 随机生成道具
+    if (Math.random() < 0.003 && powerups.length < 5) {
+      spawnPowerup();
+    }
+  }
+
+  function applyPowerup(s, type) {
+    switch (type) {
+      case 'shield':
+        s.shield = true;
+        break;
+      case '狂暴':
+        s.infiniteBoost = true;
+        setTimeout(() => { s.infiniteBoost = false; }, 10000);  // 10秒
+        break;
+      case 'magnet':
+        s.magnet = 900;  // 15秒
+        break;
+    }
+  }
+
+  function getPowerupName(type) {
+    const names = { 'shield': '🛡️ 护盾', '狂暴': '⚡ 狂暴', 'magnet': '🧲 磁铁' };
+    return names[type] || type;
+  }
+
+  function drawPowerups() {
+    const W2 = innerWidth / 2 + 120, H2 = innerHeight / 2 + 120;
+    for (const p of powerups) {
+      if (Math.abs(p.x - cam.x) > W2 || Math.abs(p.y - cam.y) > H2) continue;
+      const sz = 14 + Math.sin(p.pulse) * 3;
+      cx.save();
+      cx.globalAlpha = Math.min(1, p.life / 180);
+      // 绘制道具背景光圈
+      cx.beginPath();
+      cx.arc(p.x, p.y, sz + 6, 0, Math.PI * 2);
+      const grd = cx.createRadialGradient(p.x, p.y, 0, p.x, p.y, sz + 6);
+      grd.addColorStop(0, 'rgba(255,255,255,0.15)');
+      grd.addColorStop(1, 'rgba(255,255,255,0)');
+      cx.fillStyle = grd;
+      cx.fill();
+      // 绘制道具图标
+      cx.font = `${sz}px sans-serif`;
+      cx.textAlign = 'center';
+      cx.textBaseline = 'middle';
+      const icons = { 'shield': '🛡️', '狂暴': '⚡', 'magnet': '🧲' };
+      cx.fillText(icons[p.type] || '?', p.x, p.y);
+      cx.restore();
+    }
   }
 
   // 击杀播报
@@ -1241,6 +1328,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     drawWorld(W, H);
     drawFoods();
     drawMagnets();
+    drawPowerups();  // V6: 绘制道具
     drawSnakes();
     drawParts();
     cx.restore();
@@ -1982,7 +2070,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
   // V6: 回到菜单
   document.getElementById('menuBtn').onclick = () => {
     document.getElementById('pauseScreen').classList.remove('show');
-    snakes = []; foods = []; particles = []; magnets = [];
+    snakes = []; foods = []; particles = []; magnets = []; powerups = [];
     aiAgent = false;
     document.getElementById('exitBtn').style.display = 'none';
     document.getElementById('aiBtn').style.display = 'none';
@@ -2119,6 +2207,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     checkHit();
     ensureFood();
     updateMagnets();
+    updatePowerups();  // V6: 更新道具系统
     updateParts();
     updateShake();
     updateCam();
@@ -2164,7 +2253,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
 
   // 开始游戏
   function startGame() {
-    snakes = []; foods = []; particles = []; magnets = [];
+    snakes = []; foods = []; particles = []; magnets = []; powerups = [];
     revives = 0; victoryChecked = false;
     magnetSpawnCD = MAGNET_SPAWN_CD;
     killFeedEl.innerHTML = '';
