@@ -298,8 +298,8 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
 <div id="snakeInfoScreen" class="overlay">
   <div class="icon">📖</div>
   <div class="title">蛇类型说明</div>
-  <div style="max-width:400px;padding:20px;text-align:left;font-size:13px;color:rgba(255,255,255,0.8);line-height:1.8;">
-    <h3 style="color:#00ccff;margin:10px 0 5px;">🐍 普通蛇</h3>
+  <div style="max-width:420px;padding:20px;text-align:left;font-size:13px;color:rgba(255,255,255,0.8);line-height:1.8;max-height:80vh;overflow-y:auto;">
+    <h3 style="color:#00ccff;margin:10px 0 5px;">🐍 普通蛇（最多18条）</h3>
     <table style="width:100%;border-collapse:collapse;">
       <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)"><b>小青龙</b></td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">攻击性0.5 · 中庸型</td></tr>
       <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)"><b>贪吃鬼</b></td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">攻击性0.8 · 激进型</td></tr>
@@ -308,8 +308,28 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
       <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)"><b>粉色风暴</b></td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">攻击性0.7 · 较激进</td></tr>
       <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)"><b>暗影忍者</b></td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">攻击性0.3 · 保守型</td></tr>
     </table>
-    <p style="margin-top:15px;font-size:12px;color:rgba(255,255,255,0.5);">
+    <p style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.5);">
       💡 攻击性越高，AI越倾向于主动追击其他蛇
+    </p>
+
+    <h3 style="color:#ffd700;margin:15px 0 5px;">⭐ 超级蛇（不占普通蛇名额）</h3>
+    <p style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:5px;">
+      6条蛇=1个超级蛇 | 12条=2个 | 18条=3个
+    </p>
+    <table style="width:100%;border-collapse:collapse;">
+      <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)"><b style="color:#ff0000">超级蛇·龙王</b></td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">攻击性0.9 · 每10秒获得护盾</td></tr>
+      <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)"><b style="color:#ffdd00">超级蛇·雷神</b></td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">攻击性0.7 · 每12秒获得狂暴</td></tr>
+      <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)"><b style="color:#004488">超级蛇·玄武</b></td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">攻击性0.2 · 每15秒获得磁铁</td></tr>
+    </table>
+
+    <h3 style="color:#880088;margin:15px 0 5px;">👑 Boss蛇（仅困难模式）</h3>
+    <table style="width:100%;border-collapse:collapse;">
+      <tr><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)"><b style="color:#880088">Boss混沌巨蟒</b></td><td style="padding:4px;border-bottom:1px solid rgba(255,255,255,0.1)">初始长度200 · 不占名额</td></tr>
+    </table>
+    <p style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.6);">
+      ⚠️ <b>击杀规则</b>：你的长度必须超过Boss的50%才能击杀它<br>
+      （即Boss长度200时，你需要长度>100才能击杀）<br>
+      否则你会被反杀！
     </p>
   </div>
   <button class="btn" id="snakeInfoBack" style="margin-top:15px;">返回</button>
@@ -372,13 +392,14 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
   const MAGNET_PULL = 3.5;
   const MAGNET_DUR = 900;
   const MAGNET_SPAWN_CD = 900;
-  const SUFFIX_甲乙丙丁 = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+  // V6: 超级蛇配置（不占普通蛇名额）
   const SUPER_BOTS = [
-    { name: '龙王', skin: 'crimson', aggr: 0.9, type: 'dragon', ability: 'shield', cd: 600, dur: 180 },
-    { name: '雷神', skin: 'gold', aggr: 0.7, type: 'thunder', ability: '狂暴', cd: 720, dur: 300 },
-    { name: '玄武', skin: 'ice', aggr: 0.2, type: 'xuanwu', ability: 'magnet', cd: 900, dur: 600 }
+    { name: '超级蛇·龙王', skin: 'crimson', aggr: 0.9, type: 'dragon', ability: 'shield', cd: 600, dur: 180 },
+    { name: '超级蛇·雷神', skin: 'gold', aggr: 0.7, type: 'thunder', ability: '狂暴', cd: 720, dur: 300 },
+    { name: '超级蛇·玄武', skin: 'ice', aggr: 0.2, type: 'xuanwu', ability: 'magnet', cd: 900, dur: 600 }
   ];
-  const BOSS_CFG = { name: '混沌巨蟒', skin: 'galaxy', aggr: 0.6, type: 'boss', initLen: 50 };
+  // V6: Boss配置（困难模式出现，不占普通蛇名额，初始长度200）
+  const BOSS_CFG = { name: 'Boss混沌巨蟒', skin: 'galaxy', aggr: 0.6, type: 'boss', initLen: 200 };
 
   // 皮肤系统
   function mkSkin(id, name, emoji, body, stripe, head, eye, glow, bg, dash) {
@@ -1042,8 +1063,8 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
           const sg = o.segs[i];
           const dx = h.x - sg.x, dy = h.y - sg.y;
           if (dx * dx + dy * dy < hitR2) {
-            // V6: Boss蛇无法被比他小的蛇击杀
-            if (s.type === 'boss' && o.segs.length <= s.segs.length) {
+            // V6: Boss蛇无法被长度不超过它50%的蛇击杀
+            if (s.type === 'boss' && o.segs.length <= s.segs.length * 0.5) {
               killSnake(o, o.name + ' 试图攻击Boss，被反杀');
               s.kills++;
               dead = false;
@@ -2043,35 +2064,37 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     player = mkSnake('玩家', settings.playerSkin, true, 0.5, playerTeam);
     snakes.push(player);
     const botCount = Math.min(settings.botCount, MAX_BOTS);
+
+    // V6: 创建普通蛇（用1、2、3编号，最多18条）
     let created = 0;
-    let suffixIndex = 0;
+    let botIndex = 1;
     while (created < botCount) {
       for (let t = 0; t < BOT_CFG.length && created < botCount; t++) {
         const b = BOT_CFG[t];
         const copies = Math.min(COPIES_PER_TYPE, botCount - created);
         for (let c = 0; c < copies && created < botCount; c++) {
-          let suffix = '';
-          if (botCount > BOT_CFG.length) {
-            suffix = SUFFIX_甲乙丙丁[suffixIndex % SUFFIX_甲乙丙丁.length];
-            suffixIndex++;
-          } else if (c > 0) {
-            suffix = '·' + (c + 1);
-          }
+          const suffix = copies > 1 ? '·' + (c + 1) : '';
           const botTeam = teamOn ? (created < botCount / 2 ? 1 : 2) : 0;
           const botSkin = teamOn ? (botTeam === 1 ? 'ocean' : 'crimson') : b.skin;
           snakes.push(mkSnake(b.name + suffix, botSkin, false, b.aggr, botTeam));
           created++;
+          botIndex++;
         }
       }
     }
-    // V6: 添加超级蛇（AI≥9时出现）
-    if (botCount >= 9) {
-      for (const sb of SUPER_BOTS) {
-        if (created >= botCount) break;
-        const botTeam = teamOn ? (created < botCount / 2 ? 1 : 2) : 0;
-        snakes.push(mkSnake(sb.name, sb.skin, false, sb.aggr, botTeam, sb.type));
-        created++;
-      }
+
+    // V6: 添加超级蛇（不占普通蛇名额：6条=1个，12条=2个，18条=3个）
+    const superCount = botCount >= 18 ? 3 : (botCount >= 12 ? 2 : (botCount >= 6 ? 1 : 0));
+    for (let i = 0; i < superCount && i < SUPER_BOTS.length; i++) {
+      const sb = SUPER_BOTS[i];
+      const botTeam = teamOn ? 3 : 0;
+      snakes.push(mkSnake(sb.name, sb.skin, false, sb.aggr, botTeam, sb.type));
+    }
+
+    // V6: 困难模式添加Boss（不占普通蛇名额）
+    if (settings.difficulty === 'hard') {
+      const botTeam = teamOn ? 4 : 0;
+      snakes.push(mkSnake(BOSS_CFG.name, BOSS_CFG.skin, false, BOSS_CFG.aggr, botTeam, 'boss'));
     }
     // V6: 添加Boss蛇（AI≥12时出现）
     if (botCount >= 12) {
