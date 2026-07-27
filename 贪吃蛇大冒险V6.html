@@ -859,39 +859,43 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
       const a = i * step;
       const cosA = Math.cos(a), sinA = Math.sin(a);
       let sc = 0;
-      // --- 墙壁避让（增强：更早反应） ---
+      // --- 墙壁避让（V6增强：极力避开墙壁） ---
       const tx = h.x + cosA * lookDist;
       const ty = h.y + sinA * lookDist;
       const wd = Math.min(tx, MAP - tx, ty, MAP - ty);
-      if (wd < 0) sc -= 9999;
-      else if (wd < 80) sc -= (80 - wd) * 50;
-      else if (wd < 160) sc -= (160 - wd) * 10;
+      if (wd < 0) sc -= 99999;  // 必死区域
+      else if (wd < 80) sc -= (80 - wd) * 100;  // 危险区域
+      else if (wd < 160) sc -= (160 - wd) * 25;  // 警戒区域
+      else if (wd < 250) sc -= (250 - wd) * 5;   // 感知区域
       else sc += 8;
       const tx2 = h.x + cosA * lookDist * 1.8;
       const ty2 = h.y + sinA * lookDist * 1.8;
-      if (Math.min(tx2, MAP - tx2, ty2, MAP - ty2) < 100) sc -= 500;
-      // --- 碰撞避让（增强：预测移动） ---
+      if (Math.min(tx2, MAP - tx2, ty2, MAP - ty2) < 150) sc -= 800;
+      // --- 碰撞避让（V6增强：极力避开碰撞） ---
       for (const o of snakes) {
         if (!o.alive) continue;
         const odx = tx - o.segs[0].x, ody = ty - o.segs[0].y;
-        const maxR = o.segs.length * SG + 100;
+        const maxR = o.segs.length * SG + 150;
         if (odx * odx + ody * ody > maxR * maxR) continue;
         const startI = (o === s) ? 8 : 0;
         for (let j = startI; j < o.segs.length; j += 2) {
           const seg = o.segs[j];
           const d2 = (tx - seg.x) ** 2 + (ty - seg.y) ** 2;
-          if (d2 < 400) sc -= 9999;
-          else if (d2 < 2500) sc -= (50 - Math.sqrt(d2)) * 28;
-          else if (d2 < 6400) sc -= (80 - Math.sqrt(d2)) * 5;
+          // V6: 极力避开碰撞，权重大幅提升
+          if (d2 < 900) sc -= 99999;  // 必死区域，绝对避开
+          else if (d2 < 2500) sc -= (50 - Math.sqrt(d2)) * 80;  // 危险区域，强力避开
+          else if (d2 < 6400) sc -= (80 - Math.sqrt(d2)) * 20;  // 警戒区域，提前避开
+          else if (d2 < 10000) sc -= (100 - Math.sqrt(d2)) * 5;  // 感知区域，轻微避开
         }
-        // 预测其他蛇的未来位置
+        // 预测其他蛇的未来位置（更远预测）
         if (o !== s && o.alive && o.segs.length > 1) {
-          const pred = 40;
-          const ox2 = o.segs[0].x + Math.cos(o.angle) * pred;
-          const oy2 = o.segs[0].y + Math.sin(o.angle) * pred;
-          const pd2 = (tx - ox2) ** 2 + (ty - oy2) ** 2;
-          if (pd2 < 2500) sc -= 300;
-          else if (pd2 < 6400) sc -= 80;
+          for (let pred = 20; pred <= 60; pred += 20) {
+            const ox2 = o.segs[0].x + Math.cos(o.angle) * pred;
+            const oy2 = o.segs[0].y + Math.sin(o.angle) * pred;
+            const pd2 = (tx - ox2) ** 2 + (ty - oy2) ** 2;
+            if (pd2 < 2500) sc -= 500;
+            else if (pd2 < 6400) sc -= 150;
+          }
         }
       }
       // --- 食物吸引力（增强：更大范围、更高权重） ---
@@ -983,27 +987,27 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
       while (adiff > Math.PI) adiff -= Math.PI * 2;
       while (adiff < -Math.PI) adiff += Math.PI * 2;
       sc -= Math.abs(adiff) * 5;
-      // --- 开放空间评估 ---
+      // --- 开放空间评估（V6增强：更倾向于开放空间） ---
       let openScore = 0;
-      for (let r = 1; r <= 4; r++) {
-        const rd = r * 45;
-        for (let da = -0.35; da <= 0.35; da += 0.35) {
+      for (let r = 1; r <= 5; r++) {
+        const rd = r * 40;
+        for (let da = -0.4; da <= 0.4; da += 0.2) {
           const cx2 = h.x + Math.cos(a + da) * rd;
           const cy2 = h.y + Math.sin(a + da) * rd;
-          if (Math.min(cx2, MAP - cx2, cy2, MAP - cy2) > 60) openScore += r;
+          if (Math.min(cx2, MAP - cx2, cy2, MAP - cy2) > 80) openScore += r * 2;
           for (const o of snakes) {
             if (!o.alive) continue;
             const si = o === s ? 10 : 0;
-            for (let j = si; j < o.segs.length; j += 4) {
-              if ((cx2 - o.segs[j].x) ** 2 + (cy2 - o.segs[j].y) ** 2 < 900) {
-                openScore -= r * 2;
+            for (let j = si; j < o.segs.length; j += 3) {
+              if ((cx2 - o.segs[j].x) ** 2 + (cy2 - o.segs[j].y) ** 2 < 1200) {
+                openScore -= r * 3;
                 break;
               }
             }
           }
         }
       }
-      sc += openScore;
+      sc += openScore * 1.5;
       scores[i] = sc;
     }
     let bestI = 0;
