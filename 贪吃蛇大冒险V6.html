@@ -284,6 +284,17 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     </label>
     <div class="mode-exclude-hint">两种模式不可同时开启</div>
     <div class="skin-section" id="skinSection"></div>
+    <div class="settings-panel" style="margin-top:10px;">
+      <h3>🐍 蛇类型选择</h3>
+      <div class="diff-btns" style="flex-wrap:wrap;gap:6px;">
+        <button class="diff-btn active" data-type="normal">普通蛇</button>
+        <button class="diff-btn" data-type="dragon" style="color:#ff6666;">🐉 龙王</button>
+        <button class="diff-btn" data-type="thunder" style="color:#ffdd00;">⚡ 雷神</button>
+        <button class="diff-btn" data-type="xuanwu" style="color:#6688cc;">🐢 玄武</button>
+        <button class="diff-btn" data-type="boss" style="color:#aa66cc;">👑 混沌巨蟒</button>
+      </div>
+      <div id="typeDesc" style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:6px;">普通蛇：无特殊能力</div>
+    </div>
   </div>
   <div class="desc" id="controlDesc">
     移动鼠标/触摸屏幕 控制方向<br>
@@ -473,7 +484,8 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     huntMode: false,
     teamMode: false,
     selfBite: true,
-    playerSkin: 'crimson'
+    playerSkin: 'crimson',
+    playerType: 'normal'  // V6: normal/dragon/thunder/xuanwu/boss
   };
 
   const isPC = !('ontouchstart' in window) || navigator.maxTouchPoints === 0;
@@ -812,48 +824,6 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
   function updateAI(s) {
     const h = s.segs[0];
     const diffCfg = DIFF_CFG[settings.difficulty];
-
-    // V6: 超级蛇能力触发
-    if (s.type && s.alive && !s.isP) {
-      if (s.type === 'boss') {
-        // Boss同时有三种效果，隔一段时间获得一次
-        s.abilityCD--;
-        if (s.abilityCD <= 0) {
-          s.abilityCD = 600;  // 每10秒触发一次
-          s.shield = true;
-          s.infiniteBoost = true;
-          s.magnet = 600;
-          addKillFeed('👑 ' + s.name + ' 获得了全部强化！');
-          setTimeout(() => { s.infiniteBoost = false; }, 10000);  // 狂暴10秒
-        }
-      } else {
-        // 普通超级蛇能力
-        const cfg = SUPER_BOTS.find(b => b.type === s.type);
-        if (cfg) {
-          s.abilityCD--;
-          if (s.abilityCD <= 0 && !s.abilityActive) {
-            s.abilityActive = true;
-            s.abilityCD = cfg.cd;
-            switch (cfg.ability) {
-              case 'shield':
-                s.shield = true;
-                addKillFeed('🛡️ ' + s.name + ' 获得了护盾');
-                break;
-              case '狂暴':
-                s.infiniteBoost = true;
-                addKillFeed('⚡ ' + s.name + ' 进入狂暴状态');
-                setTimeout(() => { s.infiniteBoost = false; s.abilityActive = false; }, cfg.dur * 16);
-                break;
-              case 'magnet':
-                s.magnet = cfg.dur;
-                addKillFeed('🧲 ' + s.name + ' 启动了磁铁');
-                break;
-            }
-            setTimeout(() => { s.abilityActive = false; }, cfg.dur * 16);
-          }
-        }
-      }
-    }
 
     // V6: 无限加速
     if (s.infiniteBoost && s.alive) {
@@ -2149,10 +2119,23 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     if (settings.huntMode) modeTxt += ' · 猎杀模式';
     botInfoEl.textContent = '与 ' + settings.botCount + ' 条 AI 蛇同场竞技！（' + DIFF_CFG[settings.difficulty].label + '难度' + modeTxt + '）';
     document.querySelectorAll('.diff-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.diff === settings.difficulty);
+      if (btn.dataset.diff) {
+        btn.classList.toggle('active', btn.dataset.diff === settings.difficulty);
+      } else if (btn.dataset.type) {
+        btn.classList.toggle('active', btn.dataset.type === settings.playerType);
+      }
     });
     huntModeEl.checked = settings.huntMode;
     teamModeEl.checked = settings.teamMode;
+    // V6: 更新蛇类型描述
+    const typeDescs = {
+      'normal': '普通蛇：无特殊能力',
+      'dragon': '🐉 龙王：攻击性0.9，每10秒获得护盾',
+      'thunder': '⚡ 雷神：攻击性0.7，每12秒获得狂暴（无限加速）',
+      'xuanwu': '🐢 玄武：攻击性0.2，每15秒获得磁铁',
+      'boss': '👑 混沌巨蟒：初始长度100，每10秒获得全部强化'
+    };
+    document.getElementById('typeDesc').textContent = typeDescs[settings.playerType] || '';
   }
 
   document.getElementById('botMinus').onclick = () => {
@@ -2163,7 +2146,11 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
   };
   document.querySelectorAll('.diff-btn').forEach(btn => {
     btn.onclick = () => {
-      settings.difficulty = btn.dataset.diff;
+      if (btn.dataset.diff) {
+        settings.difficulty = btn.dataset.diff;
+      } else if (btn.dataset.type) {
+        settings.playerType = btn.dataset.type;
+      }
       updateSettingsUI();
     };
   });
@@ -2200,6 +2187,47 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
         continue;
       }
       if (s.invuln > 0) s.invuln--;
+
+      // V6: 超级蛇/Boss能力触发（包括玩家）
+      if (s.type && s.alive) {
+        if (s.type === 'boss') {
+          s.abilityCD--;
+          if (s.abilityCD <= 0) {
+            s.abilityCD = 600;
+            s.shield = true;
+            s.infiniteBoost = true;
+            s.magnet = 600;
+            addKillFeed('👑 ' + s.name + ' 获得了全部强化！');
+            setTimeout(() => { s.infiniteBoost = false; }, 10000);
+          }
+        } else {
+          const cfg = SUPER_BOTS.find(b => b.type === s.type);
+          if (cfg) {
+            s.abilityCD--;
+            if (s.abilityCD <= 0 && !s.abilityActive) {
+              s.abilityActive = true;
+              s.abilityCD = cfg.cd;
+              switch (cfg.ability) {
+                case 'shield':
+                  s.shield = true;
+                  addKillFeed('🛡️ ' + s.name + ' 获得了护盾');
+                  break;
+                case '狂暴':
+                  s.infiniteBoost = true;
+                  addKillFeed('⚡ ' + s.name + ' 进入狂暴状态');
+                  setTimeout(() => { s.infiniteBoost = false; s.abilityActive = false; }, cfg.dur * 16);
+                  break;
+                case 'magnet':
+                  s.magnet = cfg.dur;
+                  addKillFeed('🧲 ' + s.name + ' 启动了磁铁');
+                  break;
+              }
+              setTimeout(() => { s.abilityActive = false; }, cfg.dur * 16);
+            }
+          }
+        }
+      }
+
       if (!s.isP || aiAgent) updateAI(s);
       updateBoost(s);
       moveSnake(s);
@@ -2259,7 +2287,16 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
     killFeedEl.innerHTML = '';
     const teamOn = settings.teamMode;
     const playerTeam = teamOn ? 1 : 0;
-    player = mkSnake('玩家', settings.playerSkin, true, 0.5, playerTeam);
+    // V6: 根据选择设置玩家类型
+    const playerType = settings.playerType === 'normal' ? null : settings.playerType;
+    const playerAggr = playerType === 'dragon' ? 0.9 : (playerType === 'thunder' ? 0.7 : (playerType === 'xuanwu' ? 0.2 : 0.5));
+    player = mkSnake('玩家', settings.playerSkin, true, playerAggr, playerTeam, playerType);
+    // 如果选择Boss，初始长度100
+    if (playerType === 'boss') {
+      player.segs = [];
+      const a = player.angle;
+      for (let i = 0; i < 100; i++) player.segs.push({ x: player.segs[0].x - Math.cos(a) * i * SG, y: player.segs[0].y - Math.sin(a) * i * SG });
+    }
     snakes.push(player);
     const botCount = Math.min(settings.botCount, MAX_BOTS);
 
