@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>贪吃蛇大作战</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#060810;overflow:hidden;
+  font-family:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+  touch-action:none;user-select:none;-webkit-user-select:none;
+  overscroll-behavior:none;
+}
+canvas{display:block;position:fixed;top:0;left:0}
+.overlay{
+  position:fixed;inset:0;
+  background:rgba(6,8,16,0.88);
+  display:none;flex-direction:column;
+  justify-content:center;align-items:center;
+  z-index:200;backdrop-filter:blur(8px);
+}
+.overlay.show{display:flex}
+.overlay .icon{font-size:72px;margin-bottom:12px}
+.overlay .title{font-size:34px;font-weight:800;color:#fff;margin-bottom:6px}
+.overlay .sub{font-size:16px;color:rgba(255,255,255,0.45);margin-bottom:28px}
+.overlay .stats{display:flex;gap:32px;margin-bottom:28px}
+.overlay .stat{text-align:center}
+.overlay .stat .val{font-size:30px;font-weight:700;color:#e94560}
+.overlay .stat .lbl{font-size:12px;color:rgba(255,255,255,0.35);margin-top:4px}
+.btn{
+  background:#e94560;color:#fff;border:none;
+  border-radius:12px;padding:14px 44px;
+  font-size:17px;font-weight:700;cursor:pointer;
+  transition:all .15s;letter-spacing:1px;
+}
+.btn:active{transform:scale(.94);background:#d63851}
+.boost-btn{
+  position:fixed;bottom:28px;left:28px;
+  width:68px;height:68px;border-radius:50%;
+  background:rgba(233,69,96,0.25);
+  border:2px solid rgba(233,69,96,0.45);
+  color:rgba(255,255,255,0.6);font-size:26px;
+  display:flex;justify-content:center;align-items:center;
+  z-index:50;cursor:pointer;transition:all .12s;
+  -webkit-tap-highlight-color:transparent;
+  animation:pulse 2.5s infinite;
+}
+.boost-btn.active{
+  background:rgba(233,69,96,0.7);
+  border-color:#e94560;transform:scale(.88);color:#fff;
+  animation:none;
+}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(233,69,96,0.35)}
+  50%{box-shadow:0 0 0 12px rgba(233,69,96,0)}
+}
+.overlay .desc{
+  max-width:320px;text-align:center;
+  font-size:14px;color:rgba(255,255,255,0.35);
+  line-height:1.6;margin-bottom:24px;
+}
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+<div id="boostBtn" class="boost-btn">⚡</div>
+
+<div id="startScreen" class="overlay show">
+  <div class="icon">🐍</div>
+  <div class="title">贪吃蛇大作战</div>
+  <div class="sub">与 6 条 AI 蛇同场竞技！</div>
+  <div class="desc">
+    移动鼠标/触摸屏幕 控制方向<br>
+    点击/按住 加速（消耗长度）<br>
+    撞到边界或其他蛇的身体即死亡
+  </div>
+  <button class="btn" id="startBtn">开始游戏</button>
+</div>
+
+<div id="gameOverScreen" class="overlay">
+  <div class="icon">💀</div>
+  <div class="title">游戏结束</div>
+  <div class="sub" id="deathReason">-</div>
+  <div class="stats">
+    <div class="stat"><div class="val" id="fScore">0</div><div class="lbl">得分</div></div>
+    <div class="stat"><div class="val" id="fLen">0</div><div class="lbl">长度</div></div>
+    <div class="stat"><div class="val" id="fKills">0</div><div class="lbl">击杀</div></div>
+  </div>
+  <button class="btn" id="restartBtn">再来一局</button>
+</div>
+
+<script>
+(()=>{
+'use strict';
+
+/* ══════════ 常量 ══════════ */
+const MAP=3000, FOOD_N=250, BOT_N=6;
+const SR=10, SG=16, SPD=2.5, BSPD=5.2, TURN=.07;
+const INIT_L=20, FOOD_R=5, DEAD_R=7;
+const BOOST_MIN=15, BOOST_CI=8, INVULN_T=120;
+
+const BOT_CFG=[
+  {name:'小青龙',  color:'#00d2ff', aggr:.5},
+  {name:'贪吃鬼',  color:'#ff8c00', aggr:.8},
+  {name:'闪电蛇',  color:'#ffd700', aggr:.6},
+  {name:'毒液',    color:'#7cfc00', aggr:.4},
+  {name:'粉色风暴',color:'#ff69b4', aggr:.7},
+  {name:'暗影忍者',color:'#9b59b6', aggr:.3}
+];
+
+/* ══════════ 状态 ══════════ */
+const cv=document.getElementById('canvas');
+const cx=cv.getContext('2d');
+const DPR=window.devicePixelRatio||1;
+
+let snakes=[],foods=[],particles=[];
+let cam={x:MAP/2,y:MAP/2};
+let player=null, running=false, animId=null;
+let tAngle=0, boostHeld=false;
+let shakeAmt=0, shakeX=0, shakeY=0;
+
+/* ══════════ 画布尺寸 ══════════ */
+function resize(){
+  cv.width=innerWidth*DPR; cv.height=innerHeight*DPR;
+  cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
+  cx.setTransform(DPR,0,0,DPR,0,0);
+}
+addEventListener('resize',resize); resize();
+
+/* ══════════ 蛇 ══════════ */
+function mkSnake(name,color,isP,aggr){
+  const x=300+Math.random()*(MAP-600), y=300+Math.random()*(MAP-600);
+  const a=Math.random()*Math.PI*2, segs=[];
+  for(let i=0;i<INIT_L;i++) segs.push({x:x-Math.cos(a)*i*SG, y:y-Math.sin(a)*i*SG});
+  return{segs,angle:a,tAngle:a,speed:SPD,color,name,
+    score:0,alive:true,isP,boost:false,bc:0,kills:0,invuln:INVULN_T,rt:0,
+    aggr:aggr||.5,                                    // 攻击性 0~1
+    thinkCD:0,                                         // AI 决策冷却
+    lastDir:a,                                         // 上次决策方向
+    stuckCount:0,                                      // 卡住计数
+    lastPos:{x,y},                                     // 上次位置
+    stuckCheck:0};                                     // 卡住检测计时
+}
+
+function moveSnake(s){
+  let d=s.tAngle-s.angle;
+  while(d>Math.PI)d-=Math.PI*2; while(d<-Math.PI)d+=Math.PI*2;
+  if(Math.abs(d)>TURN) s.angle+=Math.sign(d)*TURN; else s.angle=s.tAngle;
+  while(s.angle>Math.PI)s.angle-=Math.PI*2; while(s.angle<-Math.PI)s.angle+=Math.PI*2;
+  const h=s.segs[0];
+  h.x+=Math.cos(s.angle)*s.speed; h.y+=Math.sin(s.angle)*s.speed;
+  for(let i=1;i<s.segs.length;i++){
+    const p=s.segs[i-1],c=s.segs[i];
+    const dx=p.x-c.x, dy=p.y-c.y, dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist>SG){const r=(dist-SG)/dist; c.x+=dx*r; c.y+=dy*r;}
+  }
+}
+
+function killSnake(s,reason){
+  if(!s.alive) return;
+  s.alive=false;
+  for(const sg of s.segs)
+    for(let j=0;j<2;j++)
+      particles.push({x:sg.x,y:sg.y,vx:(Math.random()-.5)*7,vy:(Math.random()-.5)*7,
+        life:1,dec:.014+Math.random()*.014,sz:3+Math.random()*3,color:s.color});
+  for(let i=0;i<s.segs.length;i+=3)
+    foods.push({x:s.segs[i].x+(Math.random()-.5)*18,y:s.segs[i].y+(Math.random()-.5)*18,
+      r:DEAD_R,color:s.color,val:2});
+  if(s.isP){addShake(18); setTimeout(()=>showOver(reason,s),600);}
+  else s.rt=3000+Math.random()*3000;
+}
+
+function respawnBot(s){
+  let x,y,ok;
+  for(let t=0;t<50;t++){
+    x=300+Math.random()*(MAP-600); y=300+Math.random()*(MAP-600); ok=true;
+    for(const o of snakes){
+      if(!o.alive||o===s) continue;
+      if((x-o.segs[0].x)**2+(y-o.segs[0].y)**2<280*280){ok=false;break;}
+    }
+    if(ok) break;
+  }
+  const a=Math.random()*Math.PI*2; s.segs=[];
+  for(let i=0;i<INIT_L;i++) s.segs.push({x:x-Math.cos(a)*i*SG, y:y-Math.sin(a)*i*SG});
+  s.angle=a; s.tAngle=a; s.speed=SPD; s.alive=true;
+  s.boost=false; s.bc=0; s.score=0; s.kills=0; s.invuln=INVULN_T;
+  s.thinkCD=0; s.stuckCount=0; s.lastPos={x,y}; s.stuckCheck=0; s.lastDir=a;
+}
+
+/* ══════════ 食物 ══════════ */
+function spawnFood(){
+  foods.push({x:60+Math.random()*(MAP-120),y:60+Math.random()*(MAP-120),
+    r:FOOD_R,color:`hsl(${Math.random()*360},80%,60%)`,val:1});
+}
+function ensureFood(){
+  while(foods.length>FOOD_N*2.5) foods.splice(Math.floor(Math.random()*foods.length),1);
+  while(foods.length<FOOD_N) spawnFood();
+}
+
+/* ═══════════════════════════════════════════════════
+   智能 AI  —— 360° 方向评分系统
+   ═══════════════════════════════════════════════════ */
+
+function updateAI(s){
+  const h=s.segs[0];
+
+  // ---- 防卡死检测 ----
+  s.stuckCheck++;
+  if(s.stuckCheck>60){
+    s.stuckCheck=0;
+    const dx=h.x-s.lastPos.x, dy=h.y-s.lastPos.y;
+    if(dx*dx+dy*dy<9){s.stuckCount++;} else {s.stuckCount=0;}
+    s.lastPos={x:h.x,y:h.y};
+  }
+  // 如果连续卡住，随机跳一个方向
+  if(s.stuckCount>=3){
+    s.stuckCount=0;
+    s.tAngle=s.angle+(Math.random()-.5)*2.5;
+    s.boost=true;
+    return;
+  }
+
+  // ---- 决策频率：每3帧评估一次（节省性能） ----
+  s.thinkCD--;
+  if(s.thinkCD>0) return;
+  s.thinkCD=3;
+
+  const numDirs=36;                    // 36个采样方向（每10°一个）
+  const step=Math.PI*2/numDirs;
+  const lookDist=130+s.segs.length*0.5; // 越长看得越远
+  const scores=new Array(numDirs);
+
+  for(let i=0;i<numDirs;i++){
+    const a=i*step;
+    const cosA=Math.cos(a), sinA=Math.sin(a);
+    let sc=0;
+
+    /* ---- 1. 边界安全 ---- */
+    const testX=h.x+cosA*lookDist;
+    const testY=h.y+sinA*lookDist;
+    const wallD=Math.min(testX,MAP-testX,testY,MAP-testY);
+    if(wallD<0)       sc-=9999;                      // 已经超界
+    else if(wallD<60)  sc-=(60-wallD)*60;            // 非常危险
+    else if(wallD<130) sc-=(130-wallD)*12;           // 有风险
+    else               sc+=5;                         // 安全加分
+
+    // 多层预测
+    const testX2=h.x+cosA*lookDist*1.8;
+    const testY2=h.y+sinA*lookDist*1.8;
+    const wallD2=Math.min(testX2,MAP-testX2,testY2,MAP-testY2);
+    if(wallD2<80) sc-=400;
+
+    /* ---- 2. 蛇身避障 ---- */
+    for(const o of snakes){
+      if(!o.alive) continue;
+      const startI=o===s?8:0;           // 自身跳过前8节（可穿过）
+      for(let j=startI;j<o.segs.length;j+=2){
+        const seg=o.segs[j];
+        const dx=testX-seg.x, dy=testY-seg.y;
+        const d2=dx*dx+dy*dy;
+        if(d2<400)       sc-=9999;                    // 必死
+        else if(d2<2500) sc-=((50-Math.sqrt(d2))*25); // 危险
+        else if(d2<6400) sc-=((80-Math.sqrt(d2))*4);  // 注意
+      }
+      // 预判对方蛇头走向
+      if(o!==s&&o.alive&&o.segs.length>1){
+        const oh=o.segs[0];
+        const oa=o.angle;
+        const ox2=oh.x+Math.cos(oa)*60;
+        const oy2=oh.y+Math.sin(oa)*60;
+        const dx1=testX-ox2, dy1=testY-oy2;
+        if(dx1*dx1+dy1*dy1<2500) sc-=200;
+      }
+    }
+
+    /* ---- 3. 食物吸引力 ---- */
+    // 只看前方锥形范围内的食物
+    let foodScore=0, foodCount=0;
+    for(const f of foods){
+      const fdx=f.x-h.x, fdy=f.y-h.y;
+      const fd=Math.sqrt(fdx*fdx+fdy*fdy);
+      if(fd>400) continue;                             // 太远不看
+      let fa=Math.atan2(fdy,fdx);
+      let diff=a-fa;
+      while(diff>Math.PI)diff-=Math.PI*2;
+      while(diff<-Math.PI)diff+=Math.PI*2;
+      if(Math.abs(diff)<0.6){                          // 前方±35°锥形
+        const cone=1-Math.abs(diff)/0.6;
+        foodScore+=cone*(400-fd)/400*8*f.val;
+        foodCount++;
+      }
+    }
+    sc+=foodScore;
+
+    /* ---- 4. 追杀其他玩家（如果足够长且攻击性高） ---- */
+    if(!s.isP&&s.segs.length>25){
+      const playerHead=player&&player.alive?player.segs[0]:null;
+      if(playerHead){
+        const dx=playerHead.x-h.x, dy=playerHead.y-h.y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<350){
+          let pa=Math.atan2(dy,dx);
+          let diff=a-pa;
+          while(diff>Math.PI)diff-=Math.PI*2;
+          while(diff<-Math.PI)diff+=Math.PI*2;
+          if(Math.abs(diff)<0.5){
+            sc+=((1-Math.abs(diff)/0.5)*(350-dist)/350)*15*s.aggr;
+          }
+        }
+      }
+      // 追杀其他短蛇
+      for(const o of snakes){
+        if(!o.alive||o===s||o.isP) continue;
+        if(o.segs.length<s.segs.length*0.6){
+          const dx=o.segs[0].x-h.x, dy=o.segs[0].y-h.y;
+          const dist=Math.sqrt(dx*dx+dy*dy);
+          if(dist<280){
+            let pa=Math.atan2(dy,dx);
+            let diff=a-pa;
+            while(diff>Math.PI)diff-=Math.PI*2;
+            while(diff<-Math.PI)diff+=Math.PI*2;
+            if(Math.abs(diff)<0.4){
+              sc+=((1-Math.abs(diff)/0.4)*(280-dist)/280)*10*s.aggr;
+            }
+          }
+        }
+      }
+    }
+
+    /* ---- 5. 逃跑（遇到长蛇要躲） ---- */
+    for(const o of snakes){
+      if(!o.alive||o===s) continue;
+      if(o.segs.length>s.segs.length*1.3){
+        const dx=o.segs[0].x-h.x, dy=o.segs[0].y-h.y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<200){
+          let pa=Math.atan2(dy,dx);
+          let diff=a-pa;
+          while(diff>Math.PI)diff-=Math.PI*2;
+          while(diff<-Math.PI)diff+=Math.PI*2;
+          // 背对方向加分
+          if(Math.abs(diff)>1.5){
+            sc+=((Math.abs(diff)-1.5)/1.5)*(200-dist)/200*20;
+          }
+        }
+      }
+    }
+
+    /* ---- 6. 方向惯性（不要乱抖） ---- */
+    let adiff=a-s.lastDir;
+    while(adiff>Math.PI)adiff-=Math.PI*2;
+    while(adiff<-Math.PI)adiff+=Math.PI*2;
+    sc-=Math.abs(adiff)*6;
+
+    /* ---- 7. 前方开阔度 ---- */
+    let openScore=0;
+    for(let r=1;r<=3;r++){
+      const rd=r*50;
+      for(let da=-0.4;da<=0.4;da+=0.4){
+        const cx=h.x+Math.cos(a+da)*rd;
+        const cy=h.y+Math.sin(a+da)*rd;
+        const wd=Math.min(cx,MAP-cx,cy,MAP-cy);
+        if(wd>50) openScore+=r;
+        for(const o of snakes){
+          if(!o.alive) continue;
+          const si=o===s?10:0;
+          for(let j=si;j<o.segs.length;j+=4){
+            const sg=o.segs[j];
+            if((cx-sg.x)**2+(cy-sg.y)**2<900){openScore-=r*2; break;}
+          }
+        }
+      }
+    }
+    sc+=openScore;
+
+    scores[i]=sc;
+  }
+
+  // 找最高分方向
+  let bestI=0;
+  for(let i=1;i<numDirs;i++) if(scores[i]>scores[bestI]) bestI=i;
+  s.tAngle=bestI*step;
+  s.lastDir=s.tAngle;
+
+  // ---- 加速决策 ----
+  s.boost=false;
+  if(s.segs.length>BOOST_MIN+5){
+    // 追食物加速
+    for(const f of foods){
+      const fd=Math.sqrt((f.x-h.x)**2+(f.y-h.y)**2);
+      if(fd<110&&fd>20&&f.val>=2){
+        let fa=Math.atan2(f.y-h.y,f.x-h.x);
+        let diff=s.angle-fa;
+        while(diff>Math.PI)diff-=Math.PI*2;
+        while(diff<-Math.PI)diff+=Math.PI*2;
+        if(Math.abs(diff)<0.4){s.boost=true; break;}
+      }
+    }
+    // 逃跑加速
+    if(!s.boost){
+      for(const o of snakes){
+        if(!o.alive||o===s) continue;
+        if(o.segs.length>s.segs.length*1.2){
+          const dist=Math.sqrt((o.segs[0].x-h.x)**2+(o.segs[0].y-h.y)**2);
+          if(dist<130){s.boost=true; break;}
+        }
+      }
+    }
+  }
+}
+
+/* ══════════ 加速 ══════════ */
+function updateBoost(s){
+  if(s.isP) s.boost=boostHeld;
+  if(s.boost&&s.alive&&s.segs.length>BOOST_MIN){
+    s.speed=BSPD; s.bc++;
+    if(s.bc>=BOOST_CI){
+      s.bc=0;
+      const t=s.segs.pop();
+      if(t) foods.push({x:t.x,y:t.y,r:3,color:s.color,val:1});
+      if(s.isP) s.score=Math.max(0,s.score-1);
+    }
+  }else{ s.speed=SPD; s.boost=false; s.bc=0; }
+}
+
+/* ══════════ 碰撞 ══════════ */
+function checkHit(){
+  const eaten=new Set();
+  for(const s of snakes){
+    if(!s.alive||s.invuln>0) continue;
+    const h=s.segs[0];
+    if(h.x<0||h.x>MAP||h.y<0||h.y>MAP){killSnake(s,'撞到了边界');continue;}
+    let dead=false;
+    for(const o of snakes){
+      if(!o.alive||o===s) continue;
+      for(let i=0;i<o.segs.length;i++){
+        const sg=o.segs[i];
+        if((h.x-sg.x)**2+(h.y-sg.y)**2<SR*SR*1.5){
+          killSnake(s,'被 '+o.name+' 消灭'); o.kills++; dead=true; break;
+        }
+      }
+      if(dead) break;
+    }
+    if(dead) continue;
+    for(let i=12;i<s.segs.length;i++){
+      const sg=s.segs[i];
+      if((h.x-sg.x)**2+(h.y-sg.y)**2<SR*SR*.9){killSnake(s,'咬到了自己'); dead=true; break;}
+    }
+    if(dead) continue;
+    for(let i=0;i<foods.length;i++){
+      if(eaten.has(i)) continue;
+      const f=foods[i];
+      if((h.x-f.x)**2+(h.y-f.y)**2<(SR+f.r)**2){
+        eaten.add(i); s.score+=f.val;
+        for(let j=0;j<f.val;j++){const t=s.segs[s.segs.length-1]; s.segs.push({x:t.x,y:t.y});}
+        for(let j=0;j<5;j++)
+          particles.push({x:f.x,y:f.y,vx:(Math.random()-.5)*4,vy:(Math.random()-.5)*4,
+            life:1,dec:.04,sz:2+Math.random()*2,color:f.color});
+      }
+    }
+  }
+  [...eaten].sort((a,b)=>b-a).forEach(i=>foods.splice(i,1));
+}
+
+/* ══════════ 粒子/震动 ══════════ */
+function updateParts(){
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i]; p.x+=p.vx; p.y+=p.vy;
+    p.vx*=.94; p.vy*=.94; p.life-=p.dec;
+    if(p.life<=0) particles.splice(i,1);
+  }
+}
+function addShake(a){shakeAmt=a;}
+function updateShake(){
+  if(shakeAmt>.5){shakeX=(Math.random()-.5)*shakeAmt; shakeY=(Math.random()-.5)*shakeAmt; shakeAmt*=.88;}
+  else shakeX=shakeY=shakeAmt=0;
+}
+
+/* ══════════ 镜头 ══════════ */
+function updateCam(){
+  if(!player||!player.alive) return;
+  cam.x+=(player.segs[0].x-cam.x)*.09;
+  cam.y+=(player.segs[0].y-cam.y)*.09;
+}
+
+/* ══════════ 渲染 ══════════ */
+function render(){
+  const W=innerWidth, H=innerHeight;
+  cx.fillStyle='#060810'; cx.fillRect(0,0,W,H);
+  cx.save();
+  cx.translate(W/2-cam.x+shakeX, H/2-cam.y+shakeY);
+  drawWorld(W,H); drawFoods(); drawSnakes(); drawParts();
+  cx.restore();
+  drawUI(W,H);
+}
+
+function drawWorld(W,H){
+  cx.fillStyle='#0c1020'; cx.fillRect(0,0,MAP,MAP);
+  cx.strokeStyle='rgba(255,255,255,0.025)'; cx.lineWidth=1;
+  const gs=80;
+  const sx=Math.max(0,Math.floor((cam.x-W/2)/gs)*gs);
+  const sy=Math.max(0,Math.floor((cam.y-H/2)/gs)*gs);
+  const ex=Math.min(MAP,sx+W+gs*2), ey=Math.min(MAP,sy+H+gs*2);
+  cx.beginPath();
+  for(let x=sx;x<=ex;x+=gs){cx.moveTo(x,sy);cx.lineTo(x,ey);}
+  for(let y=sy;y<=ey;y+=gs){cx.moveTo(sx,y);cx.lineTo(ex,y);}
+  cx.stroke();
+  cx.strokeStyle='rgba(233,69,96,0.25)'; cx.lineWidth=4; cx.strokeRect(0,0,MAP,MAP);
+  cx.strokeStyle='rgba(233,69,96,0.06)'; cx.lineWidth=35; cx.strokeRect(0,0,MAP,MAP);
+}
+
+function drawFoods(){
+  const W2=innerWidth/2+60, H2=innerHeight/2+60;
+  for(const f of foods){
+    if(Math.abs(f.x-cam.x)>W2||Math.abs(f.y-cam.y)>H2) continue;
+    cx.globalAlpha=.2; cx.fillStyle=f.color;
+    cx.beginPath(); cx.arc(f.x,f.y,f.r*2.4,0,Math.PI*2); cx.fill();
+    cx.globalAlpha=1; cx.fillStyle=f.color;
+    cx.beginPath(); cx.arc(f.x,f.y,f.r,0,Math.PI*2); cx.fill();
+    cx.fillStyle='rgba(255,255,255,0.3)';
+    cx.beginPath(); cx.arc(f.x-f.r*.25,f.y-f.r*.25,f.r*.3,0,Math.PI*2); cx.fill();
+  }
+}
+
+function drawSnakes(){
+  const sorted=snakes.filter(s=>s.alive);
+  sorted.sort((a,b)=>(a.isP?1:0)-(b.isP?1:0));
+  sorted.forEach(drawSnake);
+}
+
+function drawSnake(s){
+  const h=s.segs[0];
+  if(Math.abs(h.x-cam.x)>innerWidth/2+250||Math.abs(h.y-cam.y)>innerHeight/2+250) return;
+  const n=s.segs.length, blink=s.invuln>0&&Math.floor(s.invuln/5)%2===0;
+  const W2=innerWidth/2+30, H2=innerHeight/2+30;
+
+  for(let i=n-1;i>=0;i--){
+    const sg=s.segs[i];
+    if(Math.abs(sg.x-cam.x)>W2||Math.abs(sg.y-cam.y)>H2) continue;
+    const t=n>1?i/(n-1):0;
+    const r=i===0?SR*1.15:SR*(.72+.28*t);
+    const stripe=Math.floor(i/3)%2===0;
+    const br=stripe?(.62+.38*t):(.48+.38*t);
+    if(blink) continue;
+    cx.globalAlpha=.12; cx.fillStyle='#000';
+    cx.beginPath(); cx.arc(sg.x+2,sg.y+2,r,0,Math.PI*2); cx.fill();
+    cx.globalAlpha=br; cx.fillStyle=s.color;
+    cx.beginPath(); cx.arc(sg.x,sg.y,r,0,Math.PI*2); cx.fill();
+    cx.globalAlpha=br*.13; cx.fillStyle='#fff';
+    cx.beginPath(); cx.arc(sg.x-r*.22,sg.y-r*.22,r*.42,0,Math.PI*2); cx.fill();
+  }
+  cx.globalAlpha=1;
+
+  if(s.alive&&!blink){
+    const eo=SR*.42,er=SR*.28,pr=er*.55,perp=s.angle+Math.PI/2;
+    for(let side=-1;side<=1;side+=2){
+      const ex=h.x+Math.cos(s.angle)*eo*.6+Math.cos(perp)*eo*side;
+      const ey=h.y+Math.sin(s.angle)*eo*.6+Math.sin(perp)*eo*side;
+      cx.fillStyle='#fff'; cx.beginPath(); cx.arc(ex,ey,er,0,Math.PI*2); cx.fill();
+      cx.fillStyle='#111'; cx.beginPath();
+      cx.arc(ex+Math.cos(s.angle)*pr*.3,ey+Math.sin(s.angle)*pr*.3,pr,0,Math.PI*2); cx.fill();
+    }
+    const label=s.name+' ('+n+')';
+    cx.font='bold 12px "Segoe UI","PingFang SC",sans-serif';
+    cx.textAlign='center'; cx.textBaseline='bottom';
+    const tw=cx.measureText(label).width;
+    cx.fillStyle='rgba(0,0,0,0.4)';
+    rrect(h.x-tw/2-6, h.y-SR-24, tw+12, 18, 4); cx.fill();
+    cx.fillStyle=s.isP?'#fff':'rgba(255,255,255,0.75)';
+    cx.fillText(label, h.x, h.y-SR-8);
+  }
+
+  if(s.boost&&s.alive&&!blink){
+    const tail=s.segs[n-1];
+    cx.globalAlpha=.15; cx.fillStyle=s.color;
+    cx.beginPath(); cx.arc(tail.x,tail.y,SR*1.5,0,Math.PI*2); cx.fill();
+    cx.globalAlpha=1;
+  }
+}
+
+function rrect(x,y,w,h,r){
+  cx.beginPath(); cx.moveTo(x+r,y); cx.lineTo(x+w-r,y);
+  cx.quadraticCurveTo(x+w,y,x+w,y+r); cx.lineTo(x+w,y+h-r);
+  cx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); cx.lineTo(x+r,y+h);
+  cx.quadraticCurveTo(x,y+h,x,y+h-r); cx.lineTo(x,y+r);
+  cx.quadraticCurveTo(x,y,x+r,y); cx.closePath();
+}
+
+function drawParts(){
+  for(const p of particles){
+    cx.globalAlpha=Math.max(0,p.life); cx.fillStyle=p.color;
+    cx.beginPath(); cx.arc(p.x,p.y,p.sz*Math.max(.2,p.life),0,Math.PI*2); cx.fill();
+  }
+  cx.globalAlpha=1;
+}
+
+/* ══════════ UI ══════════ */
+function drawUI(W,H){
+  if(player&&player.alive){
+    cx.fillStyle='rgba(0,0,0,0.32)';
+    rrect(12,12,155,68,10); cx.fill();
+    cx.textAlign='left'; cx.textBaseline='top';
+    cx.fillStyle='rgba(255,255,255,0.4)'; cx.font='11px sans-serif';
+    cx.fillText('得分',22,18);
+    cx.fillStyle='#fff'; cx.font='bold 22px sans-serif';
+    cx.fillText(''+player.score,22,32);
+    cx.fillStyle='rgba(255,255,255,0.35)'; cx.font='11px sans-serif';
+    cx.fillText('长度: '+player.segs.length+'  击杀: '+player.kills,22,58);
+  }
+
+  const alive=snakes.filter(s=>s.alive).sort((a,b)=>b.score-a.score);
+  const lbW=155, lbH=28+alive.length*22;
+  const lbX=W-lbW-12, lbY=12;
+  cx.fillStyle='rgba(0,0,0,0.32)'; rrect(lbX,lbY,lbW,lbH,10); cx.fill();
+  cx.textAlign='center'; cx.fillStyle='rgba(255,255,255,0.55)'; cx.font='bold 12px sans-serif';
+  cx.fillText('🏆 排行榜',lbX+lbW/2,lbY+10);
+  cx.textAlign='left'; cx.font='12px sans-serif';
+  alive.forEach((s,i)=>{
+    const y=lbY+30+i*22;
+    cx.fillStyle=s.isP?'#e94560':'rgba(255,255,255,0.35)';
+    cx.fillText(''+(i+1),lbX+8,y);
+    cx.fillStyle=s.color; cx.beginPath(); cx.arc(lbX+28,y+5,4,0,Math.PI*2); cx.fill();
+    cx.fillStyle=s.isP?'#fff':'rgba(255,255,255,0.6)';
+    cx.fillText(s.name,lbX+38,y);
+    cx.textAlign='right';
+    cx.fillStyle=s.isP?'#e94560':'rgba(255,255,255,0.35)';
+    cx.fillText(''+s.score,lbX+lbW-8,y);
+    cx.textAlign='left';
+  });
+
+  const ms=100,mx=W-ms-12,my=H-ms-12,sx=ms/MAP,sy=ms/MAP;
+  cx.fillStyle='rgba(0,0,0,0.4)'; rrect(mx,my,ms,ms,8); cx.fill();
+  cx.strokeStyle='rgba(255,255,255,0.08)'; cx.lineWidth=1;
+  cx.strokeRect(mx+1,my+1,ms-2,ms-2);
+  for(const s of snakes){
+    if(!s.alive) continue;
+    const ds=s.isP?4:2;
+    cx.fillStyle=s.isP?'#fff':s.color; cx.globalAlpha=s.isP?1:.45;
+    cx.fillRect(mx+s.segs[0].x*sx-ds/2, my+s.segs[0].y*sy-ds/2, ds, ds);
+  }
+  cx.globalAlpha=1;
+  cx.strokeStyle='rgba(255,255,255,0.18)'; cx.lineWidth=1;
+  cx.strokeRect(mx+(cam.x-W/2)*sx, my+(cam.y-H/2)*sy, W*sx, H*sy);
+
+  cx.fillStyle='rgba(255,255,255,0.12)'; cx.font='11px sans-serif'; cx.textAlign='center';
+  cx.fillText('鼠标/触摸控制方向 · 点击/按住加速',W/2,H-8);
+  cx.textAlign='left';
+}
+
+/* ══════════ 输入 ══════════ */
+cv.addEventListener('mousemove',e=>{
+  if(!player||!player.alive) return;
+  const dx=e.clientX-innerWidth/2, dy=e.clientY-innerHeight/2;
+  if(dx*dx+dy*dy>225){tAngle=Math.atan2(dy,dx); player.tAngle=tAngle;}
+});
+cv.addEventListener('mousedown',()=>{boostHeld=true;});
+addEventListener('mouseup',()=>{boostHeld=false;});
+
+cv.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  if(!player||!player.alive) return;
+  const t=e.touches[0];
+  const dx=t.clientX-innerWidth/2, dy=t.clientY-innerHeight/2;
+  tAngle=Math.atan2(dy,dx); player.tAngle=tAngle;
+},{passive:false});
+cv.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  if(!player||!player.alive) return;
+  const t=e.touches[0];
+  const dx=t.clientX-innerWidth/2, dy=t.clientY-innerHeight/2;
+  tAngle=Math.atan2(dy,dx); player.tAngle=tAngle;
+},{passive:false});
+
+const bb=document.getElementById('boostBtn');
+bb.addEventListener('mousedown',e=>{e.stopPropagation();boostHeld=true;bb.classList.add('active');});
+bb.addEventListener('mouseup',()=>{boostHeld=false;bb.classList.remove('active');});
+bb.addEventListener('mouseleave',()=>{boostHeld=false;bb.classList.remove('active');});
+bb.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();boostHeld=true;bb.classList.add('active');},{passive:false});
+bb.addEventListener('touchend',()=>{boostHeld=false;bb.classList.remove('active');});
+
+/* ══════════ 结束/重开 ══════════ */
+function showOver(r,s){
+  document.getElementById('deathReason').textContent=r;
+  document.getElementById('fScore').textContent=s.score;
+  document.getElementById('fLen').textContent=s.segs.length;
+  document.getElementById('fKills').textContent=s.kills;
+  document.getElementById('gameOverScreen').classList.add('show');
+}
+document.getElementById('restartBtn').onclick=()=>{
+  document.getElementById('gameOverScreen').classList.remove('show'); startGame();
+};
+document.getElementById('startBtn').onclick=()=>{
+  document.getElementById('startScreen').classList.remove('show'); startGame();
+};
+
+/* ══════════ 主循环 ══════════ */
+function loop(){
+  for(const s of snakes){
+    if(!s.alive){
+      if(!s.isP){s.rt-=16; if(s.rt<=0) respawnBot(s);}
+      continue;
+    }
+    if(s.invuln>0) s.invuln--;
+    if(!s.isP) updateAI(s);
+    updateBoost(s); moveSnake(s);
+  }
+  checkHit(); ensureFood(); updateParts(); updateShake(); updateCam(); render();
+  animId=requestAnimationFrame(loop);
+}
+
+/* ══════════ 启动 ══════════ */
+function startGame(){
+  snakes=[]; foods=[]; particles=[];
+  player=mkSnake('玩家','#e94560',true,.5);
+  snakes.push(player);
+  BOT_CFG.forEach(b=>snakes.push(mkSnake(b.name,b.color,false,b.aggr)));
+  ensureFood();
+  cam.x=player.segs[0].x; cam.y=player.segs[0].y;
+  running=true;
+  if(animId) cancelAnimationFrame(animId);
+  animId=requestAnimationFrame(loop);
+}
+
+/* 初始背景渲染 */
+(function initBg(){
+  resize();
+  cx.fillStyle='#0c1020'; cx.fillRect(0,0,innerWidth,innerHeight);
+  cx.strokeStyle='rgba(255,255,255,0.02)'; cx.lineWidth=1;
+  cx.beginPath();
+  for(let x=0;x<innerWidth;x+=80){cx.moveTo(x,0);cx.lineTo(x,innerHeight);}
+  for(let y=0;y<innerHeight;y+=80){cx.moveTo(0,y);cx.lineTo(innerWidth,y);}
+  cx.stroke();
+})();
+
+})();
+</script>
+</body>
+</html>
