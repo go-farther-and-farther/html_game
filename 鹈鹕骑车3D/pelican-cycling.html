@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鹈鹕骑自行车</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);overflow:hidden}
+  h1{color:#f0e68c;font-family:'Segoe UI',sans-serif;margin-bottom:10px;font-size:1.2em;text-shadow:0 2px 8px rgba(0,0,0,.4)}
+  svg{width:min(92vw,680px);height:auto;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+</style>
+</head>
+<body>
+<h1>🐦 鹈鹕骑自行车 🚲</h1>
+<svg id="s" viewBox="0 0 520 460">
+<defs>
+  <radialGradient id="sky" cx="85%" cy="12%" r="65%">
+    <stop offset="0%" stop-color="#FFE4B5"/><stop offset="35%" stop-color="#87CEEB"/><stop offset="100%" stop-color="#4A90D9"/>
+  </radialGradient>
+  <radialGradient id="sun" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#FFFDE0"/><stop offset="50%" stop-color="#FFD700"/><stop offset="100%" stop-color="#FFA500" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="gnd" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#6BCB77"/><stop offset="100%" stop-color="#2E8B57"/>
+  </linearGradient>
+  <linearGradient id="frm" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#E63946"/><stop offset="100%" stop-color="#C1121F"/>
+  </linearGradient>
+  <radialGradient id="bdy" cx="35%" cy="30%">
+    <stop offset="0%" stop-color="#FFFEF8"/><stop offset="60%" stop-color="#F5F0E0"/><stop offset="100%" stop-color="#E8DFC8"/>
+  </radialGradient>
+  <linearGradient id="bek" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#F4A460"/><stop offset="100%" stop-color="#FF8C00"/>
+  </linearGradient>
+  <linearGradient id="pou" x1=".5" y1="0" x2=".5" y2="1">
+    <stop offset="0%" stop-color="#FFB347"/><stop offset="100%" stop-color="#FF8C00"/>
+  </linearGradient>
+  <linearGradient id="leg" x1=".5" y1="0" x2=".5" y2="1">
+    <stop offset="0%" stop-color="#E8A030"/><stop offset="100%" stop-color="#D48A18"/>
+  </linearGradient>
+</defs>
+
+<!-- ===== STATIC BACKGROUND ===== -->
+<rect width="520" height="460" fill="url(#sky)"/>
+<circle cx="465" cy="58" r="50" fill="url(#sun)"/>
+<circle cx="465" cy="58" r="26" fill="#FFFDE0"/>
+
+<!-- Clouds -->
+<g opacity=".75">
+  <ellipse cx="70" cy="52" rx="42" ry="15" fill="white"/>
+  <ellipse cx="100" cy="44" rx="32" ry="13" fill="white"/>
+  <ellipse cx="48" cy="48" rx="28" ry="11" fill="white"/>
+  <ellipse cx="290" cy="38" rx="35" ry="13" fill="white"/>
+  <ellipse cx="318" cy="32" rx="28" ry="11" fill="white"/>
+  <ellipse cx="180" cy="28" rx="30" ry="10" fill="white"/>
+</g>
+
+<!-- Mountains -->
+<path d="M0,320 L50,275 L100,300 L160,255 L220,285 L280,245 L340,275 L400,250 L460,270 L520,255 L520,385 L0,385Z" fill="#8FBC8F" opacity=".35"/>
+
+<!-- Trees -->
+<g opacity=".3">
+  <ellipse cx="50" cy="310" rx="18" ry="25" fill="#2E7D32"/>
+  <rect x="47" y="325" width="6" height="15" fill="#5D4037"/>
+  <ellipse cx="470" cy="300" rx="20" ry="28" fill="#2E7D32"/>
+  <rect x="467" y="318" width="6" height="18" fill="#5D4037"/>
+</g>
+
+<!-- Ground -->
+<rect y="385" width="520" height="75" fill="url(#gnd)"/>
+
+<!-- Road -->
+<rect y="382" width="520" height="13" rx="2" fill="#888"/>
+<rect y="383" width="520" height="11" rx="1" fill="none" stroke="#999" stroke-width=".5"/>
+<line x1="0" y1="388.5" x2="520" y2="388.5" stroke="#FFD700" stroke-width="1.5" stroke-dasharray="16,10"/>
+
+<!-- Grass tufts -->
+<g stroke="#4CAF50" stroke-width="1.5" fill="none" opacity=".5">
+  <path d="M25,382 Q27,374 30,382"/><path d="M75,382 Q78,372 81,382"/>
+  <path d="M145,382 Q147,376 150,382"/><path d="M230,382 Q233,373 236,382"/>
+  <path d="M310,382 Q312,375 315,382"/><path d="M390,382 Q393,371 396,382"/>
+  <path d="M450,382 Q452,374 455,382"/><path d="M500,382 Q502,376 505,382"/>
+</g>
+
+<!-- Flowers -->
+<g opacity=".6">
+  <circle cx="95" cy="380" r="2.5" fill="#FF6B6B"/><circle cx="95" cy="380" r="1" fill="#FFE66D"/>
+  <circle cx="260" cy="381" r="2" fill="#E040FB"/><circle cx="260" cy="381" r=".8" fill="#FFE66D"/>
+  <circle cx="430" cy="379" r="2.5" fill="#FF6B6B"/><circle cx="430" cy="379" r="1" fill="#FFE66D"/>
+</g>
+
+<!-- Dynamic animation group -->
+<g id="m"></g>
+</svg>
+
+<script>
+const m = document.getElementById('m');
+
+// ============================================================
+// GEOMETRY CONSTANTS
+// ============================================================
+const WR = 48;    // wheel radius
+const CR = 20;    // crank radius (pedal circle)
+const TH = 48;    // thigh length
+const SH = 48;    // shin length
+
+// Bicycle key points
+const RW = {x:130, y:346};   // rear wheel center
+const FW = {x:370, y:346};   // front wheel center
+const BB = {x:205, y:307};   // bottom bracket (crank center)
+const ST = {x:175, y:242};   // seat tube top
+const HT = {x:345, y:238};   // head tube top
+const HB = {x:357, y:298};   // head tube bottom
+const SAD= {x:172, y:236};   // saddle center
+
+// Pelican hip positions (where legs attach to body)
+const NH = {x:178, y:245};   // near side hip
+const FH = {x:182, y:243};   // far side hip (slightly offset)
+
+// Pelican body center
+const BX = 177, BY0 = 215;
+
+// ============================================================
+// INVERSE KINEMATICS SOLVER (2-link IK)
+// ============================================================
+function solveIK(hx, hy, tx, ty) {
+  const dx = tx - hx, dy = ty - hy;
+  let d = Math.hypot(dx, dy);
+  // Clamp to reachable range
+  d = Math.max(0.5, Math.min(d, TH + SH - 0.5));
+
+  const base = Math.atan2(dy, dx);
+  // Law of cosines for the hip angle
+  const cosA = Math.max(-1, Math.min(1, (TH*TH + d*d - SH*SH) / (2*TH*d)));
+  const a = Math.acos(cosA);
+
+  // Two solutions: pick the one with knee pointing forward (larger x)
+  const k1x = hx + TH * Math.cos(base - a);
+  const k1y = hy + TH * Math.sin(base - a);
+  const k2x = hx + TH * Math.cos(base + a);
+  const k2y = hy + TH * Math.sin(base + a);
+
+  return k1x >= k2x ? {x: k1x, y: k1y} : {x: k2x, y: k2y};
+}
+
+// ============================================================
+// DRAWING: Wheel with rotating spokes
+// ============================================================
+function drawWheel(cx, cy, r, rot) {
+  let s = '';
+  // Tire
+  s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#333"/>`;
+  s += `<circle cx="${cx}" cy="${cy}" r="${r-2}" fill="none" stroke="#444" stroke-width="2"/>`;
+  // Rim
+  s += `<circle cx="${cx}" cy="${cy}" r="${r-5}" fill="none" stroke="#ccc" stroke-width="2"/>`;
+  // Hub
+  s += `<circle cx="${cx}" cy="${cy}" r="4" fill="#aaa" stroke="#888" stroke-width="1"/>`;
+  // Rotating spokes
+  for (let i = 0; i < 16; i++) {
+    const a = rot + i / 16 * Math.PI * 2;
+    s += `<line x1="${(cx+5*Math.cos(a)).toFixed(1)}" y1="${(cy+5*Math.sin(a)).toFixed(1)}" x2="${(cx+(r-7)*Math.cos(a)).toFixed(1)}" y2="${(cy+(r-7)*Math.sin(a)).toFixed(1)}" stroke="#bbb" stroke-width=".6"/>`;
+  }
+  return s;
+}
+
+// ============================================================
+// DRAWING: Bicycle frame, saddle, handlebars
+// ============================================================
+function drawFrame() {
+  let s = '';
+  const c = 'url(#frm)';
+
+  // Chain stay (BB → rear wheel)
+  s += `<line x1="${BB.x}" y1="${BB.y}" x2="${RW.x}" y2="${RW.y}" stroke="${c}" stroke-width="4.5" stroke-linecap="round"/>`;
+  // Seat stay (near seat → rear wheel)
+  s += `<line x1="${ST.x+8}" y1="${ST.y+8}" x2="${RW.x}" y2="${RW.y}" stroke="${c}" stroke-width="3" stroke-linecap="round"/>`;
+  // Seat tube (BB → seat top)
+  s += `<line x1="${BB.x}" y1="${BB.y}" x2="${ST.x}" y2="${ST.y}" stroke="${c}" stroke-width="4.5" stroke-linecap="round"/>`;
+  // Top tube (seat → head tube)
+  s += `<line x1="${ST.x}" y1="${ST.y}" x2="${HT.x}" y2="${HT.y}" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/>`;
+  // Down tube (BB → head tube bottom)
+  s += `<line x1="${BB.x}" y1="${BB.y}" x2="${HB.x}" y2="${HB.y}" stroke="${c}" stroke-width="4" stroke-linecap="round"/>`;
+  // Head tube
+  s += `<line x1="${HT.x}" y1="${HT.y}" x2="${HB.x}" y2="${HB.y}" stroke="${c}" stroke-width="5.5" stroke-linecap="round"/>`;
+  // Fork (head tube → front wheel)
+  s += `<path d="M${HB.x},${HB.y} C${HB.x+3},${(HB.y+FW.y)/2} ${FW.x+5},${FW.y-10} ${FW.x},${FW.y}" fill="none" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/>`;
+
+  // Seat post
+  s += `<line x1="${ST.x}" y1="${ST.y}" x2="${SAD.x+3}" y2="${SAD.y}" stroke="#777" stroke-width="3" stroke-linecap="round"/>`;
+  // Saddle
+  s += `<path d="M${SAD.x-15},${SAD.y+2} Q${SAD.x},${SAD.y-3} ${SAD.x+17},${SAD.y} Q${SAD.x},${SAD.y+4} ${SAD.x-15},${SAD.y+2}Z" fill="#444" stroke="#333" stroke-width=".8"/>`;
+
+  // Handlebar stem
+  s += `<line x1="${HT.x}" y1="${HT.y}" x2="${HT.x+5}" y2="${HT.y-8}" stroke="#888" stroke-width="3" stroke-linecap="round"/>`;
+  // Handlebar curve
+  s += `<path d="M${HT.x+5},${HT.y-8} Q${HT.x+12},${HT.y-18} ${HT.x+20},${HT.y-14}" fill="none" stroke="#666" stroke-width="3" stroke-linecap="round"/>`;
+  // Grip
+  s += `<circle cx="${HT.x+20}" cy="${HT.y-14}" r="4" fill="#333" stroke="#222" stroke-width=".5"/>`;
+
+  return s;
+}
+
+// ============================================================
+// DRAWING: Crank arms, chainring, chain, pedal platforms
+// ============================================================
+function drawCrankPedals(a) {
+  let s = '';
+  // Pedal positions (180° apart)
+  const p1 = {x: BB.x + CR*Math.cos(a), y: BB.y + CR*Math.sin(a)};
+  const p2 = {x: BB.x + CR*Math.cos(a+Math.PI), y: BB.y + CR*Math.sin(a+Math.PI)};
+
+  // Chainring (front sprocket)
+  s += `<circle cx="${BB.x}" cy="${BB.y}" r="13" fill="none" stroke="#999" stroke-width="1.5"/>`;
+  s += `<circle cx="${BB.x}" cy="${BB.y}" r="9" fill="none" stroke="#aaa" stroke-width=".7" stroke-dasharray="2,2"/>`;
+  // Rear sprocket
+  s += `<circle cx="${RW.x}" cy="${RW.y}" r="6" fill="none" stroke="#999" stroke-width="1.5"/>`;
+  // Chain (top and bottom runs)
+  s += `<line x1="${BB.x+13}" y1="${BB.y}" x2="${RW.x}" y2="${RW.y-6}" stroke="#888" stroke-width="1.2"/>`;
+  s += `<line x1="${BB.x-13}" y1="${BB.y}" x2="${RW.x}" y2="${RW.y+6}" stroke="#888" stroke-width="1.2"/>`;
+
+  // Crank arm 1 (near side)
+  s += `<line x1="${BB.x}" y1="${BB.y}" x2="${p1.x.toFixed(1)}" y2="${p1.y.toFixed(1)}" stroke="#999" stroke-width="3.5" stroke-linecap="round"/>`;
+  // Pedal platform 1
+  s += `<rect x="${(p1.x-8).toFixed(1)}" y="${(p1.y-2).toFixed(1)}" width="16" height="4" rx="1.5" fill="#666" stroke="#555" stroke-width=".5"/>`;
+
+  // Crank arm 2 (far side)
+  s += `<line x1="${BB.x}" y1="${BB.y}" x2="${p2.x.toFixed(1)}" y2="${p2.y.toFixed(1)}" stroke="#999" stroke-width="3.5" stroke-linecap="round"/>`;
+  // Pedal platform 2
+  s += `<rect x="${(p2.x-8).toFixed(1)}" y="${(p2.y-2).toFixed(1)}" width="16" height="4" rx="1.5" fill="#666" stroke="#555" stroke-width=".5"/>`;
+
+  return {s, p1, p2};
+}
+
+// ============================================================
+// DRAWING: Pelican leg with IK + webbed foot
+// ============================================================
+function drawLeg(fx, fy, hx, hy, isFar) {
+  const knee = solveIK(hx, hy, fx, fy);
+  let s = '';
+
+  // Opacity/color for far vs near leg
+  const al = isFar ? 0.55 : 1;
+  const lc = `rgba(228,160,48,${al})`;
+  const jc = `rgba(210,140,30,${al})`;
+  const fc = `rgba(232,148,42,${al})`;
+
+  // Thigh (hip → knee)
+  s += `<line x1="${hx}" y1="${hy}" x2="${knee.x.toFixed(1)}" y2="${knee.y.toFixed(1)}" stroke="${lc}" stroke-width="8" stroke-linecap="round"/>`;
+  // Shin (knee → ankle/foot)
+  s += `<line x1="${knee.x.toFixed(1)}" y1="${knee.y.toFixed(1)}" x2="${fx.toFixed(1)}" y2="${fy.toFixed(1)}" stroke="${lc}" stroke-width="6.5" stroke-linecap="round"/>`;
+  // Knee joint
+  s += `<circle cx="${knee.x.toFixed(1)}" cy="${knee.y.toFixed(1)}" r="4.5" fill="${jc}"/>`;
+
+  // === WEBBED FOOT ===
+  const dir = Math.atan2(fy - knee.y, fx - knee.x);
+  const toes = [];
+  for (let i = 0; i < 4; i++) {
+    const t = (i / 3 - 0.5) * 0.65;  // spread angle
+    toes.push({
+      x: fx + 14 * Math.cos(dir + t),
+      y: fy + 14 * Math.sin(dir + t)
+    });
+  }
+
+  // Webbing polygon (ankle → toes → close)
+  let wp = `M${fx.toFixed(1)},${fy.toFixed(1)}`;
+  wp += ` L${toes[0].x.toFixed(1)},${toes[0].y.toFixed(1)}`;
+  for (let i = 0; i < 3; i++) {
+    const mx = ((toes[i].x + toes[i+1].x) / 2).toFixed(1);
+    const my = ((toes[i].y + toes[i+1].y) / 2 + 2.5).toFixed(1);
+    wp += ` Q${mx},${my} ${toes[i+1].x.toFixed(1)},${toes[i+1].y.toFixed(1)}`;
+  }
+  wp += ' Z';
+  s += `<path d="${wp}" fill="${fc}" stroke="rgba(200,120,20,${al})" stroke-width=".5"/>`;
+
+  // Individual toe lines
+  for (const t of toes) {
+    s += `<line x1="${fx.toFixed(1)}" y1="${fy.toFixed(1)}" x2="${t.x.toFixed(1)}" y2="${t.y.toFixed(1)}" stroke="rgba(200,130,30,${al * 0.6})" stroke-width=".8"/>`;
+    // Toe tip (claw)
+    s += `<circle cx="${t.x.toFixed(1)}" cy="${t.y.toFixed(1)}" r="1.5" fill="${jc}"/>`;
+  }
+
+  // Ankle joint
+  s += `<circle cx="${fx.toFixed(1)}" cy="${fy.toFixed(1)}" r="3.5" fill="${jc}"/>`;
+
+  return s;
+}
+
+// ============================================================
+// DRAWING: Pelican body, head, beak, pouch, wing, tail
+// ============================================================
+function drawPelican(crankAngle, realTime) {
+  let s = '';
+  const bob = Math.sin(crankAngle * 2) * 1.5;
+  const bx = BX, by = BY0 + bob;
+
+  // --- TAIL FEATHERS ---
+  s += `<path d="M${bx-32},${by+8} Q${bx-50},${by-2} ${bx-58},${by-12}" fill="none" stroke="#C8C0A8" stroke-width="3" stroke-linecap="round"/>`;
+  s += `<path d="M${bx-30},${by+12} Q${bx-52},${by+5} ${bx-62},${by-3}" fill="none" stroke="#D0C8B0" stroke-width="2.5" stroke-linecap="round"/>`;
+  s += `<path d="M${bx-28},${by+15} Q${bx-48},${by+12} ${bx-55},${by+5}" fill="none" stroke="#D8D0B8" stroke-width="2" stroke-linecap="round"/>`;
+
+  // --- BODY ---
+  s += `<ellipse cx="${bx}" cy="${by}" rx="38" ry="24" fill="url(#bdy)" stroke="#D5CEB0" stroke-width=".8"/>`;
+  // Chest highlight
+  s += `<ellipse cx="${bx+8}" cy="${by-2}" rx="22" ry="16" fill="white" opacity=".12"/>`;
+  // Belly shadow
+  s += `<ellipse cx="${bx-3}" cy="${by+8}" rx="26" ry="10" fill="#D5CEB0" opacity=".12"/>`;
+
+  // --- FOLDED WING ---
+  s += `<path d="M${bx-10},${by-12+bob} C${bx+2},${by-22+bob} ${bx+25},${by-16+bob} ${bx+32},${by-6+bob} C${bx+18},${by+4+bob} ${bx+3},${by+6+bob} ${bx-10},${by+2+bob}Z" fill="#EDE5D0" stroke="#D0C8A8" stroke-width=".8" opacity=".9"/>`;
+  // Wing feather details
+  s += `<path d="M${bx+2},${by-14+bob} Q${bx+18},${by-12+bob} ${bx+30},${by-4+bob}" fill="none" stroke="#C8C0A0" stroke-width=".6"/>`;
+  s += `<path d="M${bx-3},${by-9+bob} Q${bx+15},${by-5+bob} ${bx+27},${by+2+bob}" fill="none" stroke="#C8C0A0" stroke-width=".5"/>`;
+  s += `<path d="M${bx-6},${by-4+bob} Q${bx+10},${by+1+bob} ${bx+24},${by+6+bob}" fill="none" stroke="#C8C0A0" stroke-width=".4"/>`;
+  // Wing tip (darker)
+  s += `<path d="M${bx+26},${by-8+bob} Q${bx+36},${by-3+bob} ${bx+34},${by+3+bob}" fill="#A09878" opacity=".6"/>`;
+
+  // --- NECK (S-curve) ---
+  const nbx = bx+28, nby = by-8;
+  const ntx = bx+52, nty = by-58;
+  s += `<path d="M${nbx},${nby} C${bx+42},${by-32} ${bx+48},${by-52} ${ntx},${nty}" fill="none" stroke="#F0EAD6" stroke-width="15" stroke-linecap="round"/>`;
+  s += `<path d="M${nbx},${nby} C${bx+42},${by-32} ${bx+48},${by-52} ${ntx},${nty}" fill="none" stroke="#EDE5D0" stroke-width="11" stroke-linecap="round"/>`;
+  s += `<path d="M${nbx+3},${nby+1} C${bx+45},${by-30} ${bx+50},${by-50} ${ntx+2},${nty}" fill="none" stroke="#E0D8C0" stroke-width="5" stroke-linecap="round" opacity=".4"/>`;
+
+  // --- HEAD ---
+  const hx = ntx+3, hy = nty-4;
+  s += `<ellipse cx="${hx}" cy="${hy}" rx="13" ry="11" fill="#F5F0E0" stroke="#E0D8C0" stroke-width=".8"/>`;
+
+  // --- CREST FEATHERS ---
+  s += `<path d="M${hx-6},${hy-9} Q${hx-10},${hy-22} ${hx-5},${hy-17}" fill="#F0EAD6" stroke="#D5CEB0" stroke-width=".8"/>`;
+  s += `<path d="M${hx-2},${hy-10} Q${hx-2},${hy-24} ${hx+2},${hy-18}" fill="#F5F0E0" stroke="#D5CEB0" stroke-width=".7"/>`;
+  s += `<path d="M${hx+3},${hy-9} Q${hx+5},${hy-20} ${hx+6},${hy-15}" fill="#F0EAD6" stroke="#D5CEB0" stroke-width=".6"/>`;
+
+  // --- EYE (with blink) ---
+  const blink = realTime % 4;
+  if (blink > 3.85) {
+    // Closed eye
+    s += `<line x1="${hx+4}" y1="${hy-2}" x2="${hx+10}" y2="${hy-2}" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>`;
+  } else {
+    // Open eye
+    s += `<circle cx="${hx+7}" cy="${hy-2}" r="3.5" fill="white" stroke="#E0D8C0" stroke-width=".3"/>`;
+    s += `<circle cx="${hx+7.5}" cy="${hy-2}" r="2" fill="#1a1a1a"/>`;
+    s += `<circle cx="${hx+8}" cy="${hy-2.8}" r=".7" fill="white"/>`;
+  }
+
+  // --- UPPER BEAK ---
+  s += `<path d="M${hx+11},${hy-2} L${hx+42},${hy+2} L${hx+40},${hy+5} L${hx+11},${hy+4}" fill="url(#bek)" stroke="#D48A0A" stroke-width=".8"/>`;
+  // Beak hook
+  s += `<path d="M${hx+40},${hy+5} Q${hx+44},${hy+3} ${hx+42},${hy+1}" fill="#FF8C00" stroke="#D48A0A" stroke-width=".5"/>`;
+  // Nostril
+  s += `<ellipse cx="${hx+20}" cy="${hy}" rx="2" ry=".8" fill="#D48A0A" opacity=".4"/>`;
+  // Beak line
+  s += `<line x1="${hx+12}" y1="${hy+1.5}" x2="${hx+37}" y2="${hy+3.5}" stroke="#D48A0A" stroke-width=".5" opacity=".5"/>`;
+
+  // --- LOWER BEAK ---
+  s += `<path d="M${hx+11},${hy+4} L${hx+35},${hy+6} L${hx+30},${hy+9} L${hx+11},${hy+6}" fill="#E8A030" stroke="#D48A0A" stroke-width=".5" opacity=".8"/>`;
+
+  // --- THROAT POUCH ---
+  s += `<path d="M${hx+11},${hy+6} Q${hx+22},${hy+24} ${hx+17},${hy+16} Q${hx+13},${hy+11} ${hx+11},${hy+6}" fill="url(#pou)" stroke="#E87A0A" stroke-width=".8" opacity=".85"/>`;
+  // Pouch detail line
+  s += `<path d="M${hx+13},${hy+9} Q${hx+18},${hy+20} ${hx+16},${hy+14}" fill="none" stroke="#E87A0A" stroke-width=".4" opacity=".4"/>`;
+
+  return s;
+}
+
+// ============================================================
+// ANIMATION LOOP
+// ============================================================
+let angle = 0;
+let lastT = null;
+const SPD = 1.5; // radians per second (~14 RPM cadence)
+
+function animate(ts) {
+  if (lastT === null) lastT = ts;
+  const dt = Math.min((ts - lastT) / 1000, 0.05);
+  lastT = ts;
+  angle += SPD * dt;
+
+  const realTime = ts / 1000;
+
+  // Compute pedal positions (180° apart)
+  const p1 = {x: BB.x + CR*Math.cos(angle),      y: BB.y + CR*Math.sin(angle)};
+  const p2 = {x: BB.x + CR*Math.cos(angle+Math.PI), y: BB.y + CR*Math.sin(angle+Math.PI)};
+
+  let h = '';
+
+  // 1. Far leg (behind the bicycle)
+  h += drawLeg(p2.x, p2.y, FH.x, FH.y, true);
+
+  // 2. Wheels
+  const wheelRot = angle * 2.5; // gear ratio
+  h += drawWheel(RW.x, RW.y, WR, wheelRot);
+  h += drawWheel(FW.x, FW.y, WR, wheelRot);
+
+  // 3. Bicycle frame
+  h += drawFrame();
+
+  // 4. Crank, chain, pedals
+  const cp = drawCrankPedals(angle);
+  h += cp.s;
+
+  // 5. Near leg (in front of bicycle)
+  h += drawLeg(p1.x, p1.y, NH.x, NH.y, false);
+
+  // 6. Pelican body on top
+  h += drawPelican(angle, realTime);
+
+  // 7. Ground shadow
+  h += `<ellipse cx="250" cy="391" rx="135" ry="5" fill="rgba(0,0,0,.1)"/>`;
+
+  // 8. Motion/dust lines behind rear wheel
+  for (let i = 0; i < 4; i++) {
+    const phase = ((angle * 30 + i * 11) % 38);
+    const x = 25 + phase;
+    const y = 368 + i * 6;
+    const op = Math.max(0, (0.22 - phase / 38 * 0.22)).toFixed(3);
+    h += `<line x1="${x.toFixed(1)}" y1="${y}" x2="${(x+16).toFixed(1)}" y2="${y}" stroke="rgba(160,155,140,${op})" stroke-width="1.2" stroke-linecap="round"/>`;
+  }
+
+  m.innerHTML = h;
+  requestAnimationFrame(animate);
+}
+
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

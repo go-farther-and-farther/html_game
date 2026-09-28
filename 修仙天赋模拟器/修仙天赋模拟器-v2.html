@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>测灵台 · 修仙天赋模拟器 v2</title>
+<style>
+  :root{
+    --gold:#d4af37; --gold-bright:#f0dfa8; --gold-dim:rgba(212,175,55,.30);
+    --ink:#0b0d12; --panel:rgba(19,23,33,.86); --line:#262b38;
+    --txt:#d9d3c4; --mut:#8b8577;
+    --c-jin:#e6c86e; --c-mu:#7fc86e; --c-shui:#6ea8e6; --c-huo:#e67a5e; --c-tu:#c8a06e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    min-height:100vh; color:var(--txt);
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212,175,55,.09), transparent),
+      radial-gradient(ellipse 60% 40% at 90% 100%, rgba(110,168,230,.05), transparent),
+      var(--ink);
+    font-family:"Noto Serif SC","Source Han Serif SC","STKaiti","KaiTi","SimSun",serif;
+    padding:30px 14px 60px; line-height:1.6;
+  }
+  .wrap{max-width:960px;margin:0 auto}
+  header{text-align:center;margin-bottom:26px}
+  header h1{
+    font-size:42px;letter-spacing:16px;text-indent:16px;font-weight:700;
+    background:linear-gradient(180deg,#f6e8b0,var(--gold) 55%,#96771c);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 0 34px rgba(212,175,55,.22);
+  }
+  header .sub{margin-top:8px;color:var(--mut);font-size:13px;letter-spacing:5px}
+
+  .panel{
+    background:var(--panel);border:1px solid var(--gold-dim);border-radius:14px;
+    padding:20px 22px;margin-bottom:18px;box-shadow:0 8px 30px rgba(0,0,0,.45);
+  }
+  .panel h2{
+    font-size:15px;color:var(--gold);letter-spacing:6px;margin-bottom:16px;
+    display:flex;align-items:center;gap:12px;font-weight:600;
+  }
+  .panel h2::before,.panel h2::after{content:"";height:1px;background:var(--gold-dim);flex:1}
+  .empty{color:var(--mut);font-size:13px;font-style:italic}
+
+  /* 参数区 */
+  .ctrl-grid{display:flex;flex-wrap:wrap;gap:16px 28px}
+  .slider-box{flex:1 1 240px;max-width:320px}
+  .slider-box label{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;margin-bottom:6px}
+  .slider-box label b{color:var(--gold);font-size:16px;font-family:Consolas,monospace}
+  .slider-box small{display:block;color:var(--mut);font-size:11px;margin-top:4px}
+  input[type=range]{width:100%;appearance:none;height:5px;border-radius:3px;
+    background:linear-gradient(90deg,var(--gold-dim),rgba(212,175,55,.08));outline:none}
+  input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%,#f6e8b0,var(--gold));border:1px solid #7a611a;cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;
+    background:var(--gold);border:1px solid #7a611a;cursor:pointer}
+  .aff-row{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:14px}
+  .aff-row .slider-box{flex:1 1 100px;max-width:170px}
+  .lines-preview{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:16px;padding:10px 14px;
+    border:1px dashed var(--line);border-radius:8px;font-size:12.5px;color:var(--mut)}
+  .lines-preview b{color:var(--gold);font-family:Consolas,monospace;font-weight:600}
+
+  .prob-strip{margin-top:14px}
+  .prob-strip .pt{font-size:12px;color:var(--mut);letter-spacing:2px;margin-bottom:8px}
+  .prob-chips{display:flex;flex-wrap:wrap;gap:10px}
+  .prob-chip{flex:1 1 160px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:rgba(0,0,0,.25)}
+  .prob-chip .pl{font-size:12px;color:var(--mut)}
+  .prob-chip .pv{font-size:18px;color:var(--gold-bright);font-family:Consolas,monospace}
+
+  /* 测灵区 */
+  .btn-row{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-bottom:18px}
+  button{font-family:inherit;cursor:pointer;border-radius:10px;font-size:15px;letter-spacing:3px;
+    padding:10px 26px;transition:filter .15s, transform .05s}
+  button:active{transform:translateY(1px)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  #btnRoll{border:1px solid #7a611a;color:#241c05;font-weight:700;
+    background:linear-gradient(180deg,#f6e8b0,var(--gold) 60%,#b08c22)}
+  #btnRoll:hover:not(:disabled){filter:brightness(1.08)}
+  #btnBatch{background:transparent;color:var(--gold);border:1px solid var(--gold-dim)}
+  #btnBatch:hover:not(:disabled){background:rgba(212,175,55,.08)}
+  #btnClear{background:transparent;color:var(--mut);border:1px solid var(--line);font-size:13px;padding:8px 16px}
+  #btnClear:hover:not(:disabled){color:var(--txt)}
+
+  .result{min-height:120px;border:1px solid var(--line);border-radius:10px;padding:16px 18px;background:rgba(0,0,0,.22)}
+  .spin{text-align:center;padding:34px 0;font-size:19px;color:var(--gold-bright);letter-spacing:4px;animation:pulse .5s infinite alternate}
+  @keyframes pulse{from{opacity:.55}to{opacity:1}}
+  .res-head{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:13px;color:var(--mut)}
+  .res-talent b{color:var(--gold-bright);font-size:16px;font-family:Consolas,monospace}
+  .res-talent em{font-style:normal;color:var(--gold);margin-left:10px}
+  .res-title{text-align:center;font-size:32px;color:var(--gold);letter-spacing:6px;margin:10px 0 4px;font-weight:700;
+    text-shadow:0 0 24px rgba(212,175,55,.25)}
+  .res-desc{text-align:center;font-size:13px;color:var(--mut);margin-bottom:14px}
+  .el-list{display:flex;flex-direction:column;gap:7px}
+  .el-row{display:grid;grid-template-columns:30px 1fr 52px 92px;gap:10px;align-items:center;font-size:13.5px}
+  .el-row.dead{opacity:.42}
+  .el-row .el-note{font-size:12px}
+  .c0{color:var(--c-jin)}.c1{color:var(--c-mu)}.c2{color:var(--c-shui)}.c3{color:var(--c-huo)}.c4{color:var(--c-tu)}
+  .el-bar{height:8px;border-radius:4px;background:rgba(255,255,255,.06);overflow:hidden}
+  .el-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,rgba(212,175,55,.5),var(--gold))}
+  .el-score{font-family:Consolas,monospace;color:var(--txt);text-align:right}
+  .chip{font-size:11.5px;text-align:center;border-radius:6px;padding:2px 4px;border:1px solid transparent;white-space:nowrap}
+  .gr0{color:#5a6070;border-color:#333a48}
+  .gr1{color:#9a8c72;border-color:#4a4234}
+  .gr2{color:#a8b6cc;border-color:#42506a}
+  .gr3{color:#7fd0ae;border-color:#2f5c48}
+  .gr4{color:#e8c96a;border-color:#6e5a22}
+  .gr5{color:#ffd700;border-color:#8a6d14;background:rgba(255,215,0,.08);text-shadow:0 0 8px rgba(255,215,0,.5)}
+
+  /* 统计区 */
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .stat-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:rgba(0,0,0,.22)}
+  .stat-label{font-size:12px;color:var(--mut)}
+  .stat-value{font-size:22px;color:var(--gold-bright);font-family:Consolas,monospace;margin:2px 0}
+  .stat-sub{font-size:11.5px;color:var(--mut)}
+  .histogram{margin-top:16px}
+  .bars{display:flex;align-items:flex-end;gap:6px;height:172px}
+  .bar-col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}
+  .bar-num{font-size:10px;color:var(--mut);margin-bottom:3px;font-family:Consolas,monospace}
+  .bar{width:100%;max-width:46px;border-radius:4px 4px 0 0;
+    background:linear-gradient(180deg,var(--gold-bright),var(--gold) 40%,rgba(212,175,55,.35))}
+  .bar-label{margin-top:5px;font-size:11px;color:var(--mut);font-family:Consolas,monospace}
+  .bar-cap{margin-top:8px;font-size:11.5px;color:var(--mut)}
+
+  /* 排行榜 */
+  .lb-note{font-size:12.5px;color:var(--mut);margin-bottom:12px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{color:var(--gold);font-weight:600;font-size:12.5px;letter-spacing:2px;text-align:left;
+    padding:6px 10px;border-bottom:1px solid var(--gold-dim)}
+  td{padding:6px 10px;border-bottom:1px solid var(--line)}
+  td.num{font-family:Consolas,monospace}
+
+  /* 历史区 */
+  .history{display:flex;flex-wrap:wrap;gap:8px}
+  .h-chip{border:1px solid var(--line);border-radius:8px;padding:5px 12px;font-size:12.5px;background:rgba(0,0,0,.22)}
+  .h-chip b{color:var(--gold);font-family:Consolas,monospace;font-weight:600;margin-right:8px}
+
+  footer{margin-top:26px;padding:0 8px;font-size:12px;color:var(--mut);line-height:1.9;text-align:justify}
+  footer b{color:#b3a67f;font-weight:600}
+  .hidden{display:none}
+  @media (max-width:560px){
+    header h1{font-size:30px;letter-spacing:8px;text-indent:8px}
+    .el-row{grid-template-columns:24px 1fr 44px 74px;font-size:12.5px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>测 灵 台</h1>
+    <div class="sub">修仙天赋模拟器 · 掷骨问天,一测定数</div>
+  </header>
+
+  <section class="panel">
+    <h2>参 数</h2>
+    <div class="ctrl-grid">
+      <div class="slider-box">
+        <label>偏好依附 α <b id="alphaOut">1.0</b></label>
+        <input type="range" id="alpha" min="0.1" max="2" step="0.1" value="1">
+        <small>灵子第二段分配的「强者愈强」系数</small>
+      </div>
+      <div class="slider-box">
+        <label>废灵根线 <b id="wasteOut">0.0</b></label>
+        <input type="range" id="waste" min="0" max="9" step="0.1" value="0">
+        <small>分数 &gt; 此值为废灵根(凡人);品级插值基点</small>
+      </div>
+      <div class="slider-box">
+        <label>天灵根线 <b id="heavenOut">6.0</b></label>
+        <input type="range" id="heaven" min="1" max="10" step="0.1" value="6">
+        <small>≥ 此值为天灵根;联动约束:不低于废灵根线</small>
+      </div>
+    </div>
+    <div class="aff-row" id="affRow"></div>
+    <div class="lines-preview" id="linesPreview"></div>
+    <div class="prob-strip">
+      <div class="pt">气运推演(蒙特卡洛 10 万次,随参数实时刷新)</div>
+      <div class="prob-chips">
+        <div class="prob-chip"><div class="pl">身负灵根(≥下品)</div><div class="pv" id="probGifted">…</div></div>
+        <div class="prob-chip"><div class="pl">中品及以上</div><div class="pv" id="probMid">…</div></div>
+        <div class="prob-chip"><div class="pl">上品及以上</div><div class="pv" id="probHigh">…</div></div>
+        <div class="prob-chip"><div class="pl">天灵根</div><div class="pv" id="probTian">…</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>测 灵</h2>
+    <div class="btn-row">
+      <button id="btnRoll">测 灵</button>
+      <button id="btnBatch">批量模拟一百万次</button>
+      <button id="btnClear">清空统计与榜单</button>
+    </div>
+    <div id="result" class="result"><span class="empty">点击「测 灵」,掷骨问天。</span></div>
+  </section>
+
+  <section class="panel">
+    <h2>统 计</h2>
+    <div class="stat-grid" id="statGrid"><span class="empty">尚未推演——点击「批量模拟一百万次」生成统计。</span></div>
+    <div class="histogram" id="histogram"></div>
+  </section>
+
+  <section class="panel">
+    <h2>单灵根 · 峰值榜</h2>
+    <div class="lb-note">准入:恰好一系灵根 ≥ 下品线,其余四系皆废根或无根;<b style="color:var(--gold)">不限品级</b>,中品、上品、天灵根皆可上榜。与统计卡「下品灵根者(止步下品)」口径不同。</div>
+    <table id="lbTable" class="hidden">
+      <thead><tr><th>#</th><th>系别</th><th>单系分数</th><th>总天赋</th><th>编号</th></tr></thead>
+      <tbody id="lbBody"></tbody>
+    </table>
+    <span id="lbEmpty" class="empty">暂无记录——测灵或批量推演后生成。</span>
+  </section>
+
+  <section class="panel">
+    <h2>测 灵 史(最近 8 次)</h2>
+    <div id="history" class="history"><span class="empty">尚无记录</span></div>
+  </section>
+
+  <footer id="footer"></footer>
+</div>
+
+<script id="app">
+'use strict';
+/* ==================== 核心逻辑(纯函数,无 DOM,可被 Node 提取测试) ==================== */
+
+const ELEMENTS = ['金','木','水','火','土'];
+const GRADE_RANK = { '无':0, '废':1, '下':2, '中':3, '上':4, '天':5 };
+const GRADE_NAME = { '无':'无灵根', '废':'废灵根', '下':'下品灵根', '中':'中品灵根', '上':'上品灵根', '天':'天灵根' };
+
+function round1(x){ return Math.round(x*10)/10; }
+
+/* 品级线:只调废/天两条,中间自动四等分插值 */
+function computeLines(waste, heaven){
+  const step = (heaven - waste) / 4;
+  return { waste, heaven, low: waste + step, mid: waste + 2*step, high: waste + 3*step };
+}
+
+/* 总天赋:4 个 [0,1) 均匀随机数升序取第 2 小(Beta(2,3)×10,均值恰为 4,100% 落于 0.1~10) */
+function rollTalent(){
+  const u = [Math.random(), Math.random(), Math.random(), Math.random()].sort((a,b)=>a-b);
+  return round1(Math.max(0.1, 10*u[1]));
+}
+
+function talentLabel(t){
+  if (t >= 9) return '天纵奇才';
+  if (t >= 8) return '道基深厚';
+  if (t >= 6) return '良才美质';
+  if (t >= 3) return '资质平平';
+  if (t >= 1) return '根骨驽钝';
+  return '凡俗之躯';
+}
+
+/* 单系品级:≥下品线起为真灵根;>废线为废;其余为无(边界:废是大于,其余是≥) */
+function gradeOf(score, L){
+  if (score >= L.low){
+    if (score >= L.heaven) return '天';
+    if (score >= L.high)   return '上';
+    if (score >= L.mid)    return '中';
+    return '下';
+  }
+  return score > L.waste ? '废' : '无';
+}
+
+/* 灵子分配:第一段平分(余数逐系轮流+1),第二段逐粒按 吸附值+α×当前粒数 加权落系 */
+function allocateGrains(grains, alive, alpha, affinity){
+  const cnt = [0,0,0,0,0]; const idx = [];
+  for (let i=0;i<5;i++) if (alive[i]) idx.push(i);
+  const n = idx.length;
+  const half = grains >> 1;
+  const base = Math.floor(half/n), rem = half - base*n;
+  for (let k=0;k<n;k++) cnt[idx[k]] += base;
+  for (let k=0;k<rem;k++) cnt[idx[k]]++;
+  const w = [0,0,0,0,0];
+  let rest = grains - half;
+  while (rest-- > 0){
+    let sum = 0;
+    for (let k=0;k<n;k++){ const wi = affinity[idx[k]] + alpha*cnt[idx[k]]; w[k] = wi; sum += wi; }
+    let r = Math.random()*sum, pick = n-1;
+    for (let k=0;k<n;k++){ r -= w[k]; if (r < 0){ pick = k; break; } }
+    cnt[idx[pick]]++;
+  }
+  return cnt;
+}
+
+let ROLL_ID = 0;
+
+/* 模拟一人。real=true 时占用全局编号;蒙特卡洛批量估算传 false 以免污染编号 */
+function rollPerson(p, real){
+  const id = real ? ++ROLL_ID : 0;
+  const talent = rollTalent();
+  const alive = [0,0,0,0,0]; let any = false;
+  for (let i=0;i<5;i++){ alive[i] = Math.random() >= 0.1 ? 1 : 0; if (alive[i]) any = true; }
+  if (!any){
+    return { id, dead:true, talent:0, alive, scores:[0,0,0,0,0], grades:['无','无','无','无','无'],
+             peakRank:0, realCount:0, title:'绝灵体',
+             desc:'五行灵根尽数闭锁,灵气不侵,此生与道无缘。',
+             comment:'绝灵体' };
+  }
+  const cnt = allocateGrains(Math.round(talent*10), alive, p.alpha, p.affinity);
+  const scores = [0,0,0,0,0];
+  for (let i=0;i<5;i++) scores[i] = cnt[i]/10;
+  const L = computeLines(p.waste, p.heaven);
+  const grades = []; let peakRank = 0, realCount = 0; const realIdx = [];
+  for (let i=0;i<5;i++){
+    const g = gradeOf(scores[i], L);
+    grades.push(g);
+    const r = GRADE_RANK[g];
+    if (r > peakRank) peakRank = r;
+    if (r >= 2){ realCount++; realIdx.push(i); }
+  }
+  let title, desc;
+  if (realCount === 0){
+    title = '凡 人';
+    desc = '五行俱为废根,或灵根未开,不得修行。';
+  } else {
+    let main = realIdx[0];
+    for (const i of realIdx) if (scores[i] > scores[main]) main = i;
+    if (peakRank === 5){
+      const tian = realIdx.filter(i => grades[i] === '天').sort((a,b)=> scores[b]-scores[a] || a-b);
+      title = tian.length === 1
+        ? '天灵根 · ' + ELEMENTS[tian[0]]
+        : '多系天灵根 · ' + tian.map(i => ELEMENTS[i]).join('');
+    } else {
+      title = GRADE_NAME[['下','中','上'][peakRank-2]];
+    }
+    if (realCount >= 2){
+      const parts = realIdx.slice().sort((a,b)=> scores[b]-scores[a] || a-b)
+        .map(i => ELEMENTS[i] + ' ' + scores[i].toFixed(1));
+      desc = '身怀 ' + realCount + ' 系灵根:' + parts.join('、') + '。主修' + ELEMENTS[main] + '系。';
+    } else {
+      desc = '仅 ' + ELEMENTS[main] + ' 系一脉灵根(' + scores[main].toFixed(1) + '),纯粹而精。';
+    }
+  }
+  return { id, dead:false, talent, alive, scores, grades, peakRank, realCount,
+           title, desc, comment: talentLabel(talent) };
+}
+
+function emptyTally(){
+  return { n:0, sum:0, max:0, dead:0, mortal:0, gifted:0,
+           lowOnly:0, midUp:0, highUp:0, heavenCt:0,
+           histogram:[0,0,0,0,0,0,0,0,0,0] };
+}
+
+/* 统计口径:绝灵体 / 凡人 / 身负灵根者 三类互斥且加总 = n;其余为细分或累计 */
+function tallyPerson(T, p){
+  T.n++;
+  T.sum += p.talent;
+  if (p.talent > T.max) T.max = p.talent;
+  T.histogram[Math.min(9, Math.floor(p.talent))]++;
+  if (p.dead){ T.dead++; return; }
+  if (p.peakRank >= 2){
+    T.gifted++;
+    if (p.peakRank === 2) T.lowOnly++;
+    if (p.peakRank >= 3) T.midUp++;
+    if (p.peakRank >= 4) T.highUp++;
+    if (p.peakRank >= 5) T.heavenCt++;
+  } else {
+    T.mortal++;
+  }
+}
+
+/* 单灵根·峰值榜:准入 = 恰好一系 ≥ 下品线(其余皆废/无),不限品级;按该系分数取前 10 */
+function leaderboardPush(board, p){
+  if (p.dead) return;
+  let q = -1;
+  for (let i=0;i<5;i++){
+    if (GRADE_RANK[p.grades[i]] >= 2){ if (q >= 0) return; q = i; }
+  }
+  if (q < 0) return;
+  const score = p.scores[q];
+  if (board.length >= 10 && score <= board[board.length-1].score) return;
+  board.push({ element:ELEMENTS[q], score, id:p.id, talent:p.talent });
+  board.sort((a,b)=> b.score - a.score || a.id - b.id);
+  if (board.length > 10) board.length = 10;
+}
+
+const CORE = { ELEMENTS, GRADE_RANK, GRADE_NAME, round1, computeLines, rollTalent,
+               talentLabel, gradeOf, allocateGrains, rollPerson,
+               emptyTally, tallyPerson, leaderboardPush };
+
+/* ==================== UI(仅浏览器执行) ==================== */
+
+function initUI(){
+  const $ = id => document.getElementById(id);
+  const state = { alpha:1, waste:0, heaven:6, affinity:[1,1,1,1,1],
+                  board:[], T:null, history:[], busy:false, rolling:false };
+
+  const fmtCount = c => c.toLocaleString('en-US');
+  function fmtNum(x){ return String(parseFloat(x.toFixed(2))); }
+  function fmtPct(p){
+    if (!(p > 0)) return '0%';
+    if (p < 0.0001) return '<0.01%';
+    return (p*100).toFixed(2).replace(/\.?0+$/,'') + '%';
+  }
+  function fmtProb(hits, n){
+    const unit = n >= 10000 ? (n/10000) + '万' : String(n);
+    if (hits <= 0) return '＜1/' + unit;
+    const p = hits/n;
+    if (p < 0.001) return hits + '/' + unit;
+    return fmtPct(p);
+  }
+  function snapshot(){ return { alpha:state.alpha, waste:state.waste, heaven:state.heaven,
+                                affinity:state.affinity.slice() }; }
+  function setBtns(dis){ $('btnRoll').disabled = dis; $('btnBatch').disabled = dis; $('btnClear').disabled = dis; }
+
+  /* ---- 参数控件 ---- */
+  const affRow = $('affRow');
+  ELEMENTS.forEach((el, i) => {
+    const box = document.createElement('div');
+    box.className = 'slider-box';
+    box.innerHTML = '<label class="c'+i+'">' + el + ' <b id="affOut'+i+'">1.0</b></label>' +
+      '<input type="range" id="aff'+i+'" min="0.5" max="5" step="0.1" value="1">' +
+      '<small>吸附值(初始权重)</small>';
+    affRow.appendChild(box);
+  });
+
+  function readParams(){
+    state.alpha  = parseFloat($('alpha').value);
+    state.waste  = parseFloat($('waste').value);
+    state.heaven = parseFloat($('heaven').value);
+    for (let i=0;i<5;i++) state.affinity[i] = parseFloat($('aff'+i).value);
+  }
+  function writeParams(){
+    $('alpha').value = state.alpha; $('waste').value = state.waste; $('heaven').value = state.heaven;
+    for (let i=0;i<5;i++) $('aff'+i).value = state.affinity[i];
+    $('alphaOut').textContent = state.alpha.toFixed(1);
+    $('wasteOut').textContent = state.waste.toFixed(1);
+    $('heavenOut').textContent = state.heaven.toFixed(1);
+    for (let i=0;i<5;i++) $('affOut'+i).textContent = state.affinity[i].toFixed(1);
+    const L = computeLines(state.waste, state.heaven);
+    $('linesPreview').innerHTML =
+      '当前品级线:废灵根 &gt; <b>' + fmtNum(L.waste) + '</b> ｜ 下品 ≥ <b>' + fmtNum(L.low) +
+      '</b> ｜ 中品 ≥ <b>' + fmtNum(L.mid) + '</b> ｜ 上品 ≥ <b>' + fmtNum(L.high) +
+      '</b> ｜ 天灵根 ≥ <b>' + fmtNum(L.heaven) + '</b>';
+    renderFooter();
+  }
+  function onParam(){
+    readParams();
+    if (state.heaven < state.waste) state.heaven = state.waste;  /* 联动约束 */
+    if (state.waste > state.heaven) state.waste = state.heaven;
+    writeParams();
+    scheduleProbs();
+  }
+  ['alpha','waste','heaven'].forEach(id => $(id).addEventListener('input', onParam));
+  for (let i=0;i<5;i++) $('aff'+i).addEventListener('input', onParam);
+
+  /* ---- 概率提示(10 万次蒙特卡洛,防抖) ---- */
+  let probTimer = null;
+  function scheduleProbs(){ clearTimeout(probTimer); probTimer = setTimeout(runProbs, 160); }
+  function runProbs(){
+    const params = snapshot(), N = 100000;
+    let g=0, m=0, h=0, t=0;
+    for (let i=0;i<N;i++){
+      const r = rollPerson(params, false).peakRank;
+      if (r >= 2) g++;
+      if (r >= 3) m++;
+      if (r >= 4) h++;
+      if (r >= 5) t++;
+    }
+    $('probGifted').textContent = fmtProb(g, N);
+    $('probMid').textContent  = fmtProb(m, N);
+    $('probHigh').textContent = fmtProb(h, N);
+    $('probTian').textContent = fmtProb(t, N);
+  }
+
+  /* ---- 单次测灵 ---- */
+  function renderSingle(p){
+    let rows = '';
+    for (let i=0;i<5;i++){
+      if (!p.alive[i]){
+        rows += '<div class="el-row dead"><span class="c'+i+'">' + ELEMENTS[i] +
+                '</span><span class="el-note" style="grid-column:span 3">灵根已失效</span></div>';
+        continue;
+      }
+      const s = p.scores[i], g = p.grades[i];
+      rows += '<div class="el-row"><span class="c'+i+'">' + ELEMENTS[i] + '</span>' +
+        '<span class="el-bar"><i style="width:' + Math.min(100, s*10) + '%"></i></span>' +
+        '<span class="el-score">' + s.toFixed(1) + '</span>' +
+        '<span class="chip gr' + GRADE_RANK[g] + '">' + GRADE_NAME[g] + '</span></div>';
+    }
+    $('result').innerHTML =
+      '<div class="res-head"><span>第 ' + fmtCount(p.id) + ' 号</span>' +
+      '<span class="res-talent">总天赋 <b>' + p.talent.toFixed(1) + '</b><em>' + p.comment + '</em></span></div>' +
+      '<div class="res-title">' + p.title + '</div>' +
+      '<div class="res-desc">' + p.desc + '</div>' +
+      '<div class="el-list">' + rows + '</div>';
+  }
+  function renderHistory(){
+    const box = $('history');
+    if (!state.history.length){ box.innerHTML = '<span class="empty">尚无记录</span>'; return; }
+    box.innerHTML = state.history.map(p =>
+      '<span class="h-chip"><b>#' + fmtCount(p.id) + '</b>' + p.talent.toFixed(1) + ' · ' + p.title + '</span>'
+    ).join('');
+  }
+  function singleRoll(){
+    if (state.busy || state.rolling) return;
+    state.rolling = true; setBtns(true);
+    const person = rollPerson(snapshot(), true);
+    const panel = $('result');
+    let k = 0;
+    const iv = setInterval(() => {
+      if (++k > 9){
+        clearInterval(iv);
+        renderSingle(person);
+        state.history.unshift(person);
+        if (state.history.length > 8) state.history.pop();
+        renderHistory();
+        leaderboardPush(state.board, person);
+        renderLeaderboard();
+        state.rolling = false; setBtns(false);
+        return;
+      }
+      panel.innerHTML = '<div class="spin">灵光流转…… <b>' + rollTalent().toFixed(1) + '</b></div>';
+    }, 70);
+  }
+
+  /* ---- 批量一百万 ---- */
+  async function batchRun(){
+    if (state.busy || state.rolling) return;
+    state.busy = true; setBtns(true);
+    const btn = $('btnBatch');
+    const T = emptyTally(); state.T = T;
+    const params = snapshot();
+    const CH = 200000;
+    for (let c=0;c<5;c++){
+      for (let i=0;i<CH;i++){
+        const p = rollPerson(params, true);
+        tallyPerson(T, p);
+        leaderboardPush(state.board, p);
+      }
+      btn.textContent = '推演中… ' + ((c+1)*20) + '%';
+      await new Promise(r => setTimeout(r, 0));
+    }
+    btn.textContent = '批量模拟一百万次';
+    renderStats(); renderHistogram(); renderLeaderboard();
+    state.busy = false; setBtns(false);
+  }
+
+  /* ---- 统计卡与直方图 ---- */
+  function renderStats(){
+    const T = state.T, grid = $('statGrid');
+    if (!T || !T.n){ grid.innerHTML = '<span class="empty">尚未推演——点击「批量模拟一百万次」生成统计。</span>'; return; }
+    const pc = c => fmtPct(c/T.n);
+    const cards = [
+      ['平均天赋', (T.sum/T.n).toFixed(3), '设计值恰为 4.00'],
+      ['最高天赋', T.max.toFixed(1), ''],
+      ['身负灵根者', fmtCount(T.gifted), '≥下品 · ' + pc(T.gifted)],
+      ['下品灵根者', fmtCount(T.lowOnly), '止步下品 · ' + pc(T.lowOnly)],
+      ['中品及以上', fmtCount(T.midUp), pc(T.midUp)],
+      ['上品及以上', fmtCount(T.highUp), pc(T.highUp)],
+      ['天灵根', fmtCount(T.heavenCt), pc(T.heavenCt)],
+      ['绝灵体', fmtCount(T.dead), pc(T.dead)],
+      ['凡人(无下品)', fmtCount(T.mortal), pc(T.mortal)],
+    ];
+    grid.innerHTML = cards.map(c =>
+      '<div class="stat-card"><div class="stat-label">' + c[0] + '</div>' +
+      '<div class="stat-value">' + c[1] + '</div><div class="stat-sub">' + (c[2] || '&nbsp;') + '</div></div>'
+    ).join('');
+  }
+  function renderHistogram(){
+    const T = state.T;
+    if (!T || !T.n){ $('histogram').innerHTML = '<div class="bars"></div>'; return; }
+    const max = Math.max.apply(null, T.histogram.concat([1]));
+    let bars = '';
+    for (let k=0;k<10;k++){
+      const h = Math.max(2, T.histogram[k]/max*130);
+      bars += '<div class="bar-col"><div class="bar-num">' + (T.histogram[k]/T.n*100).toFixed(1) + '%</div>' +
+        '<div class="bar" style="height:' + h.toFixed(0) + 'px"></div>' +
+        '<div class="bar-label">' + (k===9 ? '9~10' : k) + '</div></div>';
+    }
+    $('histogram').innerHTML = '<div class="bars">' + bars + '</div>' +
+      '<div class="bar-cap">总天赋整数分桶(横轴为桶起点;末桶 [9,10] 含 10;桶 0 含绝灵体)</div>';
+  }
+
+  /* ---- 排行榜 ---- */
+  function renderLeaderboard(){
+    const b = state.board;
+    if (!b.length){
+      $('lbTable').classList.add('hidden');
+      $('lbEmpty').classList.remove('hidden');
+      return;
+    }
+    $('lbTable').classList.remove('hidden');
+    $('lbEmpty').classList.add('hidden');
+    $('lbBody').innerHTML = b.map((e, i) =>
+      '<tr><td class="num">' + (i+1) + '</td><td class="c' + ELEMENTS.indexOf(e.element) + '">' + e.element +
+      '</td><td class="num">' + e.score.toFixed(1) + '</td><td class="num">' + e.talent.toFixed(1) +
+      '</td><td class="num">#' + fmtCount(e.id) + '</td></tr>'
+    ).join('');
+  }
+
+  /* ---- 页脚规则 ---- */
+  function renderFooter(){
+    const L = computeLines(state.waste, state.heaven);
+    $('footer').innerHTML =
+      '<b>当前规则</b>——总天赋:取 4 个 [0,1) 均匀随机数中第 2 小者 ×10,四舍五入到 0.1,下限 0.1(即 Beta(2,3)×10:均值恰为 4.00、100% 落于 0.1~10、钟形右偏,无任何机缘/暴击类加成)。' +
+      '测灵时金木水火土各以 10% 概率失效,五系全失效即「绝灵体」——总天赋 0 的唯一来源。' +
+      '灵子分配:总天赋 ×10 粒,一半平分给存活灵根(余数逐系轮流),其余逐粒按「该系吸附值 + α×当前分数」落系(当前 α=' + state.alpha.toFixed(1) + ')。' +
+      '品级线:分数 &gt; ' + fmtNum(L.waste) + ' 为废灵根(凡人,不得修行);≥' + fmtNum(L.low) + ' 下品、≥' + fmtNum(L.mid) +
+      ' 中品、≥' + fmtNum(L.high) + ' 上品、≥' + fmtNum(L.heaven) + ' 天灵根(中间线由两条基点线自动四等分插值)。' +
+      '总评按最高灵根品级命名(恰一系天灵根记「天灵根 · X」,两系以上记「多系天灵根」),灵根数量只写入描述。' +
+      '榜单准入:恰好一系 ≥ 下品线(' + fmtNum(L.low) + '),不限品级。';
+  }
+
+  $('btnRoll').addEventListener('click', singleRoll);
+  $('btnBatch').addEventListener('click', batchRun);
+  $('btnClear').addEventListener('click', () => {
+    if (state.busy || state.rolling) return;
+    state.T = null; state.board = [];
+    renderStats(); renderHistogram(); renderLeaderboard();
+  });
+
+  writeParams();
+  renderStats(); renderHistogram(); renderHistory(); renderLeaderboard();
+  runProbs();
+}
+
+if (typeof document !== 'undefined') initUI();
+if (typeof module !== 'undefined' && typeof document === 'undefined') module.exports = CORE;
+</script>
+</body>
+</html>
