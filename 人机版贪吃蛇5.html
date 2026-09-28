@@ -1,0 +1,1968 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🐍 贪吃蛇大作战 V5</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #060810; font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+/* ===== 遮罩层（通用） ===== */
+.overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: rgba(6,8,16,0.92); z-index: 100;
+  opacity: 0; pointer-events: none; transition: opacity 0.35s;
+  overflow-y: auto; overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.overlay.show { opacity: 1; pointer-events: auto; }
+
+.overlay .icon { font-size: 56px; margin-bottom: 4px; }
+.overlay .title { font-size: 32px; font-weight: 800; color: #e94560; text-shadow: 0 0 30px rgba(233,69,96,0.4); }
+.overlay .sub { font-size: 13px; color: rgba(255,255,255,0.55); margin: 4px 0 10px; }
+.overlay .desc { font-size: 12px; color: rgba(255,255,255,0.35); text-align: center; line-height: 1.6; margin-top: 8px; }
+.victory-title { color: #ffd700 !important; text-shadow: 0 0 30px rgba(255,215,0,0.4) !important; }
+
+/* ===== 按钮 ===== */
+.btn {
+  margin-top: 22px; padding: 14px 42px; font-size: 18px; font-weight: 700;
+  color: #fff; background: linear-gradient(135deg, #e94560, #c02e44);
+  border: none; border-radius: 50px; cursor: pointer;
+  box-shadow: 0 4px 24px rgba(233,69,96,0.35); transition: transform 0.15s, box-shadow 0.15s;
+}
+.btn:hover { transform: scale(1.05); box-shadow: 0 6px 30px rgba(233,69,96,0.5); }
+.btn:active { transform: scale(0.97); }
+
+.btn-small {
+  padding: 8px 24px; font-size: 14px; font-weight: 600; border-radius: 30px;
+}
+.btn-revive {
+  background: linear-gradient(135deg, #00cc66, #009944);
+  box-shadow: 0 4px 20px rgba(0,204,102,0.3);
+}
+.btn-revive:hover { box-shadow: 0 6px 28px rgba(0,204,102,0.5); }
+.btn-revive:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+/* ===== 设置面板 ===== */
+.settings-panel {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px; padding: 14px 18px; margin: 10px 0; min-width: 280px; max-width: 380px; width: 90%;
+  flex-shrink: 0;
+}
+.settings-panel h3 { font-size: 14px; color: rgba(255,255,255,0.75); margin-bottom: 8px; }
+
+.setting-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.setting-label { font-size: 13px; color: rgba(255,255,255,0.6); }
+.setting-value { display: flex; align-items: center; gap: 10px; }
+.setting-value span { font-size: 16px; font-weight: 700; color: #fff; min-width: 24px; text-align: center; }
+.setting-btn {
+  width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06); color: #fff; font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: background 0.15s;
+}
+.setting-btn:hover { background: rgba(255,255,255,0.12); }
+
+.diff-btns { display: flex; gap: 6px; }
+.diff-btn {
+  padding: 5px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.12);
+  background: transparent; color: rgba(255,255,255,0.5); font-size: 13px; cursor: pointer; transition: all 0.15s;
+}
+.diff-btn:hover { border-color: rgba(233,69,96,0.5); color: #fff; }
+.diff-btn.active { background: #e94560; border-color: #e94560; color: #fff; }
+
+/* 模式开关 */
+.mode-toggle {
+  display: flex; align-items: center; gap: 10px; padding: 10px 0; cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px; color: rgba(255,255,255,0.6);
+}
+.mode-toggle input { display: none; }
+.mode-check {
+  width: 22px; height: 22px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.18);
+  display: flex; align-items: center; justify-content: center; font-size: 13px; color: transparent; transition: all 0.15s;
+}
+.mode-toggle input:checked ~ .mode-check { border-color: #e94560; background: #e94560; color: #fff; }
+.hunt-label { color: rgba(255,140,0,0.8); }
+.team-label { color: rgba(68,136,255,0.8); }
+.selfbite-label { color: rgba(255,255,255,0.6); }
+.selfbite-toggle input:checked ~ .mode-check { border-color: #ff6b6b; background: #ff6b6b; color: #fff; }
+
+.mode-exclude-hint {
+  font-size: 11px; color: rgba(255,255,255,0.25); padding-top: 6px; text-align: center; font-style: italic;
+}
+
+/* 皮肤选择 */
+.skin-section h4 { font-size: 14px; color: rgba(255,255,255,0.6); margin: 12px 0 8px; }
+.skin-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.skin-card {
+  padding: 8px 4px; border-radius: 10px; border: 2px solid transparent;
+  cursor: pointer; text-align: center; transition: all 0.15s;
+}
+.skin-card:hover { border-color: rgba(255,255,255,0.15); }
+.skin-card.active { border-color: #e94560; box-shadow: 0 0 12px rgba(233,69,96,0.3); }
+.skin-preview {
+  width: 36px; height: 36px; border-radius: 50%; margin: 0 auto 4px;
+  display: flex; align-items: center; justify-content: center;
+}
+.skin-name { font-size: 10px; font-weight: 600; }
+
+/* ===== HUD 元素 ===== */
+.boost-btn {
+  position: fixed; bottom: 40px; right: 30px; width: 64px; height: 64px;
+  border-radius: 50%; background: rgba(233,69,96,0.2); border: 2px solid rgba(233,69,96,0.4);
+  font-size: 28px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 50; transition: all 0.12s; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.boost-btn:active, .boost-btn.active { background: rgba(233,69,96,0.5); border-color: #e94560; transform: scale(0.9); }
+
+.exit-btn {
+  position: fixed; top: 14px; right: 14px; width: 44px; height: 44px;
+  border-radius: 50%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+  font-size: 20px; display: none; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 60; transition: all 0.12s; user-select: none;
+  -webkit-tap-highlight-color: transparent; color: rgba(255,255,255,0.6);
+}
+.exit-btn:hover { background: rgba(233,69,96,0.25); border-color: rgba(233,69,96,0.5); color: #fff; }
+.exit-btn:active { transform: scale(0.9); }
+
+.ai-btn {
+  position: fixed; bottom: 40px; left: 30px; width: 56px; height: 56px;
+  border-radius: 50%; background: rgba(255,215,0,0.12); border: 2px solid rgba(255,215,0,0.3);
+  font-size: 24px; display: none; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 50; transition: all 0.12s; user-select: none;
+  -webkit-tap-highlight-color: transparent; color: rgba(255,215,0,0.7);
+}
+.ai-btn:hover { background: rgba(255,215,0,0.25); border-color: rgba(255,215,0,0.6); }
+.ai-btn.active { background: rgba(255,215,0,0.45); border-color: #ffd700; color: #ffd700; transform: scale(0.92); }
+.ai-btn:active { transform: scale(0.88); }
+
+.rec-btn {
+  position: fixed; top: 14px; right: 66px; width: 44px; height: 44px;
+  border-radius: 50%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+  font-size: 18px; display: none; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 60; color: rgba(255,255,255,0.6); transition: all 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.rec-btn:hover { background: rgba(255,60,60,0.2); border-color: rgba(255,60,60,0.5); color: #ff6666; }
+.rec-btn.recording { background: rgba(255,0,0,0.3); border-color: #ff4444; color: #ff4444; animation: recPulse 1s infinite; }
+@keyframes recPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+.mode-tag {
+  position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+  padding: 6px 18px; border-radius: 20px; font-size: 13px; font-weight: 600;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 50;
+}
+.mode-tag.show { opacity: 1; }
+.hunt-mode-tag { background: rgba(255,140,0,0.2); border: 1px solid rgba(255,140,0,0.3); color: #ffaa33; }
+.team-tag { background: rgba(68,136,255,0.2); border: 1px solid rgba(68,136,255,0.3); color: #88bbff; }
+
+.kill-feed {
+  position: fixed; top: 50px; right: 14px; width: 260px; z-index: 50;
+  display: flex; flex-direction: column; gap: 4px; pointer-events: none;
+}
+.kill-msg {
+  padding: 6px 12px; background: rgba(0,0,0,0.5); border-radius: 8px;
+  font-size: 12px; color: rgba(255,255,255,0.8); animation: fadeInOut 4s forwards;
+}
+@keyframes fadeInOut { 0% { opacity: 0; transform: translateX(20px); } 10% { opacity: 1; transform: translateX(0); } 80% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ===== 结束界面 ===== */
+.end-stats {
+  display: flex; gap: 28px; margin: 18px 0; justify-content: center;
+}
+.stat-item { text-align: center; }
+.stat-val { font-size: 28px; font-weight: 800; color: #e94560; }
+.stat-label { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+.death-reason { font-size: 14px; color: rgba(255,255,255,0.5); margin-bottom: 10px; text-align: center; }
+
+.screenshot-box { margin: 12px 0; display: none; }
+.screenshot-box img { max-width: 280px; max-height: 180px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
+.btn-download {
+  margin-top: 6px; padding: 6px 16px; font-size: 12px; display: none;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7); border-radius: 20px; cursor: pointer;
+}
+.btn-download:hover { background: rgba(255,255,255,0.14); }
+
+.revive-hint { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 6px; }
+
+.key-hints {
+  position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+  padding: 6px 16px; background: rgba(0,0,0,0.4); border-radius: 20px;
+  font-size: 12px; color: rgba(255,255,255,0.35); z-index: 50;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+.key-hints.show { opacity: 1; }
+
+/* ===== 响应式 ===== */
+@media (max-width: 600px) {
+  .overlay { padding: 12px 0; justify-content: flex-start; padding-top: max(12px, env(safe-area-inset-top)); }
+  .overlay .icon { font-size: 40px; margin-bottom: 2px; }
+  .overlay .title { font-size: 22px; }
+  .overlay .sub { font-size: 12px; margin: 2px 0 6px; }
+  .overlay .desc { font-size: 11px; margin-top: 4px; line-height: 1.4; }
+  .settings-panel { min-width: 0; padding: 10px 12px; margin: 6px 0; border-radius: 10px; }
+  .settings-panel h3 { font-size: 13px; margin-bottom: 6px; }
+  .setting-row { padding: 4px 0; }
+  .setting-label { font-size: 12px; }
+  .setting-value span { font-size: 14px; }
+  .setting-btn { width: 26px; height: 26px; font-size: 14px; }
+  .diff-btn { padding: 4px 10px; font-size: 11px; }
+  .mode-toggle { padding: 6px 0; gap: 8px; font-size: 12px; }
+  .mode-check { width: 20px; height: 20px; font-size: 11px; }
+  .skin-section h4 { font-size: 12px; margin: 6px 0 4px; }
+  .skin-grid { gap: 4px; }
+  .skin-card { padding: 4px 2px; border-radius: 6px; }
+  .skin-preview { width: 28px; height: 28px; }
+  .skin-preview span { font-size: 16px !important; }
+  .skin-name { font-size: 8px; }
+  .mode-exclude-hint { font-size: 10px; padding-top: 3px; }
+  .btn { margin-top: 10px; padding: 10px 28px; font-size: 15px; }
+  .btn-small { padding: 6px 18px; font-size: 12px; }
+  .end-stats { gap: 14px; }
+  .stat-val { font-size: 20px; }
+  .boost-btn { width: 56px; height: 56px; font-size: 24px; bottom: 20px; right: 20px; }
+  .ai-btn { width: 48px; height: 48px; font-size: 20px; bottom: 20px; left: 20px; }
+  .exit-btn { width: 36px; height: 36px; font-size: 16px; top: 10px; right: 10px; }
+  .rec-btn { width: 36px; height: 36px; font-size: 14px; top: 10px; right: 52px; }
+}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="boostBtn" class="boost-btn">⚡</div>
+<div id="exitBtn" class="exit-btn">✕</div>
+<div id="aiBtn" class="ai-btn" title="AI代理 - 自动操控">🤖</div>
+<div id="recBtn" class="rec-btn" title="录屏1分钟">⏺</div>
+<div id="huntTag" class="mode-tag hunt-mode-tag">⚔️ 猎杀模式</div>
+<div id="teamTag" class="mode-tag team-tag">👥 队友模式</div>
+<div id="killFeed" class="kill-feed"></div>
+
+<!-- 开始界面 -->
+<div id="startScreen" class="overlay show">
+  <div class="icon">🐍</div>
+  <div class="title">贪吃蛇大作战 <span style="font-size:20px;color:#00ccff">V5</span></div>
+  <div class="sub" id="botInfo">与 6 条 AI 蛇同场竞技！</div>
+  <div class="settings-panel">
+    <h3>⚙️ 游戏设置</h3>
+    <div class="setting-row">
+      <span class="setting-label">AI 数量</span>
+      <div class="setting-value">
+        <button class="setting-btn" id="botMinus">−</button>
+        <span id="botCount">6</span>
+        <button class="setting-btn" id="botPlus">+</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">AI 难度</span>
+      <div class="diff-btns">
+        <button class="diff-btn" data-diff="easy">简单</button>
+        <button class="diff-btn active" data-diff="normal">普通</button>
+        <button class="diff-btn" data-diff="hard">困难</button>
+      </div>
+    </div>
+    <label class="mode-toggle selfbite-toggle">
+      <input type="checkbox" id="selfBite" checked>
+      <span class="mode-check">✓</span>
+      <span class="selfbite-label"><b>自咬死亡</b> · 前12节安全(绿色) · 后面咬到会死</span>
+    </label>
+    <label class="mode-toggle hunt-toggle">
+      <input type="checkbox" id="huntMode">
+      <span class="mode-check">✓</span>
+      <span class="hunt-label"><b>猎杀模式</b> · 可穿过自己 · 撞对方使其变小</span>
+    </label>
+    <label class="mode-toggle team-toggle">
+      <input type="checkbox" id="teamMode">
+      <span class="mode-check">✓</span>
+      <span class="team-label"><b>队友模式</b> · 分队对抗 · 队友不会互吃</span>
+    </label>
+    <div class="mode-exclude-hint">两种模式不可同时开启</div>
+    <div class="skin-section" id="skinSection"></div>
+  </div>
+  <div class="desc" id="controlDesc">
+    移动鼠标/触摸屏幕 控制方向<br>
+    点击/按住 加速（消耗长度）<br>
+    撞到边界或其他蛇的身体即死亡
+  </div>
+  <button class="btn" id="startBtn">🎮 开始游戏</button>
+</div>
+
+<!-- Game Over 界面 -->
+<div id="gameOverScreen" class="overlay">
+  <div class="icon" id="endIcon">💀</div>
+  <div class="title" id="endTitle">游戏结束</div>
+  <div class="sub" id="deathReason">-</div>
+  <div class="screenshot-box" id="screenshotBox" style="display:none">
+    <img id="screenshotImg" src="" alt="screenshot">
+  </div>
+  <div class="end-stats">
+    <div class="stat-item"><div class="stat-val" id="fScore">0</div><div class="stat-label">得分</div></div>
+    <div class="stat-item"><div class="stat-val" id="fLen">0</div><div class="stat-label">长度</div></div>
+    <div class="stat-item"><div class="stat-val" id="fKills">0</div><div class="stat-label">击杀</div></div>
+  </div>
+  <button class="btn btn-download" id="downloadBtn" style="display:none">📥 保存截图</button>
+  <button class="btn" id="restartBtn">🔄 再来一局</button>
+  <button class="btn btn-revive" id="reviveBtn">❤️ 复活 (<span id="reviveCount">3</span>/3)</button>
+</div>
+
+<!-- 键盘提示 -->
+<div id="keyHints" class="key-hints">
+  <div class="key-hint"><kbd>W</kbd><kbd>↑</kbd><span>上</span></div>
+  <div class="key-hint"><kbd>A</kbd><kbd>←</kbd><span>左</span></div>
+  <div class="key-hint"><kbd>S</kbd><kbd>↓</kbd><span>下</span></div>
+  <div class="key-hint"><kbd>D</kbd><kbd>→</kbd><span>右</span></div>
+  <div class="key-hint" style="margin-left:16px"><kbd>Space</kbd><span>加速</span></div>
+</div>
+
+<script>
+(()=>{
+  'use strict';
+  
+  // 常量定义
+  const MAP = 3000;
+  const FOOD_N = 250;
+  const SR = 10;
+  const SG = 16;
+  const SPD = 2.5;
+  const BSPD = 5.2;
+  const TURN = 0.07;
+  const INIT_L = 20;
+  const FOOD_R = 5;
+  const DEAD_R = 7;
+  const BOOST_MIN = 15;
+  const BOOST_CI = 8;
+  const INVULN_T = 120;
+  const MAX_BOTS = 18;
+  const COPIES_PER_TYPE = 3;
+  const HUNT_SHRINK = 10;
+  const HUNT_MIN_LEN = 8;
+  const MAX_REVIVES = 3;
+  const MAX_PARTICLES = 300;
+  const GRID_SIZE = 200;
+  const MAGNET_R = 12;
+  const MAGNET_RANGE = 350;
+  const MAGNET_PULL = 3.5;
+  const MAGNET_DUR = 900;
+  const MAGNET_SPAWN_CD = 900;
+
+  // 皮肤系统
+  function mkSkin(id, name, emoji, body, stripe, head, eye, glow, bg, dash) {
+    return { id, name, emoji, body, stripe, head, eye, glow: glow || 0.5, bg: bg || 'rgba(255,255,255,0.08)', dash: dash || null };
+  }
+
+  const SKINS = [
+    mkSkin('crimson', '赤焰蛇', '🔴', '#e94560', '#c02e44', '#ff6b81', '#111', 0.6, 'rgba(233,69,96,0.12)'),
+    mkSkin('neon', '霓虹蛇', '💚', '#00ff88', '#00cc66', '#33ffaa', '#002211', 0.8, 'rgba(0,255,136,0.12)'),
+    mkSkin('ocean', '深海蛇', '🔵', '#0099ff', '#0066cc', '#33bbff', '#001a33', 0.5, 'rgba(0,153,255,0.12)'),
+    mkSkin('sunset', '落日蛇', '🟠', '#ff8c00', '#cc6600', '#ffaa33', '#331a00', 0.5, 'rgba(255,140,0,0.12)'),
+    mkSkin('gold', '金龙蛇', '🟡', '#ffd700', '#ccaa00', '#ffe44d', '#332a00', 0.7, 'rgba(255,215,0,0.12)'),
+    mkSkin('purple', '暗紫蛇', '🟣', '#9b59b6', '#7d3c98', '#bb77d4', '#1a0d22', 0.5, 'rgba(155,89,182,0.12)'),
+    mkSkin('pink', '樱花蛇', '🌸', '#ff69b4', '#cc3388', '#ff8cc8', '#330d1a', 0.6, 'rgba(255,105,180,0.12)', [14, 10]),
+    mkSkin('ice', '冰晶蛇', '❄️', '#88ddff', '#55bbee', '#aaeeff', '#002233', 0.8, 'rgba(136,221,255,0.12)'),
+    mkSkin('galaxy', '星河蛇', '🌌', '#7744ff', '#5522cc', '#9966ff', '#0d0022', 0.9, 'rgba(119,68,255,0.12)'),
+    mkSkin('forest', '翠竹蛇', '🌿', '#22cc66', '#119944', '#44ee88', '#002211', 0.4, 'rgba(34,204,102,0.12)')
+  ];
+
+  const TEAM_COLORS = ['#4488ff', '#ff4444'];
+  const BOT_CFG = [
+    { name: '小青龙', skin: 'ocean', aggr: 0.5 },
+    { name: '贪吃鬼', skin: 'sunset', aggr: 0.8 },
+    { name: '闪电蛇', skin: 'gold', aggr: 0.6 },
+    { name: '毒液', skin: 'forest', aggr: 0.4 },
+    { name: '粉色风暴', skin: 'pink', aggr: 0.7 },
+    { name: '暗影忍者', skin: 'purple', aggr: 0.3 }
+  ];
+
+  const DIFF_CFG = {
+    easy: { aggrMul: 0.6, thinkCD: 3, lookMul: 0.8, label: '简单' },
+    normal: { aggrMul: 1.0, thinkCD: 2, lookMul: 1.1, label: '普通' },
+    hard: { aggrMul: 1.6, thinkCD: 1, lookMul: 1.4, label: '困难' }
+  };
+
+  function getSkin(id) {
+    return SKINS.find(s => s.id === id) || SKINS[0];
+  }
+
+  // 状态变量
+  const cv = document.getElementById('canvas');
+  const cx = cv.getContext('2d');
+  const DPR = window.devicePixelRatio || 1;
+  let snakes = [], foods = [], particles = [], magnets = [];
+  let magnetSpawnCD = MAGNET_SPAWN_CD;
+  let cam = { x: MAP / 2, y: MAP / 2 };
+  let player = null;
+  let gameActive = false;
+  let tAngle = 0, boostHeld = false;
+  let shakeAmt = 0, shakeX = 0, shakeY = 0;
+  let revives = 0;
+  let victoryChecked = false;
+  let animId = null;
+  let aiAgent = false;
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let recording = false;
+  let settings = {
+    botCount: 6,
+    difficulty: 'normal',
+    huntMode: false,
+    teamMode: false,
+    selfBite: true,
+    playerSkin: 'crimson'
+  };
+
+  const isPC = !('ontouchstart' in window) || navigator.maxTouchPoints === 0;
+
+  // 画布尺寸
+  function resize() {
+    cv.width = innerWidth * DPR;
+    cv.height = innerHeight * DPR;
+    cv.style.width = innerWidth + 'px';
+    cv.style.height = innerHeight + 'px';
+    cx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  addEventListener('resize', resize);
+  resize();
+
+  // 皮肤选择器
+  function buildSkinSelector() {
+    const section = document.getElementById('skinSection');
+    section.innerHTML = '<h4>🎨 选择皮肤</h4>';
+    const grid = document.createElement('div');
+    grid.className = 'skin-grid';
+    SKINS.forEach(skin => {
+      const card = document.createElement('div');
+      card.className = 'skin-card' + (skin.id === settings.playerSkin ? ' active' : '');
+      card.style.background = skin.bg;
+      card.dataset.skinId = skin.id;
+      card.innerHTML = '<div class="skin-preview" style="background:' + skin.body + ';box-shadow:0 0 12px ' + skin.body + '55;">' +
+        '<span style="font-size:20px">' + skin.emoji + '</span>' +
+        '</div>' +
+        '<div class="skin-name" style="color:' + skin.body + '">' + skin.name + '</div>';
+      card.onclick = () => {
+        settings.playerSkin = skin.id;
+        grid.querySelectorAll('.skin-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+      };
+      grid.appendChild(card);
+    });
+    section.appendChild(grid);
+  }
+  buildSkinSelector();
+
+  // 蛇工厂
+  function mkSnake(name, skinId, isP, aggr, team) {
+    const x = 300 + Math.random() * (MAP - 600);
+    const y = 300 + Math.random() * (MAP - 600);
+    const a = Math.random() * Math.PI * 2;
+    const segs = [];
+    for (let i = 0; i < INIT_L; i++) segs.push({ x: x - Math.cos(a) * i * SG, y: y - Math.sin(a) * i * SG });
+    return {
+      segs, angle: a, tAngle: a, speed: SPD, skinId, name, score: 0, alive: true, isP, boost: false, bc: 0, kills: 0, invuln: INVULN_T, rt: 0, aggr: aggr || 0.5, team: team || 0, permanentDeath: false, thinkCD: 0, lastDir: a, stuckCount: 0, lastPos: { x, y }, stuckCheck: 0, magnet: 0
+    };
+  }
+
+  function moveSnake(s) {
+    let d = s.tAngle - s.angle;
+    while (d > Math.PI) d -= Math.PI * 2;
+    while (d < -Math.PI) d += Math.PI * 2;
+    if (Math.abs(d) > TURN) s.angle += Math.sign(d) * TURN;
+    else s.angle = s.tAngle;
+    while (s.angle > Math.PI) s.angle -= Math.PI * 2;
+    while (s.angle < -Math.PI) s.angle += Math.PI * 2;
+    const h = s.segs[0];
+    h.x += Math.cos(s.angle) * s.speed;
+    h.y += Math.sin(s.angle) * s.speed;
+    for (let i = 1; i < s.segs.length; i++) {
+      const p = s.segs[i - 1], c = s.segs[i];
+      const dx = p.x - c.x, dy = p.y - c.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > SG) {
+        const r = (dist - SG) / dist;
+        c.x += dx * r;
+        c.y += dy * r;
+      }
+    }
+  }
+
+  function killSnake(s, reason) {
+    if (!s.alive) return;
+    s.alive = false;
+    const maxP = Math.min(s.segs.length, 60);
+    const step = Math.max(1, Math.floor(s.segs.length / maxP));
+    const skin = getSkin(s.skinId);
+    for (let i = 0; i < s.segs.length; i += step) {
+      const sg = s.segs[i];
+      for (let j = 0; j < 2; j++) particles.push({
+        x: sg.x, y: sg.y, vx: (Math.random() - 0.5) * 7, vy: (Math.random() - 0.5) * 7, life: 1, dec: 0.014 + Math.random() * 0.014, sz: 3 + Math.random() * 3, color: skin.body
+      });
+    }
+    for (let i = 0; i < s.segs.length; i += 3) foods.push({
+      x: s.segs[i].x + (Math.random() - 0.5) * 18, y: s.segs[i].y + (Math.random() - 0.5) * 18, r: DEAD_R, color: skin.body, val: 2
+    });
+    if (s.isP) {
+      addShake(18);
+      setTimeout(() => showOver(reason, s), 600);
+    } else {
+      s.rt = 3000 + Math.random() * 3000;
+    }
+    addKillFeed('💀 ' + reason);
+  }
+
+  function respawnBot(s) {
+    let x, y, ok;
+    for (let t = 0; t < 50; t++) {
+      x = 300 + Math.random() * (MAP - 600);
+      y = 300 + Math.random() * (MAP - 600);
+      ok = true;
+      for (const o of snakes) {
+        if (!o.alive || o === s) continue;
+        if ((x - o.segs[0].x) ** 2 + (y - o.segs[0].y) ** 2 < 280 * 280) { ok = false; break; }
+      }
+      if (ok) break;
+    }
+    const a = Math.random() * Math.PI * 2;
+    s.segs = [];
+    for (let i = 0; i < INIT_L; i++) s.segs.push({ x: x - Math.cos(a) * i * SG, y: y - Math.sin(a) * i * SG });
+    s.angle = a; s.tAngle = a; s.speed = SPD; s.alive = true; s.boost = false; s.bc = 0; s.score = 0; s.kills = 0; s.invuln = INVULN_T; s.permanentDeath = false; s.thinkCD = 0; s.stuckCount = 0; s.lastPos = { x, y }; s.stuckCheck = 0; s.lastDir = a; s.magnet = 0;
+  }
+
+  // 食物系统
+  let foodGrid = {};
+  function buildFoodGrid() {
+    foodGrid = {};
+    for (let i = 0; i < foods.length; i++) {
+      const f = foods[i];
+      const key = ((f.x / GRID_SIZE | 0) << 16) | (f.y / GRID_SIZE | 0);
+      if (!foodGrid[key]) foodGrid[key] = [];
+      foodGrid[key].push(i);
+    }
+  }
+
+  function getNearFood(x, y, r) {
+    const res = [];
+    const gx0 = Math.max(0, (x - r) / GRID_SIZE | 0);
+    const gy0 = Math.max(0, (y - r) / GRID_SIZE | 0);
+    const gx1 = Math.min((MAP / GRID_SIZE | 0), (x + r) / GRID_SIZE | 0);
+    const gy1 = Math.min((MAP / GRID_SIZE | 0), (y + r) / GRID_SIZE | 0);
+    for (let gx = gx0; gx <= gx1; gx++) {
+      for (let gy = gy0; gy <= gy1; gy++) {
+        const arr = foodGrid[(gx << 16) | gy];
+        if (arr) res.push(...arr);
+      }
+    }
+    return res;
+  }
+
+  function spawnFood() {
+    foods.push({
+      x: 60 + Math.random() * (MAP - 120), y: 60 + Math.random() * (MAP - 120), r: FOOD_R, color: `hsl(${Math.random() * 360},80%,60%)`, val: 1
+    });
+  }
+
+  function ensureFood() {
+    while (foods.length > FOOD_N * 2.5) foods.splice(Math.floor(Math.random() * foods.length), 1);
+    while (foods.length < FOOD_N) spawnFood();
+    buildFoodGrid();
+  }
+
+  // 磁铁道具系统
+  function spawnMagnet() {
+    magnets.push({
+      x: 100 + Math.random() * (MAP - 200),
+      y: 100 + Math.random() * (MAP - 200),
+      pulse: 0
+    });
+  }
+
+  function updateMagnets(dt) {
+    // 磁铁保底：始终至少1个
+    if (magnets.length === 0) {
+      spawnMagnet();
+    }
+    // 磁铁生成计时
+    magnetSpawnCD--;
+    if (magnetSpawnCD <= 0 && magnets.length < 5) {
+      spawnMagnet();
+      magnetSpawnCD = MAGNET_SPAWN_CD + Math.floor(Math.random() * 400);
+    }
+    // 磁铁脉冲动画
+    for (const m of magnets) m.pulse = (m.pulse + 0.04) % (Math.PI * 2);
+    // 蛇的磁铁效果：吸引食物
+    for (const s of snakes) {
+      if (!s.alive || s.magnet <= 0) continue;
+      s.magnet--;
+      const hx = s.segs[0].x, hy = s.segs[0].y;
+      for (const f of foods) {
+        const dx = hx - f.x, dy = hy - f.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < MAGNET_RANGE && dist > 5) {
+          const pull = MAGNET_PULL * (1 - dist / MAGNET_RANGE);
+          f.x += (dx / dist) * pull;
+          f.y += (dy / dist) * pull;
+        }
+      }
+    }
+  }
+
+  function drawMagnets() {
+    const W2 = innerWidth / 2 + 120, H2 = innerHeight / 2 + 120;
+    for (const m of magnets) {
+      if (Math.abs(m.x - cam.x) > W2 || Math.abs(m.y - cam.y) > H2) continue;
+      // 磁场光环
+      const pulseR = MAGNET_R + 6 + Math.sin(m.pulse) * 4;
+      cx.globalAlpha = 0.15 + Math.sin(m.pulse) * 0.08;
+      cx.fillStyle = '#00ccff';
+      cx.beginPath();
+      cx.arc(m.x, m.y, pulseR * 2.5, 0, Math.PI * 2);
+      cx.fill();
+      // 外圈
+      cx.globalAlpha = 0.3;
+      cx.strokeStyle = '#00ccff';
+      cx.lineWidth = 2;
+      cx.beginPath();
+      cx.arc(m.x, m.y, pulseR * 1.8, 0, Math.PI * 2);
+      cx.stroke();
+      // 核心
+      cx.globalAlpha = 1;
+      cx.fillStyle = '#00eeff';
+      cx.beginPath();
+      cx.arc(m.x, m.y, MAGNET_R, 0, Math.PI * 2);
+      cx.fill();
+      // 高光
+      cx.fillStyle = 'rgba(255,255,255,0.5)';
+      cx.beginPath();
+      cx.arc(m.x - 3, m.y - 3, 4, 0, Math.PI * 2);
+      cx.fill();
+      // 磁铁图标
+      cx.font = '14px sans-serif';
+      cx.textAlign = 'center';
+      cx.textBaseline = 'middle';
+      cx.fillText('🧲', m.x, m.y);
+    }
+    cx.globalAlpha = 1;
+  }
+
+  // 击杀播报
+  const killFeedEl = document.getElementById('killFeed');
+  function addKillFeed(text) {
+    const el = document.createElement('div');
+    el.className = 'kill-msg';
+    el.textContent = text;
+    killFeedEl.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+    while (killFeedEl.children.length > 6) killFeedEl.removeChild(killFeedEl.firstChild);
+  }
+
+  // AI 系统（增强版）
+  function updateAI(s) {
+    const h = s.segs[0];
+    const diffCfg = DIFF_CFG[settings.difficulty];
+    // 卡住检测
+    s.stuckCheck++;
+    if (s.stuckCheck > 60) {
+      s.stuckCheck = 0;
+      const dx = h.x - s.lastPos.x, dy = h.y - s.lastPos.y;
+      if (dx * dx + dy * dy < 9) s.stuckCount++;
+      else s.stuckCount = 0;
+      s.lastPos = { x: h.x, y: h.y };
+    }
+    if (s.stuckCount >= 3) {
+      s.stuckCount = 0;
+      s.tAngle = s.angle + (Math.random() - 0.5) * 2.5;
+      s.boost = true;
+      return;
+    }
+    // 思考冷却（AI增强：冷却减半）
+    s.thinkCD--;
+    if (s.thinkCD > 0) return;
+    s.thinkCD = Math.max(1, Math.floor(diffCfg.thinkCD * 0.6));
+    const NUM_DIRS = 48;
+    const step = Math.PI * 2 / NUM_DIRS;
+    const lookDist = (150 + s.segs.length * 0.6) * diffCfg.lookMul;
+    const nearFood = getNearFood(h.x, h.y, 500);
+    const scores = new Float64Array(NUM_DIRS);
+    for (let i = 0; i < NUM_DIRS; i++) {
+      const a = i * step;
+      const cosA = Math.cos(a), sinA = Math.sin(a);
+      let sc = 0;
+      // --- 墙壁避让（增强：更早反应） ---
+      const tx = h.x + cosA * lookDist;
+      const ty = h.y + sinA * lookDist;
+      const wd = Math.min(tx, MAP - tx, ty, MAP - ty);
+      if (wd < 0) sc -= 9999;
+      else if (wd < 80) sc -= (80 - wd) * 50;
+      else if (wd < 160) sc -= (160 - wd) * 10;
+      else sc += 8;
+      const tx2 = h.x + cosA * lookDist * 1.8;
+      const ty2 = h.y + sinA * lookDist * 1.8;
+      if (Math.min(tx2, MAP - tx2, ty2, MAP - ty2) < 100) sc -= 500;
+      // --- 碰撞避让（增强：预测移动） ---
+      for (const o of snakes) {
+        if (!o.alive) continue;
+        const odx = tx - o.segs[0].x, ody = ty - o.segs[0].y;
+        const maxR = o.segs.length * SG + 100;
+        if (odx * odx + ody * ody > maxR * maxR) continue;
+        const startI = (o === s) ? 8 : 0;
+        for (let j = startI; j < o.segs.length; j += 2) {
+          const seg = o.segs[j];
+          const d2 = (tx - seg.x) ** 2 + (ty - seg.y) ** 2;
+          if (d2 < 400) sc -= 9999;
+          else if (d2 < 2500) sc -= (50 - Math.sqrt(d2)) * 28;
+          else if (d2 < 6400) sc -= (80 - Math.sqrt(d2)) * 5;
+        }
+        // 预测其他蛇的未来位置
+        if (o !== s && o.alive && o.segs.length > 1) {
+          const pred = 40;
+          const ox2 = o.segs[0].x + Math.cos(o.angle) * pred;
+          const oy2 = o.segs[0].y + Math.sin(o.angle) * pred;
+          const pd2 = (tx - ox2) ** 2 + (ty - oy2) ** 2;
+          if (pd2 < 2500) sc -= 300;
+          else if (pd2 < 6400) sc -= 80;
+        }
+      }
+      // --- 食物吸引力（增强：更大范围、更高权重） ---
+      let foodScore = 0;
+      for (const fi of nearFood) {
+        const f = foods[fi];
+        const fd2 = (f.x - h.x) ** 2 + (f.y - h.y) ** 2;
+        if (fd2 > 250000) continue;
+        const fd = Math.sqrt(fd2);
+        let fa = Math.atan2(f.y - h.y, f.x - h.x);
+        let diff = a - fa;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        if (Math.abs(diff) < 0.7) {
+          const cone = 1 - Math.abs(diff) / 0.7;
+          foodScore += cone * (500 - fd) / 500 * 12 * f.val;
+        }
+      }
+      sc += foodScore;
+      // --- 磁铁吸引力 ---
+      for (const m of magnets) {
+        const md2 = (m.x - h.x) ** 2 + (m.y - h.y) ** 2;
+        if (md2 > 250000) continue;
+        const md = Math.sqrt(md2);
+        let ma = Math.atan2(m.y - h.y, m.x - h.x);
+        let diff = a - ma;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        if (Math.abs(diff) < 0.5) {
+          const cone = 1 - Math.abs(diff) / 0.5;
+          sc += cone * (500 - md) / 500 * 25;
+        }
+      }
+      // --- 追击（增强：更积极、更远追击） ---
+      const aggrMul = diffCfg.aggrMul;
+      const huntAggr = settings.huntMode ? 2 : 1;
+      if (s.segs.length > 20) {
+        const ph = player && player.alive ? player.segs[0] : null;
+        if (ph && !(settings.teamMode && s.team > 0 && s.team === player.team)) {
+          const dx = ph.x - h.x, dy = ph.y - h.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const chaseD = settings.huntMode ? 600 : 420;
+          if (dist < chaseD) {
+            let pa = Math.atan2(dy, dx);
+            let diff = a - pa;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            if (Math.abs(diff) < 0.6) sc += (1 - Math.abs(diff) / 0.6) * (chaseD - dist) / chaseD * 18 * s.aggr * aggrMul * huntAggr;
+          }
+        }
+        for (const o of snakes) {
+          if (!o.alive || o === s || o.isP) continue;
+          if (settings.teamMode && s.team > 0 && o.team === s.team) continue;
+          const ratio = settings.huntMode ? 1.3 : 0.7;
+          if (o.segs.length < s.segs.length * ratio) {
+            const dx = o.segs[0].x - h.x, dy = o.segs[0].y - h.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const chaseD = settings.huntMode ? 480 : 340;
+            if (dist < chaseD) {
+              let pa = Math.atan2(dy, dx);
+              let diff = a - pa;
+              while (diff > Math.PI) diff -= Math.PI * 2;
+              while (diff < -Math.PI) diff += Math.PI * 2;
+              if (Math.abs(diff) < 0.5) sc += (1 - Math.abs(diff) / 0.5) * (chaseD - dist) / chaseD * 12 * s.aggr * aggrMul * huntAggr;
+            }
+          }
+        }
+      }
+      // --- 逃跑（增强：更快反应、更远感知） ---
+      for (const o of snakes) {
+        if (!o.alive || o === s) continue;
+        if (settings.teamMode && s.team > 0 && o.team === s.team) continue;
+        const fleeRatio = settings.huntMode ? 1.1 : 1.25;
+        const fleeDist = settings.huntMode ? 320 : 240;
+        if (o.segs.length > s.segs.length * fleeRatio) {
+          const dx = o.segs[0].x - h.x, dy = o.segs[0].y - h.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < fleeDist) {
+            let pa = Math.atan2(dy, dx);
+            let diff = a - pa;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            if (Math.abs(diff) > 1.3) sc += ((Math.abs(diff) - 1.3) / 1.7) * (fleeDist - dist) / fleeDist * 28;
+          }
+        }
+      }
+      // --- 方向惯性 ---
+      let adiff = a - s.lastDir;
+      while (adiff > Math.PI) adiff -= Math.PI * 2;
+      while (adiff < -Math.PI) adiff += Math.PI * 2;
+      sc -= Math.abs(adiff) * 5;
+      // --- 开放空间评估 ---
+      let openScore = 0;
+      for (let r = 1; r <= 4; r++) {
+        const rd = r * 45;
+        for (let da = -0.35; da <= 0.35; da += 0.35) {
+          const cx2 = h.x + Math.cos(a + da) * rd;
+          const cy2 = h.y + Math.sin(a + da) * rd;
+          if (Math.min(cx2, MAP - cx2, cy2, MAP - cy2) > 60) openScore += r;
+          for (const o of snakes) {
+            if (!o.alive) continue;
+            const si = o === s ? 10 : 0;
+            for (let j = si; j < o.segs.length; j += 4) {
+              if ((cx2 - o.segs[j].x) ** 2 + (cy2 - o.segs[j].y) ** 2 < 900) {
+                openScore -= r * 2;
+                break;
+              }
+            }
+          }
+        }
+      }
+      sc += openScore;
+      scores[i] = sc;
+    }
+    let bestI = 0;
+    for (let i = 1; i < NUM_DIRS; i++) if (scores[i] > scores[bestI]) bestI = i;
+    s.tAngle = bestI * step;
+    s.lastDir = s.tAngle;
+    // --- 加速决策（增强：更智能） ---
+    s.boost = false;
+    if (s.segs.length > BOOST_MIN + 3) {
+      // 追击高价值食物
+      for (const f of foods) {
+        const fd = Math.sqrt((f.x - h.x) ** 2 + (f.y - h.y) ** 2);
+        if (fd < 130 && fd > 15 && f.val >= 2) {
+          let fa = Math.atan2(f.y - h.y, f.x - h.x);
+          let diff = s.angle - fa;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          if (Math.abs(diff) < 0.35) { s.boost = true; break; }
+        }
+      }
+      // 冲向磁铁
+      if (!s.boost) {
+        for (const m of magnets) {
+          const md = Math.sqrt((m.x - h.x) ** 2 + (m.y - h.y) ** 2);
+          if (md < 180 && md > 15) {
+            let ma = Math.atan2(m.y - h.y, m.x - h.x);
+            let diff = s.angle - ma;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            if (Math.abs(diff) < 0.3) { s.boost = true; break; }
+          }
+        }
+      }
+      // 逃跑加速
+      if (!s.boost) {
+        for (const o of snakes) {
+          if (!o.alive || o === s) continue;
+          if (o.segs.length > s.segs.length * 1.15) {
+            const dist = Math.sqrt((o.segs[0].x - h.x) ** 2 + (o.segs[0].y - h.y) ** 2);
+            if (dist < 160) { s.boost = true; break; }
+          }
+        }
+      }
+      // 追击比自己小的蛇
+      if (!s.boost && s.segs.length > 30) {
+        for (const o of snakes) {
+          if (!o.alive || o === s || o.isP) continue;
+          if (settings.teamMode && s.team > 0 && o.team === s.team) continue;
+          if (o.segs.length < s.segs.length * 0.5) {
+            const dist = Math.sqrt((o.segs[0].x - h.x) ** 2 + (o.segs[0].y - h.y) ** 2);
+            if (dist < 100) {
+              let oa = Math.atan2(o.segs[0].y - h.y, o.segs[0].x - h.x);
+              let diff = s.angle - oa;
+              while (diff > Math.PI) diff -= Math.PI * 2;
+              while (diff < -Math.PI) diff += Math.PI * 2;
+              if (Math.abs(diff) < 0.3) { s.boost = true; break; }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 加速系统
+  function updateBoost(s) {
+    if (s.isP) s.boost = boostHeld && gameActive;
+    if (s.boost && s.alive && s.segs.length > BOOST_MIN) {
+      s.speed = BSPD;
+      s.bc++;
+      if (s.bc >= BOOST_CI) {
+        s.bc = 0;
+        const t = s.segs.pop();
+        if (t) foods.push({ x: t.x, y: t.y, r: 3, color: getSkin(s.skinId).body, val: 1 });
+        if (s.isP) s.score = Math.max(0, s.score - 1);
+      }
+    } else {
+      s.speed = SPD;
+      s.boost = false;
+      s.bc = 0;
+    }
+  }
+
+  // 猎杀模式
+  function huntShrink(victim, attacker) {
+    if (victim.segs.length <= HUNT_MIN_LEN) {
+      killSnake(victim, attacker.name + ' 吞噬了 ' + victim.name);
+      attacker.kills++;
+      victim.permanentDeath = true;
+      return;
+    }
+    const lose = Math.min(HUNT_SHRINK, victim.segs.length - HUNT_MIN_LEN);
+    for (let i = 0; i < lose; i++) {
+      const seg = victim.segs.pop();
+      if (seg) foods.push({
+        x: seg.x + (Math.random() - 0.5) * 10, y: seg.y + (Math.random() - 0.5) * 10, r: DEAD_R, color: getSkin(victim.skinId).body, val: 1
+      });
+    }
+    victim.score = Math.max(0, victim.score - lose);
+    const gain = Math.floor(lose * 0.6);
+    for (let i = 0; i < gain; i++) {
+      const tail = attacker.segs[attacker.segs.length - 1];
+      if (tail) attacker.segs.push({ x: tail.x, y: tail.y });
+    }
+    attacker.score += gain;
+    addShake(8);
+    for (let j = 0; j < 12; j++) particles.push({
+      x: victim.segs[0].x, y: victim.segs[0].y, vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.5) * 6, life: 1, dec: 0.03, sz: 3 + Math.random() * 3, color: getSkin(victim.skinId).body
+    });
+    addKillFeed('⚔️ ' + attacker.name + ' 撞了 ' + victim.name + ' (-' + lose + ')');
+  }
+
+  // 碰撞检测
+  function checkHit() {
+    const eaten = new Set();
+    const hunt = settings.huntMode;
+    const teamOn = settings.teamMode;
+    const hitR2 = SR * SR * 1.5;
+    const selfR2 = SR * SR * 0.9;
+    for (const s of snakes) {
+      if (!s.alive || s.invuln > 0) continue;
+      const h = s.segs[0];
+      if (h.x < 0 || h.x > MAP || h.y < 0 || h.y > MAP) {
+        killSnake(s, s.name + ' 撞到了边界');
+        continue;
+      }
+      let dead = false;
+      for (const o of snakes) {
+        if (!o.alive || o === s) continue;
+        if (teamOn && s.team > 0 && o.team === s.team) continue;
+        const maxRange = o.segs.length * SG + SR * 2;
+        if ((h.x - o.segs[0].x) ** 2 + (h.y - o.segs[0].y) ** 2 > maxRange * maxRange) continue;
+        for (let i = 0; i < o.segs.length; i++) {
+          const sg = o.segs[i];
+          const dx = h.x - sg.x, dy = h.y - sg.y;
+          if (dx * dx + dy * dy < hitR2) {
+            if (hunt) {
+              huntShrink(o, s);
+            } else {
+              killSnake(s, s.name + ' 被 ' + o.name + ' 消灭');
+              o.kills++;
+            }
+            dead = true;
+            break;
+          }
+        }
+        if (dead) break;
+      }
+      if (dead) continue;
+      if (!hunt && settings.selfBite && s.segs.length > 12) {
+        for (let i = 12; i < s.segs.length; i++) {
+          const sg = s.segs[i];
+          const dx = h.x - sg.x, dy = h.y - sg.y;
+          if (dx * dx + dy * dy > 2500) continue;
+          if (dx * dx + dy * dy < selfR2) {
+            killSnake(s, s.name + ' 咬到了自己');
+            dead = true;
+            break;
+          }
+        }
+      }
+      if (dead) continue;
+      const eatR = SR + FOOD_R + 5;
+      const nearIdx = getNearFood(h.x, h.y, eatR);
+      for (const i of nearIdx) {
+        if (eaten.has(i)) continue;
+        const f = foods[i];
+        if ((h.x - f.x) ** 2 + (h.y - f.y) ** 2 < (SR + f.r) * (SR + f.r)) {
+          eaten.add(i);
+          s.score += f.val;
+          for (let j = 0; j < f.val; j++) {
+            const tail = s.segs[s.segs.length - 1];
+            s.segs.push({ x: tail.x, y: tail.y });
+          }
+          for (let j = 0; j < 5; j++) particles.push({
+            x: f.x, y: f.y, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4, life: 1, dec: 0.04, sz: 2 + Math.random() * 2, color: f.color
+          });
+        }
+      }
+    }
+    const toDel = [...eaten].sort((a, b) => b - a);
+    for (const idx of toDel) {
+      if (idx < foods.length - 1) foods[idx] = foods[foods.length - 1];
+      foods.pop();
+    }
+    // 磁铁碰撞
+    for (const s of snakes) {
+      if (!s.alive || s.invuln > 0) continue;
+      const hx = s.segs[0].x, hy = s.segs[0].y;
+      for (let i = magnets.length - 1; i >= 0; i--) {
+        const m = magnets[i];
+        const dx = hx - m.x, dy = hy - m.y;
+        if (dx * dx + dy * dy < (SR + MAGNET_R) * (SR + MAGNET_R)) {
+          s.magnet = MAGNET_DUR;
+          for (let j = 0; j < 12; j++) particles.push({
+            x: m.x, y: m.y, vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.5) * 6,
+            life: 1, dec: 0.025, sz: 3 + Math.random() * 3, color: '#00ccff'
+          });
+          magnets.splice(i, 1);
+          if (s.isP) addKillFeed('🧲 获得磁铁！吸引食物 15 秒');
+          break;
+        }
+      }
+    }
+  }
+
+  // 粒子系统
+  function updateParts() {
+    while (particles.length > MAX_PARTICLES) particles.shift();
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vx *= 0.94;
+      p.vy *= 0.94;
+      p.life -= p.dec;
+      if (p.life <= 0) particles.splice(i, 1);
+    }
+  }
+
+  function addShake(a) { shakeAmt = a; }
+  function updateShake() {
+    if (shakeAmt > 0.5) {
+      shakeX = (Math.random() - 0.5) * shakeAmt;
+      shakeY = (Math.random() - 0.5) * shakeAmt;
+      shakeAmt *= 0.88;
+    } else {
+      shakeX = shakeY = shakeAmt = 0;
+    }
+  }
+
+  // 镜头
+  function updateCam() {
+    if (!player || !player.alive) return;
+    cam.x += (player.segs[0].x - cam.x) * 0.09;
+    cam.y += (player.segs[0].y - cam.y) * 0.09;
+  }
+
+  // 渲染
+  function render() {
+    const W = innerWidth, H = innerHeight;
+    cx.fillStyle = '#060810';
+    cx.fillRect(0, 0, W, H);
+    cx.save();
+    cx.translate(W / 2 - cam.x + shakeX, H / 2 - cam.y + shakeY);
+    drawWorld(W, H);
+    drawFoods();
+    drawMagnets();
+    drawSnakes();
+    drawParts();
+    cx.restore();
+    drawUI(W, H);
+  }
+
+  function drawWorld(W, H) {
+    cx.fillStyle = '#0c1020';
+    cx.fillRect(0, 0, MAP, MAP);
+    cx.strokeStyle = 'rgba(255,255,255,0.025)';
+    cx.lineWidth = 1;
+    const gs = 80;
+    const sx = Math.max(0, Math.floor((cam.x - W / 2) / gs) * gs);
+    const sy = Math.max(0, Math.floor((cam.y - H / 2) / gs) * gs);
+    const ex = Math.min(MAP, sx + W + gs * 2);
+    const ey = Math.min(MAP, sy + H + gs * 2);
+    cx.beginPath();
+    for (let x = sx; x <= ex; x += gs) { cx.moveTo(x, sy); cx.lineTo(x, ey); }
+    for (let y = sy; y <= ey; y += gs) { cx.moveTo(sx, y); cx.lineTo(ex, y); }
+    cx.stroke();
+    cx.strokeStyle = 'rgba(233,69,96,0.25)';
+    cx.lineWidth = 4;
+    cx.strokeRect(0, 0, MAP, MAP);
+    cx.strokeStyle = 'rgba(233,69,96,0.06)';
+    cx.lineWidth = 35;
+    cx.strokeRect(0, 0, MAP, MAP);
+  }
+
+  function drawFoods() {
+    const W2 = innerWidth / 2 + 120, H2 = innerHeight / 2 + 120;
+    cx.globalAlpha = 0.2;
+    for (const f of foods) {
+      if (Math.abs(f.x - cam.x) > W2 || Math.abs(f.y - cam.y) > H2) continue;
+      cx.fillStyle = f.color;
+      cx.beginPath();
+      cx.arc(f.x, f.y, f.r * 2.4, 0, Math.PI * 2);
+      cx.fill();
+    }
+    cx.globalAlpha = 1;
+    for (const f of foods) {
+      if (Math.abs(f.x - cam.x) > W2 || Math.abs(f.y - cam.y) > H2) continue;
+      cx.fillStyle = f.color;
+      cx.beginPath();
+      cx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+      cx.fill();
+    }
+    cx.fillStyle = 'rgba(255,255,255,0.3)';
+    for (const f of foods) {
+      if (Math.abs(f.x - cam.x) > W2 || Math.abs(f.y - cam.y) > H2) continue;
+      cx.beginPath();
+      cx.arc(f.x - f.r * 0.25, f.y - f.r * 0.25, f.r * 0.3, 0, Math.PI * 2);
+      cx.fill();
+    }
+  }
+
+  function drawSnakes() {
+    const sorted = snakes.filter(s => s.alive);
+    sorted.sort((a, b) => (a.isP ? 1 : 0) - (b.isP ? 1 : 0));
+    sorted.forEach(drawSnake);
+  }
+
+  function drawSnake(s) {
+    const h = s.segs[0];
+    if (Math.abs(h.x - cam.x) > innerWidth / 2 + 300 || Math.abs(h.y - cam.y) > innerHeight / 2 + 300) return;
+    const n = s.segs.length;
+    const skin = getSkin(s.skinId);
+    const invulnActive = s.invuln > 0;
+    const W2 = innerWidth / 2 + 120, H2 = innerHeight / 2 + 120;
+    const huntWeak = settings.huntMode && n <= HUNT_MIN_LEN + 5 && n > HUNT_MIN_LEN;
+    const bodyColor = huntWeak ? '#ff3333' : skin.body;
+    const stripeColor = huntWeak ? '#cc0000' : skin.stripe;
+    // 蛇身圆点半径，段间距SG=16，圆半径约9.2确保重叠连贯
+    const segR = SG * 0.58;
+    // 阴影层 — 沿身体曲线的投影
+    cx.fillStyle = 'rgba(0,0,0,0.22)';
+    for (let i = 0; i < n; i++) {
+      const sg = s.segs[i];
+      if (Math.abs(sg.x - cam.x) > W2 || Math.abs(sg.y - cam.y) > H2) break;
+      cx.beginPath();
+      cx.arc(sg.x + 2, sg.y + 2, segR + 2, 0, Math.PI * 2);
+      cx.fill();
+    }
+    // 主体层 — 连贯圆点蛇身（自咬模式下安全区变色）
+    const safeLen = settings.selfBite ? 12 : 0;
+    for (let i = 0; i < n; i++) {
+      const sg = s.segs[i];
+      if (Math.abs(sg.x - cam.x) > W2 || Math.abs(sg.y - cam.y) > H2) break;
+      // 安全区用绿色高亮，危险区用原色
+      if (settings.selfBite && !settings.huntMode && i < safeLen) {
+        cx.fillStyle = 'rgba(80,220,120,0.7)';
+      } else {
+        cx.fillStyle = bodyColor;
+      }
+      cx.beginPath();
+      cx.arc(sg.x, sg.y, segR, 0, Math.PI * 2);
+      cx.fill();
+    }
+    // 条纹层 — 交替画深色圆环形成分段效果
+    cx.fillStyle = stripeColor;
+    const stripeDash = skin.dash || [SG * 0.5, SG * 0.5];
+    const dashOn = stripeDash[0], dashOff = stripeDash[1];
+    const dashPeriod = dashOn + dashOff;
+    for (let i = 0; i < n; i++) {
+      const sg = s.segs[i];
+      if (Math.abs(sg.x - cam.x) > W2 || Math.abs(sg.y - cam.y) > H2) break;
+      if ((i % dashPeriod) < dashOn) {
+        cx.beginPath();
+        cx.arc(sg.x, sg.y, segR - 1, 0, Math.PI * 2);
+        cx.fill();
+      }
+    }
+    // 高光层
+    cx.fillStyle = 'rgba(255,255,255,0.1)';
+    for (let i = 0; i < n; i++) {
+      const sg = s.segs[i];
+      if (Math.abs(sg.x - cam.x) > W2 || Math.abs(sg.y - cam.y) > H2) break;
+      cx.beginPath();
+      cx.arc(sg.x - segR * 0.2, sg.y - segR * 0.2, segR * 0.45, 0, Math.PI * 2);
+      cx.fill();
+    }
+    // 加速光晕 — 沿身体尾部渐变光圈，跟随曲线
+    if (s.boost && s.alive) {
+      cx.save();
+      cx.shadowColor = bodyColor;
+      cx.shadowBlur = 20;
+      cx.fillStyle = bodyColor;
+      const tailStart = Math.max(0, n - 12);
+      for (let i = n - 1; i >= tailStart; i--) {
+        const sg = s.segs[i];
+        const fade = (i - tailStart) / Math.max(1, n - tailStart);
+        cx.globalAlpha = 0.06 + fade * 0.22;
+        cx.beginPath();
+        cx.arc(sg.x, sg.y, segR + 4 + fade * 5, 0, Math.PI * 2);
+        cx.fill();
+      }
+      cx.restore();
+    }
+    const huntHead = settings.huntMode && n <= HUNT_MIN_LEN + 5;
+    const headColor = huntHead ? '#ff3333' : skin.head;
+    cx.fillStyle = 'rgba(0,0,0,0.2)';
+    cx.beginPath();
+    cx.arc(h.x + 2, h.y + 2, SR * 1.2, 0, Math.PI * 2);
+    cx.fill();
+    cx.fillStyle = headColor;
+    cx.beginPath();
+    cx.arc(h.x, h.y, SR * 1.15, 0, Math.PI * 2);
+    cx.fill();
+    cx.globalAlpha = 0.2;
+    cx.fillStyle = '#fff';
+    cx.beginPath();
+    cx.arc(h.x - SR * 0.2, h.y - SR * 0.2, SR * 0.5, 0, Math.PI * 2);
+    cx.fill();
+    cx.globalAlpha = 1;
+    // 无敌护盾光环
+    if (invulnActive && s.alive) {
+      const pulse = Math.sin(Date.now() * 0.008) * 0.15 + 0.35;
+      cx.save();
+      cx.globalAlpha = pulse;
+      cx.strokeStyle = '#00ccff';
+      cx.lineWidth = 3;
+      cx.shadowColor = '#00ccff';
+      cx.shadowBlur = 12;
+      cx.beginPath();
+      cx.arc(h.x, h.y, SR * 1.8, 0, Math.PI * 2);
+      cx.stroke();
+      cx.restore();
+    }
+    // 无敌时整体半透明
+    if (invulnActive) cx.globalAlpha = 0.55;
+    if (s.alive) {
+      const eo = SR * 0.42, er = SR * 0.28, pr = er * 0.55, perp = s.angle + Math.PI / 2;
+      for (let side = -1; side <= 1; side += 2) {
+        const ex = h.x + Math.cos(s.angle) * eo * 0.6 + Math.cos(perp) * eo * side;
+        const ey = h.y + Math.sin(s.angle) * eo * 0.6 + Math.sin(perp) * eo * side;
+        cx.fillStyle = skin.eye === '#fff' ? '#fff' : '#eee';
+        cx.beginPath();
+        cx.arc(ex, ey, er, 0, Math.PI * 2);
+        cx.fill();
+        cx.fillStyle = skin.eye;
+        cx.beginPath();
+        cx.arc(ex + Math.cos(s.angle) * pr * 0.3, ey + Math.sin(s.angle) * pr * 0.3, pr, 0, Math.PI * 2);
+        cx.fill();
+      }
+      const teamIcon = settings.teamMode && s.team > 0 ? (s.team === 1 ? '🔵 ' : '🔴 ') : '';
+      const label = teamIcon + s.name + ' (' + n + ')';
+      cx.font = 'bold 12px "Segoe UI","PingFang SC",sans-serif';
+      cx.textAlign = 'center';
+      cx.textBaseline = 'bottom';
+      const tw = cx.measureText(label).width;
+      cx.fillStyle = 'rgba(0,0,0,0.4)';
+      rrect(h.x - tw / 2 - 6, h.y - SR - 24, tw + 12, 18, 4);
+      cx.fill();
+      const isTeammate = settings.teamMode && s.team > 0 && player && s.team === player.team;
+      cx.fillStyle = s.isP ? '#fff' : (isTeammate ? '#88bbff' : 'rgba(255,255,255,0.75)');
+      cx.fillText(label, h.x, h.y - SR - 8);
+    }
+    cx.globalAlpha = 1;
+    if (s.boost && s.alive) {
+      const tail = s.segs[n - 1];
+      cx.globalAlpha = 0.15;
+      cx.fillStyle = bodyColor;
+      cx.beginPath();
+      cx.arc(tail.x, tail.y, SR * 1.5, 0, Math.PI * 2);
+      cx.fill();
+      cx.globalAlpha = 1;
+    }
+  }
+
+  function rrect(x, y, w, h, r) {
+    cx.beginPath();
+    cx.moveTo(x + r, y);
+    cx.lineTo(x + w - r, y);
+    cx.quadraticCurveTo(x + w, y, x + w, y + r);
+    cx.lineTo(x + w, y + h - r);
+    cx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    cx.lineTo(x + r, y + h);
+    cx.quadraticCurveTo(x, y + h, x, y + h - r);
+    cx.lineTo(x, y + r);
+    cx.quadraticCurveTo(x, y, x + r, y);
+    cx.closePath();
+  }
+
+  function drawParts() {
+    const W2 = innerWidth / 2 + 100, H2 = innerHeight / 2 + 100;
+    const groups = {};
+    for (const p of particles) {
+      if (Math.abs(p.x - cam.x) > W2 || Math.abs(p.y - cam.y) > H2) continue;
+      if (p.life < 0.05) continue;
+      if (!groups[p.color]) groups[p.color] = [];
+      groups[p.color].push(p);
+    }
+    for (const color in groups) {
+      cx.fillStyle = color;
+      for (const p of groups[color]) {
+        cx.globalAlpha = Math.max(0, p.life);
+        cx.beginPath();
+        cx.arc(p.x, p.y, p.sz * Math.max(0.2, p.life), 0, Math.PI * 2);
+        cx.fill();
+      }
+    }
+    cx.globalAlpha = 1;
+  }
+
+  function drawBorderWarning(W, H) {
+    if (!player || !player.alive) return;
+    const px = player.segs[0].x, py = player.segs[0].y;
+    const warnDist = 200;
+    const left = Math.max(0, (warnDist - px) / warnDist);
+    const right = Math.max(0, (warnDist - (MAP - px)) / warnDist);
+    const top = Math.max(0, (warnDist - py) / warnDist);
+    const bottom = Math.max(0, (warnDist - (MAP - py)) / warnDist);
+    if (Math.max(left, right, top, bottom) <= 0) return;
+    if (left > 0 || right > 0) {
+      const g = cx.createLinearGradient(0, 0, W, 0);
+      if (left > 0) { g.addColorStop(0, `rgba(255,40,40,${left * 0.4})`); g.addColorStop(0.15, 'transparent'); }
+      if (right > 0) { g.addColorStop(0.85, 'transparent'); g.addColorStop(1, `rgba(255,40,40,${right * 0.4})`); }
+      cx.fillStyle = g;
+      cx.fillRect(0, 0, W, H);
+    }
+    if (top > 0 || bottom > 0) {
+      const g = cx.createLinearGradient(0, 0, 0, H);
+      if (top > 0) { g.addColorStop(0, `rgba(255,40,40,${top * 0.4})`); g.addColorStop(0.15, 'transparent'); }
+      if (bottom > 0) { g.addColorStop(0.85, 'transparent'); g.addColorStop(1, `rgba(255,40,40,${bottom * 0.4})`); }
+      cx.fillStyle = g;
+      cx.fillRect(0, 0, W, H);
+    }
+  }
+
+  function drawUI(W, H) {
+    drawBorderWarning(W, H);
+    if (player && player.alive) {
+      const panelH = settings.teamMode ? 100 : 78;
+      cx.fillStyle = 'rgba(0,0,0,0.32)';
+      rrect(12, 12, 155, panelH, 10);
+      cx.fill();
+      cx.textAlign = 'left';
+      cx.textBaseline = 'top';
+      cx.fillStyle = 'rgba(255,255,255,0.4)';
+      cx.font = '11px sans-serif';
+      cx.fillText('得分', 22, 18);
+      cx.fillStyle = '#fff';
+      cx.font = 'bold 22px sans-serif';
+      cx.fillText('' + player.score, 22, 32);
+      cx.fillStyle = 'rgba(255,255,255,0.35)';
+      cx.font = '11px sans-serif';
+      cx.fillText('长度: ' + player.segs.length + ' 击杀: ' + player.kills, 22, 58);
+      cx.fillStyle = 'rgba(255,100,100,0.7)';
+      cx.font = '11px sans-serif';
+      if (settings.huntMode) cx.fillText('⚔️ 猎杀模式 · 最低' + HUNT_MIN_LEN + '节', 22, 72);
+      else cx.fillText('❤️ 复活: ' + (MAX_REVIVES - revives) + '/' + MAX_REVIVES, 22, 72);
+      if (settings.teamMode) {
+        cx.fillStyle = 'rgba(68,136,255,0.8)';
+        cx.font = 'bold 11px sans-serif';
+        cx.fillText('🔵 蓝队', 22, 88);
+      }
+      const ppx = player.segs[0].x, ppy = player.segs[0].y;
+      const minWall = Math.min(ppx, MAP - ppx, ppy, MAP - ppy);
+      if (minWall < 200) {
+        cx.fillStyle = `rgba(255,80,80,${0.3 + (200 - minWall) / 200 * 0.7})`;
+        cx.font = 'bold 11px sans-serif';
+        cx.fillText('⚠ 距边界: ' + Math.floor(minWall) + 'm', 22, settings.teamMode ? 102 : 88);
+      }
+      // 磁铁效果指示
+      if (player.magnet > 0) {
+        const mSec = Math.ceil(player.magnet / 60);
+        cx.fillStyle = 'rgba(0,204,255,0.8)';
+        cx.font = 'bold 12px sans-serif';
+        cx.fillText('🧲 磁铁: ' + mSec + 's', 22, settings.teamMode ? 116 : 102);
+      }
+    }
+    const alive = snakes.filter(s => s.alive).sort((a, b) => b.score - a.score);
+    const lbW = 155, lbH = 28 + alive.length * 22;
+    const lbX = W - lbW - 12, lbY = 12;
+    cx.fillStyle = 'rgba(0,0,0,0.32)';
+    rrect(lbX, lbY, lbW, lbH, 10);
+    cx.fill();
+    cx.textAlign = 'center';
+    cx.fillStyle = 'rgba(255,255,255,0.55)';
+    cx.font = 'bold 12px sans-serif';
+    cx.fillText('🏆 排行榜', lbX + lbW / 2, lbY + 10);
+    cx.textAlign = 'left';
+    cx.font = '12px sans-serif';
+    alive.forEach((s, i) => {
+      const y = lbY + 30 + i * 22;
+      const skin = getSkin(s.skinId);
+      const isTeam = s.isP || (settings.teamMode && s.team > 0 && player && s.team === player.team);
+      cx.fillStyle = isTeam ? '#e94560' : 'rgba(255,255,255,0.35)';
+      cx.fillText('' + (i + 1), lbX + 8, y);
+      cx.fillStyle = skin.body;
+      cx.beginPath();
+      cx.arc(lbX + 28, y + 5, 4, 0, Math.PI * 2);
+      cx.fill();
+      cx.fillStyle = isTeam ? '#fff' : 'rgba(255,255,255,0.6)';
+      cx.fillText(s.name, lbX + 38, y);
+      cx.textAlign = 'right';
+      cx.fillStyle = isTeam ? '#e94560' : 'rgba(255,255,255,0.35)';
+      cx.fillText('' + s.score, lbX + lbW - 8, y);
+      cx.textAlign = 'left';
+    });
+    drawMinimap(W, H);
+    cx.fillStyle = 'rgba(255,255,255,0.12)';
+    cx.font = '11px sans-serif';
+    cx.textAlign = 'center';
+    cx.fillText(
+      isPC ? 'WASD/方向键移动 · 空格加速' : '触摸屏幕控制方向 · 点击加速按钮',
+      W / 2, H - 8
+    );
+    cx.textAlign = 'left';
+  }
+
+  function drawMinimap(W, H) {
+    const ms = 150, mx = W - ms - 14, my = H - ms - 14, sx = ms / MAP, sy = ms / MAP;
+    cx.fillStyle = 'rgba(0,0,0,0.6)';
+    rrect(mx - 4, my - 4, ms + 8, ms + 8, 12);
+    cx.fill();
+    cx.fillStyle = '#0c1020';
+    rrect(mx, my, ms, ms, 8);
+    cx.fill();
+    cx.strokeStyle = 'rgba(255,255,255,0.04)';
+    cx.lineWidth = 0.5;
+    for (let g = 0; g <= MAP; g += 600) {
+      cx.beginPath();
+      cx.moveTo(mx + g * sx, my);
+      cx.lineTo(mx + g * sx, my + ms);
+      cx.stroke();
+      cx.beginPath();
+      cx.moveTo(mx, my + g * sy);
+      cx.lineTo(mx + ms, my + g * sy);
+      cx.stroke();
+    }
+    cx.strokeStyle = 'rgba(233,69,96,0.6)';
+    cx.lineWidth = 2.5;
+    cx.shadowColor = '#e94560';
+    cx.shadowBlur = 6;
+    cx.strokeRect(mx + 1, my + 1, ms - 2, ms - 2);
+    cx.shadowBlur = 0;
+    const teamOn = settings.teamMode;
+    for (const s of snakes) {
+      if (!s.alive || s.isP) continue;
+      const hx = mx + s.segs[0].x * sx, hy = my + s.segs[0].y * sy;
+      const isTM = teamOn && s.team > 0 && player && s.team === player.team;
+      cx.globalAlpha = isTM ? 0.75 : 0.45;
+      cx.fillStyle = isTM ? '#4488ff' : getSkin(s.skinId).body;
+      cx.beginPath();
+      cx.arc(hx, hy, isTM ? 3.5 : 2.5, 0, Math.PI * 2);
+      cx.fill();
+    }
+    // 小地图绘制磁铁
+    for (const m of magnets) {
+      const mmx = mx + m.x * sx, mmy = my + m.y * sy;
+      cx.globalAlpha = 0.6 + Math.sin(m.pulse) * 0.3;
+      cx.fillStyle = '#00ccff';
+      cx.beginPath();
+      cx.arc(mmx, mmy, 4, 0, Math.PI * 2);
+      cx.fill();
+      cx.globalAlpha = 1;
+    }
+    cx.globalAlpha = 1;
+    if (player && player.alive) {
+      const ppx = mx + player.segs[0].x * sx;
+      const ppy = my + player.segs[0].y * sy;
+      const glowR = 8 + Math.sin(Date.now() / 300) * 2;
+      cx.globalAlpha = 0.25;
+      cx.fillStyle = '#e94560';
+      cx.beginPath();
+      cx.arc(ppx, ppy, glowR, 0, Math.PI * 2);
+      cx.fill();
+      cx.globalAlpha = 0.12;
+      cx.fillStyle = '#fff';
+      cx.beginPath();
+      cx.arc(ppx, ppy, glowR * 0.6, 0, Math.PI * 2);
+      cx.fill();
+      cx.globalAlpha = 1;
+      cx.fillStyle = '#fff';
+      cx.beginPath();
+      cx.arc(ppx, ppy, 4, 0, Math.PI * 2);
+      cx.fill();
+      cx.fillStyle = '#e94560';
+      cx.beginPath();
+      cx.arc(ppx, ppy, 2.5, 0, Math.PI * 2);
+      cx.fill();
+      const arrLen = 14;
+      const ax = ppx + Math.cos(player.angle) * arrLen;
+      const ay = ppy + Math.sin(player.angle) * arrLen;
+      cx.strokeStyle = '#fff';
+      cx.lineWidth = 2;
+      cx.globalAlpha = 0.85;
+      cx.beginPath();
+      cx.moveTo(ppx, ppy);
+      cx.lineTo(ax, ay);
+      cx.stroke();
+      const aL = 5, aA = player.angle + Math.PI;
+      cx.beginPath();
+      cx.moveTo(ax, ay);
+      cx.lineTo(ax + Math.cos(aA - 0.5) * aL, ay + Math.sin(aA - 0.5) * aL);
+      cx.moveTo(ax, ay);
+      cx.lineTo(ax + Math.cos(aA + 0.5) * aL, ay + Math.sin(aA + 0.5) * aL);
+      cx.stroke();
+    }
+    cx.globalAlpha = 1;
+    cx.strokeStyle = 'rgba(255,255,255,0.3)';
+    cx.lineWidth = 1.5;
+    cx.strokeRect(mx + (cam.x - W / 2) * sx, my + (cam.y - H / 2) * sy, W * sx, H * sy);
+    if (player && player.alive) {
+      const ppx = player.segs[0].x, ppy = player.segs[0].y;
+      for (const s of snakes) {
+        if (!s.alive || s.isP) continue;
+        const dx = s.segs[0].x - ppx, dy = s.segs[0].y - ppy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > 800 || dist < 150) continue;
+        const angle = Math.atan2(dy, dx);
+        const edgeX = Math.max(mx - 2, Math.min(mx + ms + 2, mx + ms / 2 + Math.cos(angle) * (ms / 2 + 6)));
+        const edgeY = Math.max(my - 2, Math.min(my + ms + 2, my + ms / 2 + Math.sin(angle) * (ms / 2 + 6)));
+        cx.fillStyle = 'rgba(255,80,80,0.7)';
+        cx.beginPath();
+        cx.moveTo(edgeX + Math.cos(angle) * 5, edgeY + Math.sin(angle) * 5);
+        cx.lineTo(edgeX + Math.cos(angle + 2.5) * 4, edgeY + Math.sin(angle + 2.5) * 4);
+        cx.lineTo(edgeX + Math.cos(angle - 2.5) * 4, edgeY + Math.sin(angle - 2.5) * 4);
+        cx.closePath();
+        cx.fill();
+      }
+    }
+    cx.fillStyle = 'rgba(255,255,255,0.45)';
+    cx.font = 'bold 10px sans-serif';
+    cx.textAlign = 'center';
+    cx.fillText('MAP', mx + ms / 2, my - 6);
+  }
+
+  // 输入系统
+  const keys = {};
+  document.addEventListener('mousemove', e => {
+    if (!gameActive || !player || !player.alive || aiAgent) return;
+    if (e.target.closest('.overlay') || e.target.closest('.boost-btn') || e.target.closest('.exit-btn') || e.target.closest('.ai-btn') || e.target.closest('.rec-btn')) return;
+    const dx = e.clientX - innerWidth / 2;
+    const dy = e.clientY - innerHeight / 2;
+    if (dx * dx + dy * dy > 225) {
+      tAngle = Math.atan2(dy, dx);
+      player.tAngle = tAngle;
+    }
+  });
+  document.addEventListener('mousedown', e => {
+    if (!gameActive || aiAgent) return;
+    if (e.target.closest('.overlay') || e.target.closest('.boost-btn') || e.target.closest('.exit-btn') || e.target.closest('.ai-btn') || e.target.closest('.rec-btn')) return;
+    boostHeld = true;
+  });
+  document.addEventListener('mouseup', () => { boostHeld = false; });
+  document.addEventListener('keydown', e => {
+    const k = e.key.toLowerCase();
+    keys[k] = true;
+    if (k === 'arrowup') keys['w'] = true;
+    if (k === 'arrowleft') keys['a'] = true;
+    if (k === 'arrowdown') keys['s'] = true;
+    if (k === 'arrowright') keys['d'] = true;
+    if (k === ' ' || k === 'spacebar') { boostHeld = gameActive; e.preventDefault(); }
+  });
+  document.addEventListener('keyup', e => {
+    const k = e.key.toLowerCase();
+    keys[k] = false;
+    if (k === 'arrowup') keys['w'] = false;
+    if (k === 'arrowleft') keys['a'] = false;
+    if (k === 'arrowdown') keys['s'] = false;
+    if (k === 'arrowright') keys['d'] = false;
+    if (k === ' ' || k === 'spacebar') boostHeld = false;
+  });
+  function updateKeyboardAngle() {
+    if (!gameActive || !player || !player.alive) return;
+    let dx = 0, dy = 0;
+    if (keys['w']) dy = -1;
+    if (keys['s']) dy = 1;
+    if (keys['a']) dx = -1;
+    if (keys['d']) dx = 1;
+    if (dx !== 0 || dy !== 0) {
+      tAngle = Math.atan2(dy, dx);
+      player.tAngle = tAngle;
+    }
+  }
+  document.addEventListener('touchstart', e => {
+    if (!gameActive || !player || !player.alive || aiAgent) return;
+    if (e.target.closest('.overlay') || e.target.closest('.boost-btn') || e.target.closest('.exit-btn') || e.target.closest('.ai-btn') || e.target.closest('.rec-btn')) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    tAngle = Math.atan2(t.clientY - innerHeight / 2, t.clientX - innerWidth / 2);
+    player.tAngle = tAngle;
+  }, { passive: false });
+  document.addEventListener('touchmove', e => {
+    if (!gameActive || !player || !player.alive || aiAgent) return;
+    if (e.target.closest('.overlay') || e.target.closest('.boost-btn') || e.target.closest('.exit-btn') || e.target.closest('.ai-btn') || e.target.closest('.rec-btn')) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    tAngle = Math.atan2(t.clientY - innerHeight / 2, t.clientX - innerWidth / 2);
+    player.tAngle = tAngle;
+  }, { passive: false });
+  const bb = document.getElementById('boostBtn');
+  bb.addEventListener('mousedown', e => {
+    e.stopPropagation();
+    boostHeld = true;
+    bb.classList.add('active');
+  });
+  bb.addEventListener('mouseup', () => { boostHeld = false; bb.classList.remove('active'); });
+  bb.addEventListener('mouseleave', () => { boostHeld = false; bb.classList.remove('active'); });
+  bb.addEventListener('touchstart', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    boostHeld = true;
+    bb.classList.add('active');
+  }, { passive: false });
+  bb.addEventListener('touchend', () => { boostHeld = false; bb.classList.remove('active'); });
+
+  // 截图
+  function captureScreenshot() {
+    try {
+      render();
+      const dataURL = cv.toDataURL('image/png');
+      document.getElementById('screenshotImg').src = dataURL;
+      document.getElementById('screenshotBox').style.display = 'block';
+      document.getElementById('downloadBtn').style.display = 'inline-block';
+      document.getElementById('downloadBtn').onclick = () => {
+        const a = document.createElement('a');
+        a.href = dataURL;
+        a.download = '贪吃蛇_' + Date.now() + '.png';
+        a.click();
+      };
+    } catch (e) {
+      console.log('截图失败', e);
+    }
+  }
+
+  // 胜利检测
+  function checkVictory() {
+    if (!player || !player.alive) return false;
+    if (settings.teamMode) {
+      return snakes.filter(s => s.alive && !s.isP && s.team !== player.team).length === 0;
+    }
+    const aliveBots = snakes.filter(s => s.alive && !s.isP);
+    return aliveBots.length === 0 && snakes.length > 1;
+  }
+
+  function showVictory() {
+    gameActive = false;
+    document.getElementById('endIcon').textContent = '🏆';
+    document.getElementById('endTitle').textContent = '胜利！';
+    document.getElementById('endTitle').className = 'title victory-title';
+    document.getElementById('deathReason').textContent = settings.teamMode ? '你的队伍消灭了所有对手！' : '你击败了所有AI蛇！';
+    captureScreenshot();
+    document.getElementById('fScore').textContent = player.score;
+    document.getElementById('fLen').textContent = player.segs.length;
+    document.getElementById('fKills').textContent = player.kills;
+    document.getElementById('gameOverScreen').classList.add('show');
+    document.getElementById('reviveBtn').style.display = 'none';
+    document.getElementById('exitBtn').style.display = 'none';
+    document.getElementById('aiBtn').style.display = 'none';
+    document.getElementById('recBtn').style.display = 'none';
+    if (recording && mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+    document.getElementById('restartBtn').textContent = '🔄 再来一局';
+  }
+
+  // 结束界面
+  function showOver(r, s) {
+    gameActive = false;
+    document.getElementById('endIcon').textContent = '💀';
+    document.getElementById('endTitle').textContent = '游戏结束';
+    document.getElementById('endTitle').className = 'title';
+    document.getElementById('deathReason').textContent = r;
+    document.getElementById('fScore').textContent = s.score;
+    document.getElementById('fLen').textContent = s.segs.length;
+    document.getElementById('fKills').textContent = s.kills;
+    document.getElementById('gameOverScreen').classList.add('show');
+    document.getElementById('exitBtn').style.display = 'none';
+    document.getElementById('aiBtn').style.display = 'none';
+    document.getElementById('recBtn').style.display = 'none';
+    if (recording && mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+    const reviveBtn = document.getElementById('reviveBtn');
+    const reviveCountEl = document.getElementById('reviveCount');
+    const canRevive = revives < MAX_REVIVES && (!settings.huntMode || s.segs.length >= HUNT_MIN_LEN);
+    reviveCountEl.textContent = MAX_REVIVES - revives;
+    reviveBtn.disabled = !canRevive;
+    reviveBtn.style.display = canRevive ? 'block' : 'none';
+    if (settings.huntMode && s.segs.length < HUNT_MIN_LEN) {
+      document.getElementById('deathReason').textContent += '（太短了，无法复活）';
+    }
+    captureScreenshot();
+    document.getElementById('keyHints').classList.remove('show');
+    document.getElementById('huntTag').classList.remove('show');
+    document.getElementById('teamTag').classList.remove('show');
+  }
+
+  // 按钮事件
+  document.getElementById('startBtn').onclick = () => {
+    document.getElementById('startScreen').classList.remove('show');
+    startGame();
+  };
+  document.getElementById('restartBtn').onclick = () => {
+    document.getElementById('gameOverScreen').classList.remove('show');
+    startGame();
+  };
+  document.getElementById('reviveBtn').onclick = () => {
+    if (revives < MAX_REVIVES) {
+      revives++;
+      revivePlayer();
+      document.getElementById('gameOverScreen').classList.remove('show');
+    }
+  };
+  document.getElementById('exitBtn').onclick = () => {
+    gameActive = false;
+    if (animId) { cancelAnimationFrame(animId); animId = null; }
+    snakes = []; foods = []; particles = [];
+    aiAgent = false;
+    document.getElementById('exitBtn').style.display = 'none';
+    document.getElementById('aiBtn').style.display = 'none';
+    document.getElementById('aiBtn').classList.remove('active');
+    document.getElementById('recBtn').style.display = 'none';
+    if (recording && mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+    document.getElementById('gameOverScreen').classList.remove('show');
+    document.getElementById('huntTag').classList.remove('show');
+    document.getElementById('teamTag').classList.remove('show');
+    document.getElementById('keyHints').classList.remove('show');
+    document.getElementById('startScreen').classList.add('show');
+    cx.fillStyle = '#0c1020';
+    cx.fillRect(0, 0, innerWidth, innerHeight);
+  };
+
+  // AI 代理按钮
+  document.getElementById('aiBtn').onclick = () => {
+    aiAgent = !aiAgent;
+    document.getElementById('aiBtn').classList.toggle('active', aiAgent);
+    boostHeld = false;
+  };
+
+  // 录屏功能
+  const recBtn = document.getElementById('recBtn');
+  function startRecording() {
+    try {
+      const stream = cv.captureStream(30);
+      recordedChunks = [];
+      const mimeTypes = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+      let mimeType = '';
+      for (const mt of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(mt)) { mimeType = mt; break; }
+      }
+      mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+      mediaRecorder.onstop = () => {
+        if (recordedChunks.length === 0) return;
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = '贪吃蛇_' + Date.now() + '.webm';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        recording = false;
+        recBtn.classList.remove('recording');
+        recBtn.textContent = '⏺';
+      };
+      mediaRecorder.start();
+      recording = true;
+      recBtn.classList.add('recording');
+      recBtn.textContent = '⏹';
+      setTimeout(() => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+      }, 60000);
+    } catch (err) {
+      console.warn('录屏失败:', err);
+    }
+  }
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+  }
+  recBtn.onclick = () => {
+    if (recording) { stopRecording(); } else { startRecording(); }
+  };
+
+  // 设置界面
+  const botCountEl = document.getElementById('botCount');
+  const botInfoEl = document.getElementById('botInfo');
+  const huntModeEl = document.getElementById('huntMode');
+  const teamModeEl = document.getElementById('teamMode');
+
+  function updateSettingsUI() {
+    botCountEl.textContent = settings.botCount;
+    let modeTxt = '';
+    if (settings.teamMode) modeTxt += ' · 队友模式';
+    if (settings.huntMode) modeTxt += ' · 猎杀模式';
+    botInfoEl.textContent = '与 ' + settings.botCount + ' 条 AI 蛇同场竞技！（' + DIFF_CFG[settings.difficulty].label + '难度' + modeTxt + '）';
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.diff === settings.difficulty);
+    });
+    huntModeEl.checked = settings.huntMode;
+    teamModeEl.checked = settings.teamMode;
+  }
+
+  document.getElementById('botMinus').onclick = () => {
+    if (settings.botCount > 2) { settings.botCount--; updateSettingsUI(); }
+  };
+  document.getElementById('botPlus').onclick = () => {
+    if (settings.botCount < MAX_BOTS) { settings.botCount++; updateSettingsUI(); }
+  };
+  document.querySelectorAll('.diff-btn').forEach(btn => {
+    btn.onclick = () => {
+      settings.difficulty = btn.dataset.diff;
+      updateSettingsUI();
+    };
+  });
+  huntModeEl.onchange = () => {
+    if (huntModeEl.checked) { teamModeEl.checked = false; settings.teamMode = false; }
+    settings.huntMode = huntModeEl.checked;
+    updateSettingsUI();
+  };
+  teamModeEl.onchange = () => {
+    if (teamModeEl.checked) { huntModeEl.checked = false; settings.huntMode = false; }
+    settings.teamMode = teamModeEl.checked;
+    updateSettingsUI();
+  };
+  const selfBiteEl = document.getElementById('selfBite');
+  selfBiteEl.onchange = () => {
+    settings.selfBite = selfBiteEl.checked;
+    updateSettingsUI();
+  };
+
+  if (isPC) {
+    document.getElementById('controlDesc').innerHTML = 'WASD / 方向键 控制方向<br>空格键 加速（消耗长度）<br>绿色段安全 · 其余段咬到即死';
+    document.getElementById('boostBtn').style.display = 'none';
+  }
+
+  // 主循环
+  function loop() {
+    updateKeyboardAngle();
+    for (const s of snakes) {
+      if (!s.alive) {
+        if (!s.isP && !s.permanentDeath) {
+          s.rt -= 16;
+          if (s.rt <= 0) respawnBot(s);
+        }
+        continue;
+      }
+      if (s.invuln > 0) s.invuln--;
+      if (!s.isP || aiAgent) updateAI(s);
+      updateBoost(s);
+      moveSnake(s);
+    }
+    checkHit();
+    ensureFood();
+    updateMagnets();
+    updateParts();
+    updateShake();
+    updateCam();
+    render();
+    if (!victoryChecked && player && player.alive && snakes.length > 1) {
+      if (checkVictory()) {
+        victoryChecked = true;
+        setTimeout(() => showVictory(), 500);
+      }
+    }
+    animId = requestAnimationFrame(loop);
+  }
+
+  // 复活
+  function revivePlayer() {
+    let x, y, ok;
+    for (let t = 0; t < 50; t++) {
+      x = 300 + Math.random() * (MAP - 600);
+      y = 300 + Math.random() * (MAP - 600);
+      ok = true;
+      for (const o of snakes) {
+        if (!o.alive || o === player) continue;
+        if ((x - o.segs[0].x) ** 2 + (y - o.segs[0].y) ** 2 < 280 * 280) { ok = false; break; }
+      }
+      if (ok) break;
+    }
+    const a = Math.random() * Math.PI * 2;
+    const reviveLen = settings.huntMode ? Math.max(HUNT_MIN_LEN, Math.floor(player.segs.length / 2)) : INIT_L;
+    player.segs = [];
+    for (let i = 0; i < reviveLen; i++) player.segs.push({ x: x - Math.cos(a) * i * SG, y: y - Math.sin(a) * i * SG });
+    player.angle = a; player.tAngle = a; player.speed = SPD; player.alive = true; player.boost = false; player.bc = 0; player.score = Math.floor(player.score / 2); player.invuln = INVULN_T * 2; player.permanentDeath = false;
+    cam.x = player.segs[0].x; cam.y = player.segs[0].y;
+    gameActive = true;
+    aiAgent = false;
+    document.getElementById('aiBtn').style.display = 'flex';
+    document.getElementById('aiBtn').classList.remove('active');
+    document.getElementById('recBtn').style.display = 'flex';
+    document.getElementById('huntTag').classList.toggle('show', settings.huntMode);
+    document.getElementById('teamTag').classList.toggle('show', settings.teamMode);
+    document.getElementById('keyHints').classList.toggle('show', isPC);
+  }
+
+  // 开始游戏
+  function startGame() {
+    snakes = []; foods = []; particles = []; magnets = [];
+    revives = 0; victoryChecked = false;
+    magnetSpawnCD = MAGNET_SPAWN_CD;
+    killFeedEl.innerHTML = '';
+    const teamOn = settings.teamMode;
+    const playerTeam = teamOn ? 1 : 0;
+    player = mkSnake('玩家', settings.playerSkin, true, 0.5, playerTeam);
+    snakes.push(player);
+    const botCount = Math.min(settings.botCount, MAX_BOTS);
+    let created = 0;
+    while (created < botCount) {
+      for (let t = 0; t < BOT_CFG.length && created < botCount; t++) {
+        const b = BOT_CFG[t];
+        const copies = Math.min(COPIES_PER_TYPE, botCount - created);
+        for (let c = 0; c < copies && created < botCount; c++) {
+          const suffix = c === 0 ? '' : '·' + (c + 1);
+          const botTeam = teamOn ? (created < botCount / 2 ? 1 : 2) : 0;
+          const botSkin = teamOn ? (botTeam === 1 ? 'ocean' : 'crimson') : b.skin;
+          snakes.push(mkSnake(b.name + suffix, botSkin, false, b.aggr, botTeam));
+          created++;
+        }
+      }
+    }
+    if (teamOn) player.skinId = 'ocean';
+    ensureFood();
+    cam.x = player.segs[0].x; cam.y = player.segs[0].y;
+    gameActive = true;
+    aiAgent = false;
+    document.getElementById('exitBtn').style.display = 'flex';
+    document.getElementById('aiBtn').style.display = 'flex';
+    document.getElementById('aiBtn').classList.remove('active');
+    document.getElementById('recBtn').style.display = 'flex';
+    document.getElementById('huntTag').classList.toggle('show', settings.huntMode);
+    document.getElementById('teamTag').classList.toggle('show', teamOn);
+    document.getElementById('keyHints').classList.toggle('show', isPC);
+    document.getElementById('screenshotBox').style.display = 'none';
+    document.getElementById('downloadBtn').style.display = 'none';
+    if (animId) cancelAnimationFrame(animId);
+    animId = requestAnimationFrame(loop);
+  }
+
+  // 初始背景
+  (function initBg() {
+    resize();
+    cx.fillStyle = '#0c1020';
+    cx.fillRect(0, 0, innerWidth, innerHeight);
+    cx.strokeStyle = 'rgba(255,255,255,0.02)';
+    cx.lineWidth = 1;
+    cx.beginPath();
+    for (let x = 0; x < innerWidth; x += 80) { cx.moveTo(x, 0); cx.lineTo(x, innerHeight); }
+    for (let y = 0; y < innerHeight; y += 80) { cx.moveTo(0, y); cx.lineTo(innerWidth, y); }
+    cx.stroke();
+  })();
+})();
+</script>
+</body>
+</html>
