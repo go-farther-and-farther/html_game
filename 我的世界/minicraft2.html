@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>迷你方块 · 网页版</title>
+<style>
+  html,body{margin:0;padding:0;overflow:hidden;background:#000;font-family:"Segoe UI","Microsoft YaHei",sans-serif;height:100%}
+  canvas{display:block}
+  /* ---------- HUD ---------- */
+  #info{position:fixed;top:10px;left:10px;color:#fff;font-size:13px;z-index:5;
+        background:rgba(0,0,0,.45);padding:6px 10px;border-radius:6px;line-height:1.5;pointer-events:none}
+  #crosshair{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;pointer-events:none}
+  #crosshair::before,#crosshair::after{content:"";position:absolute;background:rgba(255,255,255,.9)}
+  #crosshair::before{width:18px;height:2px;left:-9px;top:-1px}
+  #crosshair::after{width:2px;height:18px;left:-1px;top:-9px}
+  /* ---------- 快捷栏 ---------- */
+  #hotbar{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:5}
+  .slot{width:52px;height:52px;background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.35);
+        border-radius:8px;position:relative;display:flex;align-items:center;justify-content:center}
+  .slot.sel{border-color:#fff;box-shadow:0 0 10px rgba(255,255,255,.7)}
+  .slot canvas{width:40px;height:40px;image-rendering:pixelated}
+  .slot b{position:absolute;top:2px;left:5px;font-size:11px;color:#ddd;font-weight:normal}
+  .slot i.cnt{position:absolute;bottom:1px;right:4px;font-style:normal;font-size:11px;color:#ffe9a8;text-shadow:0 1px 2px #000}
+  #msg{position:fixed;top:16%;left:50%;transform:translateX(-50%);z-index:6;background:rgba(0,0,0,.65);
+       color:#ffd9a0;padding:6px 14px;border-radius:6px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none}
+  /* ---------- 开始/暂停遮罩 ---------- */
+  #overlay{position:fixed;inset:0;background:rgba(8,12,24,.78);z-index:10;display:flex;
+           align-items:center;justify-content:center;color:#fff;text-align:center;cursor:pointer}
+  #overlay .card{background:rgba(20,26,44,.9);border:1px solid rgba(255,255,255,.15);
+                 border-radius:14px;padding:34px 48px;max-width:520px}
+  #overlay h1{margin:0 0 6px;font-size:34px;letter-spacing:2px}
+  #overlay .sub{color:#9fb4d8;margin-bottom:18px;font-size:14px}
+  #overlay ul{text-align:left;display:inline-block;line-height:1.9;font-size:14px;color:#cfd9ee;list-style:none;padding:0;margin:0 0 20px}
+  #overlay kbd{background:#2b3554;border-radius:4px;padding:1px 7px;margin-right:6px;font-family:monospace;font-size:13px}
+  .btn{display:inline-block;margin:6px 8px 0;padding:9px 26px;background:#3f7d2e;color:#fff;border-radius:8px;
+       font-size:15px;cursor:pointer;border:none;user-select:none}
+  .btn:hover{background:#4c9437}
+  .btn.ghost{background:#2b3554}
+  #saveTip{margin-top:16px;font-size:12px;color:#8fa0c4}
+</style>
+</head>
+<body>
+
+<div id="info"></div>
+<div id="msg"></div>
+<div id="crosshair"></div>
+<div id="hotbar"></div>
+
+<div id="overlay">
+  <div class="card">
+    <h1>迷你方块</h1>
+    <div class="sub">Minecraft · 单文件网页版（需要键盘 + 鼠标，首次打开需联网加载 Three.js）</div>
+    <ul>
+      <li><kbd>W A S D</kbd>移动　<kbd>空格</kbd>跳跃 / 游泳上浮</li>
+      <li><kbd>Shift / Ctrl</kbd>疾跑　<kbd>鼠标</kbd>视角</li>
+      <li><kbd>左键</kbd>破坏方块（可按住连挖）</li>
+      <li><kbd>右键</kbd>放置方块（消耗材料）　<kbd>滚轮 / 1-7</kbd>切换物品</li>
+      <li><kbd>Q</kbd>合成：1 原木 → 4 木板</li>
+      <li><kbd>Esc</kbd>暂停并呼出菜单（立即存档 / 继续上次 / 新世界）</li>
+      <li>自动存档：每 10 秒与方块变更时自动保存到浏览器 localStorage</li>
+    </ul>
+    <div id="btns"><span class="btn" id="btnStart">开始游戏</span></div>
+    <div id="saveTip"></div>
+    <div id="lockHint" style="margin-top:10px;font-size:12px;color:#e8b45a"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+"use strict";
+/* ================================================================
+   迷你方块 —— 单文件体素游戏
+   地形：值噪声 fbm | 物理：AABB 逐轴碰撞 + 子步进防穿模
+   渲染：Three.js r128，程序化像素纹理图集，昼夜间歇循环
+================================================================ */
+
+/* ---------------- 世界常量与数据 ---------------- */
+const W = 64, H = 36, D = 64;      // 世界尺寸 x / y / z
+const WL = 13;                     // 水面高度
+const AIR=0, GRASS=1, DIRT=2, STONE=3, LOG=4, LEAF=5, SAND=6, WATER=7, PLANK=8, BEDROCK=9;
+
+let world = new Uint8Array(W*H*D);
+const idx  = (x,y,z) => (y*D + z)*W + x;
+function getB(x,y,z){
+  if (x<0||x>=W||y<0||y>=H||z<0||z>=D) return AIR;
+  return world[idx(x,y,z)];
+}
+const solid = id => id!==AIR && id!==WATER;
+
+/* ---------------- 随机数 & 噪声 ---------------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967295}}
+function hash2(x,z){let n=(Math.imul(x,374761393)+Math.imul(z,668265263))|0;n^=n>>>13;n=Math.imul(n,1274126177);n^=n>>>16;return (n>>>0)/4294967295;}
+function vnoise(x,z){
+  const xi=Math.floor(x), zi=Math.floor(z), xf=x-xi, zf=z-zi;
+  const s=t=>t*t*(3-2*t), u=s(xf), v=s(zf);
+  return hash2(xi,zi)*(1-u)*(1-v)+hash2(xi+1,zi)*u*(1-v)+hash2(xi,zi+1)*(1-u)*v+hash2(xi+1,zi+1)*u*v;
+}
+function fbm(x,z){let a=0,amp=.5,f=1;for(let i=0;i<4;i++){a+=amp*vnoise(x*f,z*f);f*=2;amp*=.5;}return a;}
+
+/* ---------------- 地形生成 ---------------- */
+let SEED = 1337;
+function newSeed(){ return (Math.random()*0x7fffffff)|1; }   // 随机种子 → 每次新世界地形不同
+function genWorld(){
+  const rng = mulberry32(SEED);
+  const ox=Math.floor(rng()*4096), oz=Math.floor(rng()*4096);  // 种子决定地形噪声偏移，可复现
+  world.fill(AIR);
+  for (let x=0;x<W;x++) for (let z=0;z<D;z++){
+    const e = fbm((x+ox)*.06,(z+oz)*.06);
+    let h = Math.floor(8 + e*20);
+    if (h>H-9) h = H-9;
+    for (let y=0;y<=h;y++){
+      let id;
+      if (y===0) id = BEDROCK;
+      else if (y<h-3) id = STONE;
+      else if (y<h)   id = DIRT;
+      else            id = (h<=WL+1) ? SAND : GRASS;   // 滩涂变沙地
+      world[idx(x,y,z)] = id;
+    }
+    for (let y=h+1;y<=WL;y++) world[idx(x,y,z)] = WATER;  // 低洼处蓄水
+  }
+  /* 树 */
+  for (let x=2;x<W-2;x++) for (let z=2;z<D-2;z++){
+    const hTop = topSolidY(x,z);
+    if (world[idx(x,hTop,z)]!==GRASS || hTop<=WL+1) continue;
+    if (rng()>=.025) continue;
+    const th = 4 + (rng()*2|0);
+    for (let y=hTop+1;y<=hTop+th && y<H-3;y++) world[idx(x,y,z)] = LOG;
+    for (let ly=hTop+th-1; ly<=hTop+th+1 && ly<H; ly++){
+      const rad = (ly===hTop+th+1)?1:2;
+      for (let dx=-rad;dx<=rad;dx++) for (let dz=-rad;dz<=rad;dz++){
+        if (Math.abs(dx)===rad&&Math.abs(dz)===rad&&rng()<.6) continue;
+        const i = idx(x+dx,ly,z+dz);
+        if (world[i]===AIR && ly<H) world[i]=LEAF;
+      }
+    }
+  }
+}
+function topSolidY(x,z){ for(let y=H-1;y>=0;y--){const id=getB(x,y,z); if(solid(id)) return y;} return -1; }
+
+/* ---------------- 程序化像素纹理图集 ---------------- */
+const TILE = {grassT:0, grassS:1, dirt:2, stone:3, logS:4, logT:5, leaf:6, sand:7, plank:8, bed:9};
+const ATW = 10; // 图集横向 tile 数（宽 160px，高 16px）
+
+function makeAtlasCanvas(){
+  const c = document.createElement("canvas"); c.width=ATW*16; c.height=16;
+  const g = c.getContext("2d");
+  const R = mulberry32(42);
+  function px(ti,x,y,col){ g.fillStyle=col; g.fillRect(ti*16+x, y, 1, 1); }
+  function shade(base,vary,Rr){
+    const d=(R()*2-1)*vary;
+    return `rgb(${Math.max(0,base[0]+d)|0},${Math.max(0,base[1]+d)|0},${Math.max(0,base[2]+d)|0})`;
+  }
+  for (let ti=0;ti<ATW;ti++) for (let y=0;y<16;y++) for (let x=0;x<16;x++){
+    let col; const r=R();
+    switch(ti){
+      case TILE.grassT: col = shade([106,170,64],22,R); break;
+      case TILE.grassS:{
+        const green = y<3 || (y===3 && r<.5) || (y===4 && r<.18);
+        col = green ? shade([96,158,58],20,R) : shade([134,96,67],14,R); break; }
+      case TILE.dirt:   col = shade([134,96,67],15,R); break;
+      case TILE.stone:  col = r<.08 ? "rgb(96,96,96)" : shade([125,125,125],14,R); break;
+      case TILE.logS:{ const band=((x*7)%5-2)*7; col=`rgb(${104+band},${80+band},${50+band})`; break; }
+      case TILE.logT:{ const d=Math.max(Math.abs(x-7.5),Math.abs(y-7.5));
+        col = (d|0)%2 ? shade([160,130,84],10,R) : shade([112,88,54],10,R); break; }
+      case TILE.leaf:   col = r<.15 ? "rgb(40,92,30)" : shade([58,122,42],22,R); break;
+      case TILE.sand:   col = shade([219,206,160],12,R); break;
+      case TILE.plank:{ const seam=(y%4===3);
+        col = seam ? "rgb(122,97,58)" : shade([168,137,89],10,R); break; }
+      case TILE.bed:    col = `rgb(${40+R()*90|0},${40+R()*90|0},${40+R()*90|0})`; break;
+    }
+    px(ti,x,y,col);
+  }
+  return c;
+}
+
+/* 方块 → 各面 tile（面序：+x -x +y -y +z -z） */
+const rep = (id,ti)=>[ti,ti,ti,ti,ti,ti];
+const FACE_TILE = [
+  [],                                // air
+  [TILE.grassS,TILE.grassS,TILE.grassT,TILE.dirt,TILE.grassS,TILE.grassS],   // grass
+  rep(DIRT,TILE.dirt), rep(STONE,TILE.stone),
+  [TILE.logS,TILE.logS,TILE.logT,TILE.logT,TILE.logS,TILE.logS],             // log
+  rep(LEAF,TILE.leaf), rep(SAND,TILE.sand), [], rep(PLANK,TILE.plank), rep(BEDROCK,TILE.bed)
+];
+
+/* ---------------- Three.js 场景 ---------------- */
+const renderer = new THREE.WebGLRenderer({antialias:false});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x87ceeb, 45, 160);
+const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, .1, 400);
+
+const atlasCanvas = makeAtlasCanvas();
+const tex = new THREE.CanvasTexture(atlasCanvas);
+tex.magFilter = tex.minFilter = THREE.NearestFilter;
+tex.generateMipmaps = false;
+
+const solidMat = new THREE.MeshLambertMaterial({map:tex, side:THREE.DoubleSide});
+const waterMat = new THREE.MeshLambertMaterial({color:0x2f6fce, transparent:true, opacity:.55, side:THREE.DoubleSide});
+
+let solidMesh=null, waterMesh=null;
+function setGeometry(mesh, geo){ if(mesh.geometry) mesh.geometry.dispose(); mesh.geometry=geo; }
+const emptyGeo = () => new THREE.BufferGeometry();
+solidMesh = new THREE.Mesh(emptyGeo(), solidMat); scene.add(solidMesh);
+waterMesh = new THREE.Mesh(emptyGeo(), waterMat); scene.add(waterMesh);
+
+/* 光照 + 太阳/月亮 */
+const ambient = new THREE.AmbientLight(0xffffff,.9);   scene.add(ambient);
+const sun     = new THREE.DirectionalLight(0xfff2d0,.85); scene.add(sun);
+const sunBall = new THREE.Mesh(new THREE.SphereGeometry(9,12,12), new THREE.MeshBasicMaterial({color:0xffe27a}));
+const moonBall= new THREE.Mesh(new THREE.SphereGeometry(6,12,12), new THREE.MeshBasicMaterial({color:0xdfe8ff}));
+scene.add(sunBall,moonBall);
+
+/* 选中方块高亮框 */
+const hlGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(1.004,1.004,1.004));
+const highlight = new THREE.LineSegments(hlGeo,new THREE.LineBasicMaterial({color:0x111111}));
+highlight.visible=false; scene.add(highlight);
+
+/* ---------------- 网格构建（只生成暴露面） ---------------- */
+/* 每个面：法线 + 4 个角点 [x,y,z,u,v]，uv 为 tile 内局部坐标（v=1 朝上），角点顺序绕面一周 */
+const FACE_DEF=[
+  {n:[ 1,0,0],c:[[1,0,0,0,0],[1,0,1,1,0],[1,1,1,1,1],[1,1,0,0,1]]},
+  {n:[-1,0,0],c:[[0,0,1,0,0],[0,0,0,1,0],[0,1,0,1,1],[0,1,1,0,1]]},
+  {n:[ 0,1,0],c:[[0,1,1,0,0],[1,1,1,1,0],[1,1,0,1,1],[0,1,0,0,1]]},
+  {n:[ 0,-1,0],c:[[0,0,0,0,0],[1,0,0,1,0],[1,0,1,1,1],[0,0,1,0,1]]},
+  {n:[ 0,0,1],c:[[0,0,1,0,0],[1,0,1,1,0],[1,1,1,1,1],[0,1,1,0,1]]},
+  {n:[ 0,0,-1],c:[[1,0,0,0,0],[0,0,0,1,0],[0,1,0,1,1],[1,1,0,0,1]]}
+];
+
+function buildMeshes(){
+  const sP=[],sU=[],sN=[], wP=[],wU=[],wN=[];
+  /* 每个面展开为两个三角形：顶点序 v0,v1,v2, v0,v2,v3 */
+  const ORDER=[0,1,2,0,2,3];
+  for (let y=0;y<H;y++) for (let z=0;z<D;z++) for (let x=0;x<W;x++){
+    const id = world[idx(x,y,z)]; if (id===AIR) continue;
+    for (let f=0;f<6;f++){
+      const fd = FACE_DEF[f];
+      const nb = getB(x+fd.n[0], y+fd.n[1], z+fd.n[2]);
+      let isWater=false, ti=TILE.dirt;
+      if (id===WATER){ if(nb!==AIR) continue; isWater=true; }
+      else { if(!(nb===AIR||nb===WATER)) continue; ti=FACE_TILE[id][f]; }
+
+      const P=isWater?wP:sP, U=isWater?wU:sU, N=isWater?wN:sN;
+      for (const vi of ORDER){
+        const c=fd.c[vi];
+        P.push(x+c[0], y+c[1], z+c[2]);
+        N.push(fd.n[0], fd.n[1], fd.n[2]);
+        U.push(isWater?0:(ti+c[3])/ATW, isWater?0:c[4]);
+      }
+    }
+  }
+  function makeGeo(P,U,N){
+    const g=new THREE.BufferGeometry();
+    g.setAttribute("position",new THREE.Float32BufferAttribute(new Float32Array(P),3));
+    g.setAttribute("uv",new THREE.Float32BufferAttribute(new Float32Array(U),2));
+    g.setAttribute("normal",new THREE.Float32BufferAttribute(new Float32Array(N),3));
+    return g;
+  }
+  setGeometry(solidMesh, makeGeo(sP,sU,sN));
+  setGeometry(waterMesh, makeGeo(wP,wU,wN));
+}
+
+/* ---------------- 玩家与物理 ---------------- */
+/* 所有运动状态统一挂在 player 上：pos 只存坐标，速度/朝向/onGround 在顶层 */
+const player = { pos:{x:W/2,y:H-6,z:D/2}, xv:0, vy:0, zv:0, onGround:false, yaw:.6, pitch:-.15 };
+const HW=.3, PH=1.8, EYE=1.62;
+const GRAV=26, JUMPV=8.2;
+
+const keys={};
+function craft(){ // 迷你合成：1 原木 → 4 木板
+  if((inv[LOG]||0)>=1){ inv[LOG]--; inv[PLANK]=(inv[PLANK]||0)+4; updateHotbarCounts(); showMsg("合成完成：×4 木板"); }
+  else showMsg("没有原木，无法合成");
+}
+addEventListener("keydown",e=>{ keys[e.code]=true; if(e.code==="Space") e.preventDefault();
+  if(locked && e.code=="KeyQ" && !e.repeat) craft(); });
+addEventListener("keyup",  e=>{ keys[e.code]=false; });
+
+function inWater(){
+  const p=player.pos;
+  return getB(Math.floor(p.x),Math.floor(p.y+.4),Math.floor(p.z))===WATER ||
+         getB(Math.floor(p.x),Math.floor(p.y+1.2),Math.floor(p.z))===WATER;
+}
+
+function collideAxis(axis){
+  const p=player.pos;
+  const x0=Math.floor(p.x-HW), x1=Math.floor(p.x+HW);
+  const y0=Math.floor(p.y),    y1=Math.floor(p.y+PH-0.01);
+  const z0=Math.floor(p.z-HW), z1=Math.floor(p.z+HW);
+  let hit=false, lo=Infinity, hi=-Infinity;
+  for (let cx=x0;cx<=x1;cx++) for (let cy=y0;cy<=y1;cy++) for (let cz=z0;cz<=z1;cz++){
+    if (!solid(getB(cx,cy,cz))) continue;
+    let v = axis==="x"?cx : axis==="y"?cy : cz;
+    hit=true; if(v<lo)lo=v; if(v>hi)hi=v;
+  }
+  if(!hit) return false;
+  const vel = axis==="x"?player.xv : axis==="y"?player.vy : player.zv;
+  if (axis==="x"){ if(vel>0) p.x = lo-HW-1e-4; else if(vel<0) p.x = hi+1+HW+1e-4; }
+  if (axis==="z"){ if(vel>0) p.z = lo-HW-1e-4; else if(vel<0) p.z = hi+1+HW+1e-4; }
+  if (axis==="y"){ if(vel>0){ p.y = lo-PH-1e-4; } else { p.y = hi+1+1e-4; player.onGround=true; } }
+  return true;
+}
+
+function stepPhysics(dt){
+  const P=player, p=P.pos, space=keys["Space"];
+  const swim=inWater();
+  const f=(keys["KeyW"]?1:0)-(keys["KeyS"]?1:0), s=(keys["KeyD"]?1:0)-(keys["KeyA"]?1:0);
+  let mx=0,mz=0;
+  if(f||s){
+    const sy=Math.sin(P.yaw), cy=Math.cos(P.yaw);
+    mx=-sy*f+cy*s; mz=-cy*f-sy*s;
+    const L=Math.hypot(mx,mz)||1; mx/=L; mz/=L;
+  }
+  const sprint=keys["ShiftLeft"]||keys["ShiftRight"]||keys["ControlLeft"];
+  const spd=(sprint?7:4.5)*(swim?.6:1);
+  P.xv=mx*spd; P.zv=mz*spd;
+
+  if(swim){
+    P.vy-=9*dt;
+    if(space) P.vy=Math.min(P.vy+34*dt,4.5);
+    P.vy=Math.max(P.vy,-3.2);
+    const dr=Math.max(0,1-2.2*dt); P.xv*=dr; P.zv*=dr;
+  } else {
+    P.vy-=GRAV*dt;
+    if(space&&P.onGround){P.vy=JUMPV; P.onGround=false;}
+  }
+  P.vy=Math.max(P.vy,-30);
+
+  /* 子步进防穿模；NaN 防护：任何异常速度都不能让整帧冻结 */
+  let n=Math.ceil(Math.max(Math.abs(P.xv),Math.abs(P.zv),Math.abs(P.vy))*dt/0.4);
+  if(!isFinite(n)||n<1)n=1;
+  P.onGround=false;
+  for(let i=0;i<n;i++){
+    const h=dt/n;
+    p.x+=P.xv*h; if(collideAxis("x")) P.xv=0;
+    p.z+=P.zv*h; if(collideAxis("z")) P.zv=0;
+    p.y+=P.vy*h; if(collideAxis("y")){ if(P.vy<0)P.onGround=true; P.vy=0; }
+  }
+  /* 世界边界 */
+  p.x=Math.min(Math.max(p.x,HW+.01),W-HW-.01);
+  p.z=Math.min(Math.max(p.z,HW+.01),D-HW-.01);
+}
+
+/* ---------------- 射线拾取（DDA，Amanatides & Woo） ---------------- */
+const REACH=5.5;
+function pick(){
+  const o=camera.position; const d=new THREE.Vector3(); camera.getWorldDirection(d);
+  let x=Math.floor(o.x), y=Math.floor(o.y), z=Math.floor(o.z);
+  const sx=d.x>0?1:-1, sy2=d.y>0?1:-1, sz=d.z>0?1:-1;
+  const tdx=d.x!==0?Math.abs(1/d.x):Infinity, tdy=d.y!==0?Math.abs(1/d.y):Infinity, tdz=d.z!==0?Math.abs(1/d.z):Infinity;
+  let tmx = d.x!==0 ? (d.x>0?(x+1-o.x):(o.x-x))/Math.abs(d.x) : Infinity;
+  let tmy = d.y!==0 ? (d.y>0?(y+1-o.y):(o.y-y))/Math.abs(d.y) : Infinity;
+  let tmz = d.z!==0 ? (d.z>0?(z+1-o.z):(o.z-z))/Math.abs(d.z) : Infinity;
+  let px=x,py=y,pz=z,t=0;
+  for(let i=0;i<256;i++){
+    if(tmx<tmy&&tmx<tmz){px=x;py=y;pz=z;x+=sx;t=tmx;tmx+=tdx;}
+    else if(tmy<tmz){px=x;py=y;pz=z;y+=sy2;t=tmy;tmy+=tdy;}
+    else{px=x;py=y;pz=z;z+=sz;t=tmz;tmz+=tdz;}
+    if(t>REACH) return null;
+    const b=getB(x,y,z);
+    if(b!==AIR&&b!==WATER){
+      /* 放置目标 = 上一个格子；若上一格在玩家体内则禁止 */
+      let placeOK = inBounds(px,py,pz) && (getB(px,py,pz)===AIR||getB(px,py,pz)===WATER);
+      if(placeOK){
+        const p=player.pos;
+        const overlap = px+1>p.x-HW&&px<p.x+HW && py+1>p.y&&py<p.y+PH && pz+1>p.z-HW&&pz<p.z+HW;
+        if(overlap) placeOK=false;
+      }
+      return {bx:x,by:y,bz:z, px,py,pz, id:b, placeOK};
+    }
+  }
+  return null;
+}
+function inBounds(x,y,z){return x>=0&&x<W&&y>0&&y<H&&z>=0&&z<D;}
+
+/* ---------------- 破坏 / 放置 ---------------- */
+let dirty=false, saveTimer=null;
+function markDirty(){ dirty=true; clearTimeout(saveTimer); saveTimer=setTimeout(saveWorld,900); }
+function doBreak(t){
+  if(!t) return;
+  if(t.id===BEDROCK) return;
+  const id=t.id;
+  world[idx(t.bx,t.by,t.bz)]=AIR;
+  spawnDrop(id,t.bx,t.by,t.bz);   // 掉落物
+  markDirty();                    // 主循环负责重建网格（每帧最多一次）+ 防抖存档
+}
+function doPlace(t,item){
+  if(!t||!t.placeOK) return;
+  if(!useItem(item)){ showMsg("材料不足，先挖几个方块吧"); return; }
+  world[idx(t.px,t.py,t.pz)]=item;
+  markDirty();                    // 主循环负责重建网格（每帧最多一次）+ 防抖存档
+}
+
+/* ---------------- 掉落物 & 库存（生存模式：挖→拾取→放置消耗） ---------------- */
+const inv={}; // id -> 数量
+function addInv(id,n){ inv[id]=(inv[id]||0)+(n||1); updateHotbarCounts(); }
+function useItem(item){ const n=inv[item]||0; if(n<=0) return false; inv[item]=n-1; updateHotbarCounts(); return true; }
+
+/* 掉落物网格：与方块同纹理，0.38 小立方体（几何按 id 缓存） */
+const dropGeoCache={};
+function dropGeometry(id){
+  const cached=dropGeoCache[id]; if(cached) return cached;
+  const P=[],U=[],N=[]; const S=.38,O=(1-S)/2;
+  for(let f=0;f<6;f++){
+    const fd=FACE_DEF[f], ti=FACE_TILE[id][f];
+    for(const vi of [0,1,2,0,2,3]){
+      const c=fd.c[vi];
+      P.push(O+c[0]*S,O+c[1]*S,O+c[2]*S);
+      N.push(fd.n[0],fd.n[1],fd.n[2]);
+      U.push((ti+c[3])/ATW,c[4]);
+    }
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute("position",new THREE.Float32BufferAttribute(new Float32Array(P),3));
+  g.setAttribute("uv",new THREE.Float32BufferAttribute(new Float32Array(U),2));
+  g.setAttribute("normal",new THREE.Float32BufferAttribute(new Float32Array(N),3));
+  return dropGeoCache[id]=g;
+}
+
+const drops=[]; // {x,y,z,vy,id,mesh,age}
+function spawnDrop(id,bx,by,bz){
+  const m=new THREE.Mesh(dropGeometry(id),solidMat);
+  m.position.set(bx+.5,by+.62,bz+.5); scene.add(m);
+  drops.push({x:bx+.5,y:by+.62,z:bz+.5,vy:-1,id,mesh:m,age:0});
+}
+function updateDrops(dt){
+  for(let i=drops.length-1;i>=0;i--){
+    const d=drops[i]; d.age+=dt;
+    if(d.age>90){ scene.remove(d.mesh); drops.splice(i,1); continue; }
+    /* 拾取：与玩家胸部距离 */
+    const dx=player.pos.x-d.x, dy=(player.pos.y+.9)-d.y, dz=player.pos.z-d.z;
+    if(dx*dx+dy*dy+dz*dz<1.7){ addInv(d.id,1); scene.remove(d.mesh); drops.splice(i,1); continue; }
+    /* 下落：子步进 + 探测下方格子 */
+    d.vy=Math.max(-24,d.vy-20*dt);
+    const steps=Math.max(1,Math.ceil(Math.abs(d.vy)*dt/.3)), h=dt/steps;
+    for(let s=0;s<steps;s++){
+      d.y+=d.vy*h;
+      if(solid(getB(Math.floor(d.x),Math.floor(d.y-.19),Math.floor(d.z)))){
+        d.y=Math.floor(d.y)+1+.19+.001; d.vy=0; break;
+      }
+    }
+    if(d.y<.3){ scene.remove(d.mesh); drops.splice(i,1); continue; } // 掉出世界（正常会被基岩挡住）
+    d.mesh.rotation.y+=dt*1.6;
+    d.mesh.position.set(d.x,d.y,d.z);
+  }
+}
+
+/* ---------------- 存档（localStorage，v2） ---------------- */
+const SAVE_KEY="minicraft_world_v2";
+let lastSaveAt=0;                       // 最近一次成功保存的时间戳
+let gameStarted=false, saveClock=0;     // 本次会话是否已开始 / 周期自动存档计时
+const saveTipEl=document.getElementById("saveTip");
+
+function fmtTime(ts){ const d=new Date(ts);
+  return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")+":"+String(d.getSeconds()).padStart(2,"0"); }
+function hasSave(){ try{ return !!localStorage.getItem(SAVE_KEY); }catch(e){ return false; } }
+
+function worldToB64(){
+  let s=""; for(let i=0;i<world.length;i+=8192) s+=String.fromCharCode.apply(null,world.subarray(i,i+8192));
+  return btoa(s);
+}
+
+/* 保存：地形 + 种子 + 昼夜时间 + 玩家位置朝向 + 背包 */
+function saveWorld(){
+  try{
+    const p=player.pos;
+    const data={ v:2, W,H,D, sd:SEED, t:dayT,
+      p:{x:+p.x.toFixed(3), y:+p.y.toFixed(3), z:+p.z.toFixed(3), yaw:+player.yaw.toFixed(4), pitch:+player.pitch.toFixed(4)},
+      inv, wb:worldToB64() };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    lastSaveAt=Date.now(); updateSaveTip();
+  }catch(e){ /* 配额超限 / 隐私模式：忽略 */ }
+}
+
+function b64ToWorld(b64){
+  const s=atob(b64); if(s.length!==world.length) return false;
+  for(let i=0;i<s.length;i++) world[i]=s.charCodeAt(i);
+  return true;
+}
+
+/* 读取：成功返回 true（地形 + 位置/背包/时间均已恢复） */
+function loadWorld(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY); if(!raw) return false;
+    const d=JSON.parse(raw);
+    if(d.v!==2 || d.W!==W||d.H!==H||d.D!==D){ localStorage.removeItem(SAVE_KEY); return false; } // 旧版本存档作废
+    if(!b64ToWorld(d.wb)) return false;
+    SEED=(d.sd|0)||1337;
+    dayT=isFinite(d.t)?d.t:40;
+    for(const k in inv) delete inv[k];
+    if(d.inv&&typeof d.inv==="object") for(const id in d.inv){ const n=Math.min(999,Math.max(0,d.inv[id]|0)); if(n>0) inv[+id]=n; }
+    const p=d.p;
+    if(p && isFinite(p.x)&&isFinite(p.y)&&isFinite(p.z)){
+      player.pos.x=p.x; player.pos.y=p.y; player.pos.z=p.z;
+      player.yaw=isFinite(p.yaw)?p.yaw:0.6;
+      const lim=Math.PI/2-0.01;
+      player.pitch=isFinite(p.pitch)?Math.min(Math.max(p.pitch,-lim),lim):-0.15;
+      player.xv=player.zv=player.vy=0; player.onGround=false;
+    }
+    return true;
+  }catch(e){ return false; }
+}
+
+/* v1 旧存档（只有地形）→ 迁移为 v2 */
+function migrateOldSave(){
+  try{
+    const OLD="minicraft_world_v1";
+    if(hasSave()) return;
+    const b=localStorage.getItem(OLD); if(!b) return;
+    const s=atob(b); if(s.length!==W*H*D) return;
+    for(let i=0;i<s.length;i++) world[i]=s.charCodeAt(i);
+    localStorage.setItem(SAVE_KEY, JSON.stringify({v:2,W,H,D,sd:SEED,t:40,p:null,inv:{},wb:btoa(s)}));
+    localStorage.removeItem(OLD);   // 迁移成功后释放配额
+  }catch(e){}
+}
+
+/* 存档位置是否有效（在世界内且没有被埋住） */
+function posOK(){
+  const p=player.pos;
+  if(p.x<HW||p.x>W-HW||p.z<HW||p.z>D-HW||p.y<-2||p.y+PH>H) return false;
+  return !solid(getB(Math.floor(p.x),Math.floor(p.y+.1),Math.floor(p.z)));
+}
+
+function updateSaveTip(){
+  if(!saveTipEl) return;
+  saveTipEl.textContent = lastSaveAt
+    ? "上次存档："+fmtTime(lastSaveAt)+" · 自动保存在浏览器 localStorage"
+    : "进度每 10 秒及方块变更时自动保存（存于浏览器 localStorage）";
+}
+
+/* 离开页面 / 切后台时冲刷一次存档，不丢最后几秒的进度 */
+function flushSave(){ if(gameStarted) saveWorld(); }
+addEventListener("pagehide",flushSave);
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) flushSave(); });
+
+/* ---------------- HUD / 快捷栏 ---------------- */
+const HOT=[GRASS,DIRT,STONE,PLANK,LOG,LEAF,SAND];
+const NAMES={1:"草方块",2:"泥土",3:"石头",4:"原木",5:"树叶",6:"沙子",8:"木板"};
+let sel=0;
+const hotbarEl=document.getElementById("hotbar");
+let slotEls=[];
+function buildHotbar(){
+  hotbarEl.innerHTML=""; slotEls=[];
+  HOT.forEach((id,i)=>{
+    const d=document.createElement("div"); d.className="slot"+(i===sel?" sel":"");
+    const k=document.createElement("b"); k.textContent=i+1;
+    const cv=document.createElement("canvas"); cv.width=32; cv.height=32;
+    const g=cv.getContext("2d"); g.imageSmoothingEnabled=false;
+    const ti = id===GRASS?TILE.grassS : id===LOG?TILE.logS : FACE_TILE[id][0];
+    g.drawImage(atlasCanvas, ti*16,0,16,16, 0,0,32,32);
+    const c=document.createElement("i"); c.className="cnt";
+    d.appendChild(k); d.appendChild(cv); d.appendChild(c); hotbarEl.appendChild(d);
+    slotEls.push({root:d,count:c});
+  });
+  updateHotbarCounts();
+}
+function updateHotbarCounts(){
+  for(let i=0;i<slotEls.length;i++){
+    const n=inv[HOT[i]]||0;
+    slotEls[i].count.textContent=n>0?"×"+n:"";
+    slotEls[i].root.style.opacity=n>0?1:.5; // 没有材料的格子变暗
+  }
+}
+function setSel(i){ sel=(i+HOT.length)%HOT.length; [...hotbarEl.children].forEach((el,j)=>el.classList.toggle("sel",j===sel)); }
+
+const infoEl=document.getElementById("info");
+let fps=60, frames=0, lastFpsT=performance.now();
+
+const msgEl=document.getElementById("msg"); let msgTimer=null;
+function showMsg(t){ if(!msgEl) return; msgEl.textContent=t; msgEl.style.opacity=1;
+  clearTimeout(msgTimer); msgTimer=setTimeout(()=>msgEl.style.opacity=0,1600); }
+
+/* ---------------- 输入：指针锁定 & 鼠标 ---------------- */
+const overlay=document.getElementById("overlay");
+let locked=false, lockPendingAt=0;
+function requestLock(){
+  try{ if(renderer.domElement.requestPointerLock){ lockPendingAt=performance.now(); renderer.domElement.requestPointerLock(); } }
+catch(e){}
+}
+document.addEventListener("pointerlockchange",()=>{
+  locked = document.pointerLockElement===renderer.domElement;
+  overlay.style.display = locked?"none":"flex";
+  if(locked) lockPendingAt=0;
+  else {
+    renderMenu(); // 刷新暂停菜单：按钮 + 上次存档时间
+    if(lockPendingAt && performance.now()-lockPendingAt<1500){
+      const h=document.getElementById("lockHint");
+      if(h) h.textContent="⚠ 浏览器未允许鼠标捕获（在 file://、iframe 或某些移动浏览器中常见）。键盘仍可移动，但无法控制视角和挖/放。建议换用常规网页方式打开本页。";
+    }
+  }
+});
+overlay.addEventListener("click",e=>{ if(!e.target.classList.contains("btn")) requestLock(); });
+
+addEventListener("mousemove",e=>{
+  if(!locked) return;
+  player.yaw   -= e.movementX*0.0022;
+  player.pitch -= e.movementY*0.0022;
+  const lim=Math.PI/2-0.01;
+  player.pitch=Math.min(Math.max(player.pitch,-lim),lim);
+});
+
+let holdL=false,holdR=false,lastAction=0;
+addEventListener("mousedown",e=>{
+  if(!locked) return;
+  e.preventDefault();
+  const now=performance.now();
+  if(e.button===0){ holdL=true; lastAction=now; doBreak(pick()); }
+  if(e.button===2){ holdR=true; lastAction=now; doPlace(pick(),HOT[sel]); }
+});
+addEventListener("mouseup",e=>{ if(e.button===0)holdL=false; if(e.button===2)holdR=false; });
+addEventListener("contextmenu",e=>e.preventDefault());
+
+addEventListener("wheel",e=>{ if(locked) setSel(sel+(e.deltaY>0?1:-1)); },{passive:true});
+
+/* ---------------- 昼夜循环 ---------------- */
+const DAY_LEN=150; // 秒/天
+let dayT=40;
+const skyDay=new THREE.Color(0x87ceeb), skyNight=new THREE.Color(0x0c1226);
+const skyCol=new THREE.Color();
+function updateSky(dt){
+  dayT+=dt;
+  const a=dayT/DAY_LEN*Math.PI*2 + .9;
+  const k=Math.max(0,Math.sin(a)), kk=k*k*(3-2*k);
+  sun.position.set(Math.cos(a)*80, Math.sin(a)*60+10, 30);
+  ambient.intensity=.25+.7*kk;
+  sun.intensity=.15+.75*kk;
+  skyCol.copy(skyNight).lerp(skyDay,kk);
+  scene.background=skyCol; scene.fog.color.copy(skyCol);
+  /* 太阳/月亮挂到相机周围 */
+  const dir=sun.position.clone().normalize();
+  sunBall.position.copy(camera.position).addScaledVector(dir,260);
+  moonBall.position.copy(camera.position).addScaledVector(dir,-260);
+}
+
+/* ---------------- 出生点 ---------------- */
+function findSpawn(){
+  let best=null,bestH=-1;
+  for(let x=4;x<W-4;x++)for(let z=4;z<D-4;z++){
+    const h=topSolidY(x,z);
+    if(h>WL+1 && world[idx(x,h,z)]===GRASS){
+      const score=h*2 - Math.hypot(x-W/2,z-D/2)*.05;
+      if(score>bestH){bestH=score;best={x,z,h};}
+    }
+  }
+  return best||{x:W/2|0,z:D/2|0,h:topSolidY(W/2|0,D/2|0)};
+}
+
+/* ---------------- 主循环 ---------------- */
+let lastT=performance.now();
+function loop(now){
+  requestAnimationFrame(loop);
+  let dt=(now-lastT)/1000; lastT=now;
+  if(dt>0.05)dt=0.05;
+
+  /* 按住连挖/连放 */
+  const tAct=pick();
+  if(locked){
+    if(holdL||holdR){
+      if(now-lastAction>230){
+        lastAction=now;
+        if(holdL) doBreak(tAct); else doPlace(tAct,HOT[sel]);
+      }
+    }
+  }
+
+  if(dirty){ rebuild(); dirty=false; }
+
+  /* 周期自动存档（游戏中每 10 秒一次） */
+  if(gameStarted){ saveClock+=dt; if(saveClock>=10){ saveClock=0; saveWorld(); } }
+
+  /* 物理 + 相机（暂停时冻结，避免开菜单时角色漂移/掉落物乱滚） */
+  const active = gameStarted && locked;
+  if(active) stepPhysics(dt);
+  const p=player.pos;
+  camera.position.set(p.x,p.y+EYE,p.z);
+  camera.rotation.order="YXZ";
+  camera.rotation.set(player.pitch,player.yaw,0);
+
+  if(active) updateDrops(dt); // 掉落物物理 + 拾取
+
+  /* 高亮框 */
+  const t=pick();
+  highlight.visible = locked && !!t;
+  if(t) highlight.position.set(t.bx+.5, t.by+.5, t.bz+.5);
+
+  updateSky(dt);
+
+  /* HUD */
+  frames++;
+  if(now-lastFpsT>500){ fps=Math.round(frames*1000/(now-lastFpsT)); frames=0; lastFpsT=now;
+    let totalInv=0; for(const k in inv) totalInv+=inv[k];
+    infoEl.innerHTML=`FPS ${fps} ｜ 坐标 ${p.x.toFixed(1)} / ${Math.max(0,p.y).toFixed(1)} / ${p.z.toFixed(1)}`+
+      `<br>手持：<b style="color:#9fe27a">${NAMES[HOT[sel]]} ×${inv[HOT[sel]]||0}</b>`+
+      (totalInv===0?`<br><span style="color:#ffd9a0">提示：左键挖方块拾取材料，再右键放置</span>`:"")+
+      (lastSaveAt?`<br><span style="color:#8fa0c4">已存档 ${fmtTime(lastSaveAt)}</span>`:"");
+  }
+
+  renderer.render(scene,camera);
+}
+
+/* ---------------- 初始化 & 开始按钮 ---------------- */
+function rebuild(){ buildMeshes(); }
+function startGame(fresh){
+  for(const d of drops) scene.remove(d.mesh); drops.length=0;
+  if(fresh){
+    SEED=newSeed();              // 全新随机地形
+    genWorld(); findSpawnAndReset();
+    for(const k in inv) delete inv[k];
+  } else {
+    const ok=loadWorld();        // 恢复世界 + 位置/背包/时间
+    if(!ok){                     // 无有效存档：首次开局沿用默认种子（与预览一致），否则重掷
+      if(gameStarted) SEED=newSeed();
+      genWorld(); for(const k in inv) delete inv[k]; findSpawnAndReset();
+    } else if(!posOK()){         // 存档位置无效（如被方块埋住）→ 回出生点
+      findSpawnAndReset();
+    }
+  }
+  rebuild(); buildHotbar(); setSel(0);
+  gameStarted=true; saveClock=0; lastT=performance.now();
+  renderMenu();                  // 切换按钮文案（继续游戏 / 新世界）
+  saveWorld();                   // 立即落盘当前状态，保证下次必有"继续"
+  requestLock();
+}
+function findSpawnAndReset(){
+  const sp=findSpawn();
+  player.pos.x=sp.x+.5; player.pos.z=sp.z+.5;
+  let top=topSolidY(sp.x,sp.z); if(top<1)top=H-6;
+  player.pos.y=top+1.01;
+  player.xv=player.zv=player.vy=0; player.onGround=false;
+}
+
+addEventListener("resize",()=>{
+  camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+
+/* 按钮区：动态渲染 —— 开局前 / 暂停中显示不同按钮 */
+function renderMenu(){
+  const btns=document.getElementById("btns"); if(!btns) return;
+  if(gameStarted || hasSave()){
+    btns.innerHTML=
+      "<span class='btn' id='bCont'>"+(gameStarted?"继续游戏":"继续上次存档")+"</span>"+
+      "<span class='btn ghost' id='bSave'>立即存档</span>"+
+      "<span class='btn ghost' id='bNew'>生成新世界</span>";
+    document.getElementById("bCont").onclick=()=>startGame(false);
+    document.getElementById("bSave").onclick=()=>{ saveWorld(); updateSaveTip(); };
+    document.getElementById("bNew").onclick=()=>{
+      if(confirm("确定要生成一张全新的随机世界吗？当前存档将被覆盖。")) startGame(true);
+    };
+  } else {
+    btns.innerHTML="<span class='btn' id='bStart'>开始游戏</span>";
+    document.getElementById("bStart").onclick=()=>startGame(false);
+  }
+  updateSaveTip();
+}
+
+/* 错误显示：运行期出 bug 直接弹到屏幕上，方便定位 */
+let fatalShown=false;
+addEventListener("error",ev=>{
+  if(fatalShown) return;
+  const m=(ev.message||"unknown error")+" @line "+(ev.lineno||"?");
+  try{ console.error(m); }catch(e){}
+  fatalShown=true;
+  try{
+    const d=document.createElement("div");
+    d.style.cssText="position:fixed;top:40px;left:50%;transform:translateX(-50%);z-index:99;background:#7a1f1f;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;max-width:82%";
+    d.textContent="⚠ 游戏出错："+m; 
+    document.body.appendChild(d);
+  }catch(e){}
+});
+
+/* 预热一帧：优先读入存档作背景预览；无存档则生成默认世界 */
+migrateOldSave();
+renderMenu();
+if(!loadWorld()){ genWorld(); findSpawnAndReset(); }
+rebuild();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
