@@ -736,5 +736,40 @@ function startGame(){
 
 })();
 </script>
+<script src="../js/history.js"></script>
+<script>
+HistoryManager.injectBackButton();
+/* --- 历史记录钩子 --- */
+var _gameStartTimeAI2=Date.now();
+(function(){
+  var _reset=function(){_gameStartTimeAI2=Date.now();};
+  ['startBtn','restartBtn'].forEach(function(id){
+    var _b=document.getElementById(id);
+    if(_b) _b.addEventListener('click',function(){setTimeout(_reset,0);});
+  });
+  if(typeof startGame==='function'){
+    var _origStartGameAI2=startGame;
+    startGame=function(){_reset();_origStartGameAI2();};
+  }
+})();
+(function(){
+  var _lastRecorded=false;
+  var observer=new MutationObserver(function(muts){
+    muts.forEach(function(m){
+      if(m.target.id==='gameOverScreen'&&m.target.classList.contains('show')&&!_lastRecorded){
+        _lastRecorded=true;
+        var sc=parseInt(document.getElementById('fScore').textContent)||0;
+        var kills=parseInt(document.getElementById('fKills').textContent)||0;
+        var len=parseInt(document.getElementById('fLen').textContent)||0;
+        HistoryManager.record('snake-ai2',{score:sc,result:'lose',duration:Math.round((Date.now()-_gameStartTimeAI2)/1000),extra:'长度:'+len+' 击杀:'+kills});
+      }
+    });
+  });
+  var el=document.getElementById('gameOverScreen');
+  if(el) observer.observe(el,{attributes:true,attributeFilter:['class']});
+  document.getElementById('restartBtn').addEventListener('click',function(){_lastRecorded=false;});
+  document.getElementById('startBtn').addEventListener('click',function(){_lastRecorded=false;});
+})();
+</script>
 </body>
 </html>

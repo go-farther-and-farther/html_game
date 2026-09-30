@@ -1,0 +1,8 @@
+{
+  "appId": "com.games.collection",
+  "appName": "HTML游戏合集",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

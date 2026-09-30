@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>游戏历史记录</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  body {
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    min-height: 100vh;
+    padding: 16px;
+    color: #fff;
+  }
+
+  /* ---------- 顶栏 ---------- */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .back-btn {
+    display: inline-block;
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    color: #fff;
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+
+  .back-btn:active {
+    transform: scale(0.95);
+  }
+
+  .header h1 {
+    font-size: 24px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ---------- 筛选栏 ---------- */
+  .filters {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 20px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-btn {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 20px;
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.6);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .filter-btn.active {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-color: transparent;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .filter-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* ---------- 统计卡片 ---------- */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 12px 8px;
+    text-align: center;
+  }
+
+  .stat-card .value {
+    font-size: 22px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #f5af19, #f12711);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .stat-card .label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 2px;
+  }
+
+  /* ---------- 记录列表 ---------- */
+  .record-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .record-item {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .record-icon {
+    font-size: 32px;
+    flex-shrink: 0;
+  }
+
+  .record-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .record-info .game-name {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .record-info .record-time {
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+  }
+
+  .record-info .record-extra {
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+    margin-top: 2px;
+  }
+
+  .record-score {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .record-score .score {
+    font-size: 20px;
+    font-weight: 800;
+    color: #f5af19;
+  }
+
+  .record-score .result {
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  .result-win { color: #4caf50; }
+  .result-lose { color: #f44336; }
+  .result-quit { color: rgba(255,255,255,0.4); }
+
+  /* ---------- 空状态 ---------- */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: rgba(255,255,255,0.3);
+  }
+
+  .empty-state .icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+  }
+
+  .empty-state p {
+    font-size: 15px;
+  }
+
+  .empty-state a {
+    color: #667eea;
+    text-decoration: none;
+  }
+
+  /* ---------- 分页 ---------- */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 20px;
+  }
+
+  .page-btn {
+    padding: 8px 16px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.6);
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .page-btn.active {
+    background: #667eea;
+    border-color: #667eea;
+    color: #fff;
+  }
+
+  .page-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <a class="back-btn" href="index.html">← 返回</a>
+    <h1>📊 历史记录</h1>
+  </div>
+</div>
+
+<div class="filters" id="filters"></div>
+
+<div class="stats-grid" id="stats"></div>
+
+<div class="record-list" id="record-list"></div>
+
+<div class="pagination" id="pagination"></div>
+
+<script src="js/history.js"></script>
+<script>
+  var currentFilter = 'all';
+  var currentPage = 1;
+  var pageSize = 20;
+
+  function renderFilters() {
+    var container = document.getElementById('filters');
+    var games = HistoryManager.getAllGames();
+    var html = '<div class="filter-btn ' + (currentFilter === 'all' ? 'active' : '') + '" data-filter="all">全部</div>';
+
+    var gameIds = Object.keys(games);
+    gameIds.forEach(function(id) {
+      html += '<div class="filter-btn ' + (currentFilter === id ? 'active' : '') + '" data-filter="' + id + '">' +
+              HistoryManager.getGameIcon(id) + ' ' + HistoryManager.getGameName(id) + '</div>';
+    });
+
+    container.innerHTML = html;
+
+    container.querySelectorAll('.filter-btn').forEach(function(btn) {
+      btn.onclick = function() {
+        currentFilter = this.getAttribute('data-filter');
+        currentPage = 1;
+        renderFilters();
+        renderStats();
+        renderRecords();
+      };
+    });
+  }
+
+  function renderStats() {
+    var container = document.getElementById('stats');
+    var games = HistoryManager.getAllGames();
+    var allRecords = [];
+
+    if (currentFilter === 'all') {
+      Object.keys(games).forEach(function(id) {
+        games[id].forEach(function(r) { allRecords.push(r); });
+      });
+    } else {
+      allRecords = games[currentFilter] || [];
+    }
+
+    if (allRecords.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+
+    var scores = allRecords.map(function(r) { return r.score || 0; });
+    var wins = allRecords.filter(function(r) { return r.result === 'win'; }).length;
+    var bestScore = Math.max.apply(null, scores);
+    var avgScore = Math.round(scores.reduce(function(a,b) { return a+b; }, 0) / scores.length);
+
+    container.innerHTML =
+      '<div class="stat-card"><div class="value">' + allRecords.length + '</div><div class="label">总局数</div></div>' +
+      '<div class="stat-card"><div class="value">' + bestScore + '</div><div class="label">最高分</div></div>' +
+      '<div class="stat-card"><div class="value">' + avgScore + '</div><div class="label">平均分</div></div>' +
+      '<div class="stat-card"><div class="value">' + wins + '</div><div class="label">胜利</div></div>';
+  }
+
+  function renderRecords() {
+    var container = document.getElementById('record-list');
+    var games = HistoryManager.getAllGames();
+    var allRecords = [];
+
+    if (currentFilter === 'all') {
+      Object.keys(games).forEach(function(id) {
+        games[id].forEach(function(r) {
+          allRecords.push(Object.assign({}, r, { gameId: id }));
+        });
+      });
+    } else {
+      (games[currentFilter] || []).forEach(function(r) {
+        allRecords.push(Object.assign({}, r, { gameId: currentFilter }));
+      });
+    }
+
+    // 按时间倒序
+    allRecords.sort(function(a, b) { return (b.time || 0) - (a.time || 0); });
+
+    if (allRecords.length === 0) {
+      container.innerHTML = '<div class="empty-state">' +
+        '<div class="icon">📭</div>' +
+        '<p>还没有游戏记录</p>' +
+        '<p style="margin-top:8px;"><a href="index.html">去玩游戏吧！</a></p>' +
+        '</div>';
+      document.getElementById('pagination').innerHTML = '';
+      return;
+    }
+
+    // 分页
+    var totalPages = Math.ceil(allRecords.length / pageSize);
+    if (currentPage > totalPages) currentPage = totalPages;
+    var start = (currentPage - 1) * pageSize;
+    var pageRecords = allRecords.slice(start, start + pageSize);
+
+    var html = '';
+    pageRecords.forEach(function(r) {
+      var resultClass = 'result-' + (r.result || 'quit');
+      var resultText = r.result === 'win' ? '胜利' : r.result === 'lose' ? '失败' : '退出';
+      var extra = r.extra ? '<div class="record-extra">' + r.extra + '</div>' : '';
+      var duration = r.duration ? ' · ' + HistoryManager.formatDuration(r.duration) : '';
+
+      html += '<div class="record-item">' +
+        '<div class="record-icon">' + HistoryManager.getGameIcon(r.gameId) + '</div>' +
+        '<div class="record-info">' +
+          '<div class="game-name">' + HistoryManager.getGameName(r.gameId) + '</div>' +
+          '<div class="record-time">' + HistoryManager.formatTime(r.time) + duration + '</div>' +
+          extra +
+        '</div>' +
+        '<div class="record-score">' +
+          '<div class="score">' + (r.score || 0) + '</div>' +
+          '<div class="result ' + resultClass + '">' + resultText + '</div>' +
+        '</div>' +
+      '</div>';
+    });
+
+    container.innerHTML = html;
+
+    // 分页按钮
+    if (totalPages <= 1) {
+      document.getElementById('pagination').innerHTML = '';
+      return;
+    }
+
+    var pagHtml = '';
+    pagHtml += '<button class="page-btn" ' + (currentPage <= 1 ? 'disabled' : '') + ' onclick="goPage(' + (currentPage-1) + ')">‹</button>';
+    for (var i = 1; i <= totalPages; i++) {
+      if (totalPages > 7 && i > 2 && i < totalPages - 1 && Math.abs(i - currentPage) > 1) {
+        if (i === 3 || i === totalPages - 2) pagHtml += '<span style="color:rgba(255,255,255,0.3);padding:8px 4px;">…</span>';
+        continue;
+      }
+      pagHtml += '<button class="page-btn ' + (i === currentPage ? 'active' : '') + '" onclick="goPage(' + i + ')">' + i + '</button>';
+    }
+    pagHtml += '<button class="page-btn" ' + (currentPage >= totalPages ? 'disabled' : '') + ' onclick="goPage(' + (currentPage+1) + ')">›</button>';
+    document.getElementById('pagination').innerHTML = pagHtml;
+  }
+
+  function goPage(p) {
+    currentPage = p;
+    renderRecords();
+    window.scrollTo(0, 0);
+  }
+
+  renderFilters();
+  renderStats();
+  renderRecords();
+</script>
+</body>
+</html>

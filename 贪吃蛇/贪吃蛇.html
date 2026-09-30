@@ -753,5 +753,26 @@ resizeCanvas();
 newGame();
 requestAnimationFrame(animLoop);
 </script>
+<script src="../js/history.js"></script>
+<script>
+  HistoryManager.injectBackButton();
+  var _gameStartTimeSnake = Date.now();
+  var _origGameOverSnake = gameOver;
+  gameOver = function() {
+    _origGameOverSnake();
+    HistoryManager.record('snake', {
+      score: score,
+      bestScore: best,
+      result: 'lose',
+      duration: Math.round((Date.now() - _gameStartTimeSnake) / 1000),
+      extra: '长度: ' + snake.length
+    });
+  };
+  var _origNewGameSnake = newGame;
+  newGame = function() {
+    _gameStartTimeSnake = Date.now();
+    _origNewGameSnake();
+  };
+</script>
 </body>
 </html>

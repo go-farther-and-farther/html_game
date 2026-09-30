@@ -1964,5 +1964,42 @@ canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 
   })();
 })();
 </script>
+<script src="../js/history.js"></script>
+<script>
+HistoryManager.injectBackButton();
+/* --- 历史记录钩子 --- */
+var _gameStartTimeAI5=Date.now();
+(function(){
+  var _reset=function(){_gameStartTimeAI5=Date.now();};
+  ['startBtn','restartBtn'].forEach(function(id){
+    var _b=document.getElementById(id);
+    if(_b) _b.addEventListener('click',function(){setTimeout(_reset,0);});
+  });
+  if(typeof startGame==='function'){
+    var _origStartGameAI5=startGame;
+    startGame=function(){_reset();_origStartGameAI5();};
+  }
+})();
+(function(){
+  var _lastRecorded=false;
+  var observer=new MutationObserver(function(muts){
+    muts.forEach(function(m){
+      if(m.target.id==='gameOverScreen'&&m.target.classList.contains('show')&&!_lastRecorded){
+        _lastRecorded=true;
+        var title=document.getElementById('endTitle').textContent;
+        var isWin=title.indexOf('胜利')>=0;
+        var sc=parseInt(document.getElementById('fScore').textContent)||0;
+        var kills=parseInt(document.getElementById('fKills').textContent)||0;
+        var len=parseInt(document.getElementById('fLen').textContent)||0;
+        HistoryManager.record('snake-ai5',{score:sc,result:isWin?'win':'lose',duration:Math.round((Date.now()-_gameStartTimeAI5)/1000),extra:'长度:'+len+' 击杀:'+kills});
+      }
+    });
+  });
+  var el=document.getElementById('gameOverScreen');
+  if(el) observer.observe(el,{attributes:true,attributeFilter:['class']});
+  document.getElementById('restartBtn').addEventListener('click',function(){_lastRecorded=false;});
+  document.getElementById('startBtn').addEventListener('click',function(){_lastRecorded=false;});
+})();
+</script>
 </body>
 </html>
