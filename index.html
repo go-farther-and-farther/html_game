@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTML 游戏合集</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    min-height: 100vh;
+    padding: 32px 16px;
+    color: #fff;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .header h1 {
+    font-size: 36px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #f5af19, #f12711);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+
+  .header p {
+    font-size: 14px;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 32px 0 16px;
+    padding-left: 12px;
+    border-left: 4px solid #f5af19;
+  }
+
+  .game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  .game-card {
+    display: block;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 22px 16px;
+    text-align: center;
+    text-decoration: none;
+    color: #fff;
+    transition: all 0.25s;
+  }
+
+  .game-card:hover {
+    background: rgba(255,255,255,0.14);
+    border-color: rgba(245,175,25,0.5);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  .game-card .icon {
+    font-size: 36px;
+    margin-bottom: 10px;
+  }
+
+  .game-card .name {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .game-card .desc {
+    font-size: 12px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.5;
+  }
+
+  .game-card .tag {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    background: linear-gradient(135deg, #f5af19, #f12711);
+    color: #fff;
+  }
+
+  footer {
+    text-align: center;
+    margin-top: 48px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>HTML 游戏合集</h1>
+    <p>纯 HTML / CSS / JavaScript 实现 · 浏览器直接打开即玩</p>
+  </div>
+
+  <div class="section-title">🎮 经典小游戏</div>
+  <div class="game-grid">
+    <a class="game-card" href="2048/2048.HTML">
+      <div class="icon">🔢</div>
+      <div class="name">2048</div>
+      <div class="desc">经典数字合并游戏</div>
+    </a>
+    <a class="game-card" href="俄罗斯方块/俄罗斯方块.html">
+      <div class="icon">🧱</div>
+      <div class="name">俄罗斯方块</div>
+      <div class="desc">经典方块消除</div>
+    </a>
+    <a class="game-card" href="贪吃蛇/贪吃蛇.html">
+      <div class="icon">🐍</div>
+      <div class="name">贪吃蛇</div>
+      <div class="desc">基础版贪吃蛇</div>
+    </a>
+    <a class="game-card" href="贪吃蛇/人机版贪吃蛇.html">
+      <div class="icon">🤖</div>
+      <div class="name">人机版贪吃蛇</div>
+      <div class="desc">AI 对战 · 初版</div>
+    </a>
+    <a class="game-card" href="贪吃蛇/人机版贪吃蛇2.html">
+      <div class="icon">🤖</div>
+      <div class="name">人机版贪吃蛇2</div>
+      <div class="desc">AI 对战 · 进阶版</div>
+    </a>
+    <a class="game-card" href="贪吃蛇/人机版贪吃蛇3.html">
+      <div class="icon">⭐</div>
+      <div class="name">人机版贪吃蛇3</div>
+      <div class="desc">完整版 · 队友/猎杀模式</div>
+      <span class="tag">推荐</span>
+    </a>
+    <a class="game-card" href="贪吃蛇/人机版贪吃蛇3.5.html">
+      <div class="icon">🤖</div>
+      <div class="name">人机版贪吃蛇3.5</div>
+      <div class="desc">增强版</div>
+    </a>
+    <a class="game-card" href="贪吃蛇/人机版贪吃蛇4.html">
+      <div class="icon">🤖</div>
+      <div class="name">人机版贪吃蛇4</div>
+      <div class="desc">高级 AI 版</div>
+    </a>
+    <a class="game-card" href="贪吃蛇/人机版贪吃蛇5.html">
+      <div class="icon">🤖</div>
+      <div class="name">人机版贪吃蛇5</div>
+      <div class="desc">终极 AI 版</div>
+    </a>
+    <a class="game-card" href="贪吃蛇/贪吃蛇大冒险V6.html">
+      <div class="icon">🗺️</div>
+      <div class="name">贪吃蛇大冒险V6</div>
+      <div class="desc">冒险模式</div>
+    </a>
+  </div>
+
+  <div class="section-title">🌌 3D 与大项目</div>
+  <div class="game-grid">
+    <a class="game-card" href="泰坦尼克号/titanic.html">
+      <div class="icon">🚢</div>
+      <div class="name">泰坦尼克号</div>
+      <div class="desc">3D 泰坦尼克号体验 · three.js</div>
+    </a>
+    <a class="game-card" href="雨夜便利店/index.html">
+      <div class="icon">🏪</div>
+      <div class="name">雨夜便利店</div>
+      <div class="desc">3D 雨夜便利店场景 · three.js</div>
+    </a>
+    <a class="game-card" href="雨夜加油站/index.html">
+      <div class="icon">⛽</div>
+      <div class="name">雨夜加油站</div>
+      <div class="desc">3D 雨夜加油站场景</div>
+    </a>
+    <a class="game-card" href="鹈鹕骑车3D/pelican-free-ride.html">
+      <div class="icon">🚲</div>
+      <div class="name">鹈鹕骑车3D</div>
+      <div class="desc">3D 鹈鹕自由骑行 · 多版本迭代</div>
+    </a>
+    <a class="game-card" href="塔防游戏/elemental_outpostV7.html">
+      <div class="icon">🏹</div>
+      <div class="name">塔防 · 元素前哨</div>
+      <div class="desc">元素塔防 V7 · 附设计文档与测试</div>
+    </a>
+    <a class="game-card" href="我的世界/minicraft3.html">
+      <div class="icon">⛏️</div>
+      <div class="name">我的世界</div>
+      <div class="desc">minicraft 类沙盒 · 第 3 版</div>
+    </a>
+    <a class="game-card" href="修仙天赋模拟器/修仙天赋模拟器-v2.html">
+      <div class="icon">🔮</div>
+      <div class="name">修仙天赋模拟器</div>
+      <div class="desc">修仙天赋随机模拟 · v2</div>
+    </a>
+  </div>
+
+  <footer>HTML 游戏合集 · MIT License</footer>
+</div>
+</body>
+</html>
