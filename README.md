@@ -10,7 +10,7 @@
 
 | 游戏 | 文件 | 说明 |
 |------|------|------|
-| 2048 | `2048/2048.HTML` | 经典数字合并游戏 |
+| 2048 | `2048/2048.HTML` | 经典数字合并游戏，另有 5×5 / AI / AI 5×5 / 自动化 4 个变体 |
 | 贪吃蛇 | `贪吃蛇/贪吃蛇.html` | 基础版贪吃蛇 |
 | 人机版贪吃蛇 | `贪吃蛇/人机版贪吃蛇.html` | AI 对战版贪吃蛇 |
 | 人机版贪吃蛇2 | `贪吃蛇/人机版贪吃蛇2.html` | AI 对战版贪吃蛇（进阶版） |
@@ -56,13 +56,17 @@
 
 ### 重新构建 APK
 
+游戏源文件直接放在仓库根目录的各游戏文件夹中（单一源，不再手工维护 www）；`www/` 是自动生成的打包目录（已 gitignore）。
+
 ```bash
 npm install
-npx cap sync android
+npm run cap:sync        # 自动从根目录生成 www 并同步到安卓工程
 cd android && ./gradlew.bat assembleDebug
 ```
 
 APK 输出路径：`android/app/build/outputs/apk/debug/app-debug.apk`
+
+> 注：`scripts/build-web.mjs` 决定哪些目录会被打进 APK，新增游戏后在其中的 `items` 列表补一行即可。
 
 ## 🐍 人机版贪吃蛇3（完整版）
 

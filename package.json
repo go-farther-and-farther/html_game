@@ -1,0 +1,23 @@
+{
+  "name": "html-games-collection",
+  "version": "1.0.0",
+  "description": "HTML游戏合集 - 安卓版",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'Static files, no build needed'",
+    "build:web": "node scripts/build-web.mjs",
+    "cap:init": "npx cap init \"HTML游戏合集\" \"com.games.collection\" --web-dir www",
+    "cap:add": "npx cap add android",
+    "cap:sync": "npm run build:web && npx cap sync",
+    "android:debug": "cd android && gradlew.bat assembleDebug",
+    "android:open": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0",
+    "typescript": "^7.0.2"
+  }
+}

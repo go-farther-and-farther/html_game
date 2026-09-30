@@ -539,5 +539,29 @@ window.addEventListener('resize', renderTiles);
 initBoardBg();
 newGame();
 </script>
+<script src="../js/history.js"></script>
+<script>
+  HistoryManager.injectBackButton();
+  var _gameStartTime2048 = Date.now();
+  var _origCheckGameState = checkGameState;
+  checkGameState = function() {
+    var wasWon = won && !keepPlaying;
+    var wasLost = !canMove();
+    _origCheckGameState();
+    if (wasWon || wasLost) {
+      HistoryManager.record('2048', {
+        score: score,
+        bestScore: best,
+        result: wasWon ? 'win' : 'lose',
+        duration: Math.round((Date.now() - _gameStartTime2048) / 1000)
+      });
+    }
+  };
+  var _origNewGame2048 = newGame;
+  newGame = function() {
+    _gameStartTime2048 = Date.now();
+    _origNewGame2048();
+  };
+</script>
 </body>
 </html>

@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>2048 自动化版</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  body {
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: #faf8ef;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 16px;
+    overflow-x: hidden;
+  }
+
+  .container {
+    width: min(90vw, 90vh, 500px);
+    max-width: 500px;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .title {
+    font-size: 40px;
+    font-weight: 800;
+    color: #776e65;
+  }
+
+  .title .auto-tag {
+    font-size: 14px;
+    background: #4CAF50;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .scores {
+    display: flex;
+    gap: 8px;
+  }
+
+  .score-box {
+    background: #bbada0;
+    color: #fff;
+    border-radius: 6px;
+    padding: 8px 16px;
+    text-align: center;
+    min-width: 70px;
+  }
+
+  .score-box .label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.85;
+  }
+
+  .score-box .value {
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+
+  .btn {
+    background: #8f7a66;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn:active {
+    background: #9f8b77;
+  }
+
+  .btn.running {
+    background: #4CAF50;
+  }
+
+  .speed-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #776e65;
+  }
+
+  .speed-control input {
+    width: 80px;
+  }
+
+  .board-wrapper {
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%;
+    background: #bbada0;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .board {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .cell-bg {
+    background: rgba(238, 228, 218, 0.35);
+    border-radius: 6px;
+  }
+
+  .tile-layer {
+    position: absolute;
+    inset: 0;
+    padding: 12px;
+    pointer-events: none;
+  }
+
+  .tile {
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 800;
+    border-radius: 6px;
+    transition: top 0.06s ease, left 0.06s ease;
+    z-index: 10;
+  }
+
+  .tile[data-value="2"]    { background: #eee4da; color: #776e65; }
+  .tile[data-value="4"]    { background: #ede0c8; color: #776e65; }
+  .tile[data-value="8"]    { background: #f2b179; color: #f9f6f2; }
+  .tile[data-value="16"]   { background: #f59563; color: #f9f6f2; }
+  .tile[data-value="32"]   { background: #f67c5f; color: #f9f6f2; }
+  .tile[data-value="64"]   { background: #f65e3b; color: #f9f6f2; }
+  .tile[data-value="128"]  { background: #edcf72; color: #f9f6f2; }
+  .tile[data-value="256"]  { background: #edcc61; color: #f9f6f2; }
+  .tile[data-value="512"]  { background: #edc850; color: #f9f6f2; }
+  .tile[data-value="1024"] { background: #edc53f; color: #f9f6f2; }
+  .tile[data-value="2048"] { background: #edc22e; color: #f9f6f2; }
+  .tile[data-value="4096"] { background: #3c3a32; color: #f9f6f2; }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+    background: rgba(187, 173, 160, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-item .stat-label {
+    font-size: 11px;
+    color: #776e65;
+    opacity: 0.7;
+  }
+
+  .stat-item .stat-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #776e65;
+  }
+
+  .batch-stats {
+    margin-top: 12px;
+    background: rgba(187, 173, 160, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    display: none;
+  }
+
+  .batch-stats h3 {
+    font-size: 14px;
+    color: #776e65;
+    margin-bottom: 8px;
+  }
+
+  .batch-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .batch-item {
+    text-align: center;
+    background: rgba(255,255,255,0.5);
+    border-radius: 6px;
+    padding: 8px;
+  }
+
+  .batch-item .batch-label {
+    font-size: 11px;
+    color: #776e65;
+    opacity: 0.7;
+  }
+
+  .batch-item .batch-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #776e65;
+  }
+
+  .strategy-box {
+    margin-top: 12px;
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 13px;
+    color: #776e65;
+  }
+
+  .strategy-box div {
+    margin-bottom: 4px;
+  }
+
+  .strategy-box .priority {
+    color: #4CAF50;
+    font-weight: 700;
+  }
+
+  .hint {
+    text-align: center;
+    margin-top: 12px;
+    color: #776e65;
+    font-size: 12px;
+    opacity: 0.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="title">2048<span class="auto-tag">自动</span></div>
+    <div class="scores">
+      <div class="score-box">
+        <div class="label">分数</div>
+        <div class="value" id="score">0</div>
+      </div>
+      <div class="score-box">
+        <div class="label">最大</div>
+        <div class="value" id="maxTile">0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="startBtn">▶ 开始</button>
+    <button class="btn" id="resetBtn">🔄 重置</button>
+    <button class="btn" id="batchBtn">📊 跑10局</button>
+    <div class="speed-control">
+      <span>速度</span>
+      <input type="range" id="speedSlider" min="1" max="100" value="80">
+      <span id="speedLabel">80</span>
+    </div>
+  </div>
+
+  <div class="board-wrapper" id="boardWrapper">
+    <div class="board" id="boardBg"></div>
+    <div class="tile-layer" id="tileLayer"></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-item">
+      <div class="stat-label">步数</div>
+      <div class="stat-value" id="moves">0</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">卡住次数</div>
+      <div class="stat-value" id="stucks">0</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">耗时</div>
+      <div class="stat-value" id="elapsed">0s</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">状态</div>
+      <div class="stat-value" id="status">就绪</div>
+    </div>
+  </div>
+
+  <div class="strategy-box">
+    <div><span class="priority">策略：</span>一直右+下，卡住时左/上救一下</div>
+    <div><span class="priority">目标：</span>大数字固定在右下角</div>
+  </div>
+
+  <div class="batch-stats" id="batchPanel">
+    <h3>📊 批量测试结果</h3>
+    <div class="batch-grid">
+      <div class="batch-item">
+        <div class="batch-label">平均分</div>
+        <div class="batch-value" id="avgScore">-</div>
+      </div>
+      <div class="batch-item">
+        <div class="batch-label">最高分</div>
+        <div class="batch-value" id="highScore">-</div>
+      </div>
+      <div class="batch-item">
+        <div class="batch-label">平均最大</div>
+        <div class="batch-value" id="avgMax">-</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hint">简单暴力，纪律至上</div>
+</div>
+
+<script>
+const SIZE = 4;
+let grid, score, gameRunning, gameEnded;
+let moveCount, stuckCount, startTime, autoTimer;
+let batchResults = [];
+let isBatching = false;
+
+const speedSlider = document.getElementById('speedSlider');
+const speedLabel = document.getElementById('speedLabel');
+speedSlider.addEventListener('input', () => {
+  speedLabel.textContent = speedSlider.value;
+});
+
+function getDelay() {
+  const v = parseInt(speedSlider.value);
+  return Math.max(10, Math.round(300 - (v / 100) * 290));
+}
+
+const scoreEl = document.getElementById('score');
+const maxTileEl = document.getElementById('maxTile');
+const movesEl = document.getElementById('moves');
+const stucksEl = document.getElementById('stucks');
+const elapsedEl = document.getElementById('elapsed');
+const statusEl = document.getElementById('status');
+const startBtn = document.getElementById('startBtn');
+const resetBtn = document.getElementById('resetBtn');
+const batchBtn = document.getElementById('batchBtn');
+const tileLayer = document.getElementById('tileLayer');
+const boardBg = document.getElementById('boardBg');
+const batchPanel = document.getElementById('batchPanel');
+
+function initBoardBg() {
+  boardBg.innerHTML = '';
+  for (let i = 0; i < SIZE * SIZE; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell-bg';
+    boardBg.appendChild(cell);
+  }
+}
+
+function newGame() {
+  grid = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+  score = 0;
+  moveCount = 0;
+  stuckCount = 0;
+  gameEnded = false;
+  scoreEl.textContent = '0';
+  maxTileEl.textContent = '0';
+  movesEl.textContent = '0';
+  stucksEl.textContent = '0';
+  elapsedEl.textContent = '0s';
+  statusEl.textContent = '就绪';
+  addRandomTile();
+  addRandomTile();
+  renderTiles();
+}
+
+function emptyCells() {
+  const cells = [];
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (grid[r][c] === 0) cells.push({ r, c });
+  return cells;
+}
+
+function addRandomTile() {
+  const cells = emptyCells();
+  if (!cells.length) return;
+  const { r, c } = cells[Math.floor(Math.random() * cells.length)];
+  grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+}
+
+function getMaxTile() {
+  let max = 0;
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (grid[r][c] > max) max = grid[r][c];
+  return max;
+}
+
+function renderTiles() {
+  tileLayer.innerHTML = '';
+  const wrapper = document.getElementById('boardWrapper');
+  const boardPx = wrapper.offsetWidth;
+  const padding = boardPx * (12 / 500);
+  const gap = boardPx * (12 / 500);
+  const cellSize = (boardPx - padding * 2 - gap * (SIZE - 1)) / SIZE;
+
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      const val = grid[r][c];
+      if (!val) continue;
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.setAttribute('data-value', val);
+      tile.textContent = val;
+      const left = padding + c * (cellSize + gap);
+      const top = padding + r * (cellSize + gap);
+      tile.style.left = left + 'px';
+      tile.style.top = top + 'px';
+      tile.style.width = cellSize + 'px';
+      tile.style.height = cellSize + 'px';
+      const fontSize = val >= 1000 ? cellSize * 0.30
+                     : val >= 100  ? cellSize * 0.36
+                     :               cellSize * 0.48;
+      tile.style.fontSize = fontSize + 'px';
+      tileLayer.appendChild(tile);
+    }
+  }
+
+  scoreEl.textContent = score;
+  maxTileEl.textContent = getMaxTile();
+  movesEl.textContent = moveCount;
+  stucksEl.textContent = stuckCount;
+  if (startTime) {
+    elapsedEl.textContent = Math.round((Date.now() - startTime) / 1000) + 's';
+  }
+}
+
+/* ---------- 游戏逻辑 ---------- */
+function slideRow(row) {
+  let arr = row.filter(v => v);
+  let sc = 0;
+  for (let i = 0; i < arr.length - 1; i++) {
+    if (arr[i] === arr[i + 1]) {
+      arr[i] *= 2;
+      sc += arr[i];
+      arr.splice(i + 1, 1);
+    }
+  }
+  while (arr.length < SIZE) arr.push(0);
+  return { row: arr, score: sc };
+}
+
+function move(direction) {
+  let moved = false;
+  let sc = 0;
+  const old = grid.map(r => [...r]);
+
+  if (direction === 'left') {
+    for (let r = 0; r < SIZE; r++) {
+      const result = slideRow(grid[r]);
+      grid[r] = result.row;
+      sc += result.score;
+    }
+  } else if (direction === 'right') {
+    for (let r = 0; r < SIZE; r++) {
+      const result = slideRow(grid[r].reverse());
+      grid[r] = result.row.reverse();
+      sc += result.score;
+    }
+  } else if (direction === 'up') {
+    for (let c = 0; c < SIZE; c++) {
+      let col = [];
+      for (let r = 0; r < SIZE; r++) col.push(grid[r][c]);
+      const result = slideRow(col);
+      for (let r = 0; r < SIZE; r++) grid[r][c] = result.row[r];
+      sc += result.score;
+    }
+  } else if (direction === 'down') {
+    for (let c = 0; c < SIZE; c++) {
+      let col = [];
+      for (let r = 0; r < SIZE; r++) col.push(grid[r][c]);
+      const result = slideRow(col.reverse());
+      const newRow = result.row.reverse();
+      for (let r = 0; r < SIZE; r++) grid[r][c] = newRow[r];
+      sc += result.score;
+    }
+  }
+
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (grid[r][c] !== old[r][c]) moved = true;
+
+  if (moved) {
+    score += sc;
+    moveCount++;
+    addRandomTile();
+    renderTiles();
+  }
+
+  return moved;
+}
+
+function canMove() {
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++) {
+      if (grid[r][c] === 0) return true;
+      if (c < SIZE - 1 && grid[r][c] === grid[r][c + 1]) return true;
+      if (r < SIZE - 1 && grid[r][c] === grid[r + 1][c]) return true;
+    }
+  return false;
+}
+
+/* ---------- 自动化策略 ---------- */
+// 策略：一直右+下，卡住时左/上救一下
+let lastDirections = []; // 记录最近的方向
+
+function autoStep() {
+  if (gameEnded || !gameRunning) return;
+
+  let moved = false;
+
+  // 主策略：尝试右和下
+  // 先下后右（让大数字沉到右下角）
+  if (move('down')) {
+    moved = true;
+    lastDirections.push('down');
+  } else if (move('right')) {
+    moved = true;
+    lastDirections.push('right');
+  }
+
+  // 如果右和下都走不了，就是卡住了
+  if (!moved) {
+    stuckCount++;
+    stucksEl.textContent = stuckCount;
+
+    // 救一下：尝试左或上
+    // 优先左（保持大数字在右边）
+    if (move('left')) {
+      moved = true;
+      lastDirections.push('left');
+    } else if (move('up')) {
+      moved = true;
+      lastDirections.push('up');
+    }
+  }
+
+  // 只保留最近10步记录
+  if (lastDirections.length > 10) {
+    lastDirections = lastDirections.slice(-10);
+  }
+
+  if (!canMove()) {
+    gameEnded = true;
+    gameRunning = false;
+    statusEl.textContent = '结束';
+    startBtn.textContent = '▶ 开始';
+    startBtn.classList.remove('running');
+
+    if (isBatching) {
+      onGameEnd();
+    }
+    return;
+  }
+
+  if (gameRunning) {
+    autoTimer = setTimeout(autoStep, getDelay());
+  }
+}
+
+function startAuto() {
+  if (gameEnded) {
+    newGame();
+  }
+  gameRunning = !gameRunning;
+
+  if (gameRunning) {
+    startBtn.textContent = '⏸ 暂停';
+    startBtn.classList.add('running');
+    statusEl.textContent = '运行中';
+    startTime = startTime || Date.now();
+    autoStep();
+  } else {
+    startBtn.textContent = '▶ 继续';
+    startBtn.classList.remove('running');
+    statusEl.textContent = '暂停';
+    clearTimeout(autoTimer);
+  }
+}
+
+function resetGame() {
+  gameRunning = false;
+  gameEnded = false;
+  isBatching = false;
+  clearTimeout(autoTimer);
+  startBtn.textContent = '▶ 开始';
+  startBtn.classList.remove('running');
+  startTime = null;
+  lastDirections = [];
+  newGame();
+}
+
+/* ---------- 批量测试 ---------- */
+function startBatch() {
+  if (isBatching) return;
+  isBatching = true;
+  batchResults = [];
+  batchPanel.style.display = 'block';
+  batchBtn.disabled = true;
+  batchBtn.textContent = '测试中...';
+
+  speedSlider.value = 100;
+  speedLabel.textContent = '100';
+
+  runBatchGame();
+}
+
+function runBatchGame() {
+  newGame();
+  gameRunning = true;
+  startTime = Date.now();
+  statusEl.textContent = `第${batchResults.length + 1}/10局`;
+  autoStep();
+}
+
+function onGameEnd() {
+  batchResults.push({
+    score: score,
+    maxTile: getMaxTile(),
+    moves: moveCount,
+    stucks: stuckCount,
+    time: Math.round((Date.now() - startTime) / 1000)
+  });
+
+  updateBatchStats();
+
+  if (batchResults.length < 10) {
+    setTimeout(runBatchGame, 200);
+  } else {
+    isBatching = false;
+    batchBtn.disabled = false;
+    batchBtn.textContent = '📊 跑10局';
+    statusEl.textContent = '完成';
+    speedSlider.value = 80;
+    speedLabel.textContent = '80';
+  }
+}
+
+function updateBatchStats() {
+  const n = batchResults.length;
+  if (n === 0) return;
+
+  const avgScore = Math.round(batchResults.reduce((a, b) => a + b.score, 0) / n);
+  const highScore = Math.max(...batchResults.map(b => b.score));
+  const avgMax = Math.round(batchResults.reduce((a, b) => a + b.maxTile, 0) / n);
+
+  document.getElementById('avgScore').textContent = avgScore;
+  document.getElementById('highScore').textContent = highScore;
+  document.getElementById('avgMax').textContent = avgMax;
+}
+
+/* ---------- 事件 ---------- */
+startBtn.addEventListener('click', startAuto);
+resetBtn.addEventListener('click', resetGame);
+batchBtn.addEventListener('click', startBatch);
+window.addEventListener('resize', renderTiles);
+
+/* ---------- 启动 ---------- */
+initBoardBg();
+newGame();
+</script>
+<script src="../js/history.js"></script>
+<script>
+  HistoryManager.injectBackButton();
+</script>
+</body>
+</html>

@@ -875,5 +875,26 @@ window.addEventListener('resize', () => {
 /* ---------- 启动 ---------- */
 init();
 </script>
+<script src="../js/history.js"></script>
+<script>
+  HistoryManager.injectBackButton();
+  var _gameStartTimeTetris = Date.now();
+  var _origGameOverFn = gameOverFn;
+  gameOverFn = function() {
+    _origGameOverFn();
+    HistoryManager.record('tetris', {
+      score: score,
+      bestScore: best,
+      result: 'lose',
+      duration: Math.round((Date.now() - _gameStartTimeTetris) / 1000),
+      extra: '消行: ' + lines + ' | 等级: ' + level
+    });
+  };
+  var _origNewGameTetris = newGame;
+  newGame = function() {
+    _gameStartTimeTetris = Date.now();
+    _origNewGameTetris();
+  };
+</script>
 </body>
 </html>

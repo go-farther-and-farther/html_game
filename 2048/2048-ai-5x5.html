@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>2048 AI - 5×5版</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  body {
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: #faf8ef;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 16px;
+    overflow-x: hidden;
+  }
+
+  .container {
+    width: min(92vw, 92vh, 520px);
+    max-width: 520px;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .title {
+    font-size: 40px;
+    font-weight: 800;
+    color: #776e65;
+  }
+
+  .title .ai-tag {
+    font-size: 14px;
+    background: #f65e3b;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .title .mode {
+    font-size: 14px;
+    color: #4CAF50;
+    margin-left: 4px;
+  }
+
+  .scores {
+    display: flex;
+    gap: 8px;
+  }
+
+  .score-box {
+    background: #bbada0;
+    color: #fff;
+    border-radius: 6px;
+    padding: 6px 14px;
+    text-align: center;
+    min-width: 65px;
+  }
+
+  .score-box .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.85;
+  }
+
+  .score-box .value {
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    background: #8f7a66;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn:active {
+    background: #9f8b77;
+  }
+
+  .btn.running {
+    background: #f65e3b;
+  }
+
+  .speed-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #776e65;
+  }
+
+  .speed-control input {
+    width: 70px;
+  }
+
+  .board-wrapper {
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%;
+    background: #bbada0;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .board {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .cell-bg {
+    background: rgba(238, 228, 218, 0.35);
+    border-radius: 6px;
+  }
+
+  .tile-layer {
+    position: absolute;
+    inset: 0;
+    padding: 8px;
+    pointer-events: none;
+  }
+
+  .tile {
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 800;
+    border-radius: 6px;
+    transition: top 0.06s ease, left 0.06s ease;
+    z-index: 10;
+  }
+
+  .tile[data-value="2"]    { background: #eee4da; color: #776e65; }
+  .tile[data-value="4"]    { background: #ede0c8; color: #776e65; }
+  .tile[data-value="8"]    { background: #f2b179; color: #f9f6f2; }
+  .tile[data-value="16"]   { background: #f59563; color: #f9f6f2; }
+  .tile[data-value="32"]   { background: #f67c5f; color: #f9f6f2; }
+  .tile[data-value="64"]   { background: #f65e3b; color: #f9f6f2; }
+  .tile[data-value="128"]  { background: #edcf72; color: #f9f6f2; }
+  .tile[data-value="256"]  { background: #edcc61; color: #f9f6f2; }
+  .tile[data-value="512"]  { background: #edc850; color: #f9f6f2; }
+  .tile[data-value="1024"] { background: #edc53f; color: #f9f6f2; }
+  .tile[data-value="2048"] { background: #edc22e; color: #f9f6f2; }
+  .tile[data-value="4096"] { background: #3c3a32; color: #f9f6f2; }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-top: 10px;
+    background: rgba(187, 173, 160, 0.2);
+    border-radius: 8px;
+    padding: 10px;
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-item .stat-label {
+    font-size: 10px;
+    color: #776e65;
+    opacity: 0.7;
+  }
+
+  .stat-item .stat-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: #776e65;
+  }
+
+  .batch-stats {
+    margin-top: 10px;
+    background: rgba(187, 173, 160, 0.2);
+    border-radius: 8px;
+    padding: 10px;
+    display: none;
+  }
+
+  .batch-stats h3 {
+    font-size: 13px;
+    color: #776e65;
+    margin-bottom: 8px;
+  }
+
+  .batch-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .batch-item {
+    text-align: center;
+    background: rgba(255,255,255,0.5);
+    border-radius: 6px;
+    padding: 6px;
+  }
+
+  .batch-item .batch-label {
+    font-size: 10px;
+    color: #776e65;
+    opacity: 0.7;
+  }
+
+  .batch-item .batch-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #776e65;
+  }
+
+  .hint {
+    text-align: center;
+    margin-top: 10px;
+    color: #776e65;
+    font-size: 11px;
+    opacity: 0.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="title">2048<span class="ai-tag">AI</span><span class="mode">5×5</span></div>
+    <div class="scores">
+      <div class="score-box">
+        <div class="label">分数</div>
+        <div class="value" id="score">0</div>
+      </div>
+      <div class="score-box">
+        <div class="label">最大</div>
+        <div class="value" id="maxTile">0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="startBtn">▶ 开始AI</button>
+    <button class="btn" id="resetBtn">🔄 重置</button>
+    <button class="btn" id="batchBtn">📊 跑10局</button>
+    <div class="speed-control">
+      <span>速度</span>
+      <input type="range" id="speedSlider" min="1" max="100" value="80">
+      <span id="speedLabel">80</span>
+    </div>
+  </div>
+
+  <div class="controls" style="margin-top: 8px;">
+    <div class="speed-control">
+      <span>AI辅助步数</span>
+      <input type="number" id="aiStepsInput" value="0" min="0" style="width:50px; padding:3px; border:1px solid #ccc; border-radius:4px; font-size:12px;">
+      <span>(0=无限)</span>
+    </div>
+    <button class="btn" id="manualBtn" style="display:none;">🎮 手动</button>
+  </div>
+
+  <div class="board-wrapper" id="boardWrapper">
+    <div class="board" id="boardBg"></div>
+    <div class="tile-layer" id="tileLayer"></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-item">
+      <div class="stat-label">步数</div>
+      <div class="stat-value" id="moves">0</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">深度</div>
+      <div class="stat-value" id="depth">3</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">耗时</div>
+      <div class="stat-value" id="elapsed">0s</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">状态</div>
+      <div class="stat-value" id="status">就绪</div>
+    </div>
+  </div>
+
+  <div class="batch-stats" id="batchPanel">
+    <h3>📊 批量测试结果</h3>
+    <div class="batch-grid">
+      <div class="batch-item">
+        <div class="batch-label">平均分</div>
+        <div class="batch-value" id="avgScore">-</div>
+      </div>
+      <div class="batch-item">
+        <div class="batch-label">最高分</div>
+        <div class="batch-value" id="highScore">-</div>
+      </div>
+      <div class="batch-item">
+        <div class="batch-label">平均最大</div>
+        <div class="batch-value" id="avgMax">-</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hint">键盘: WASD / 方向键 | 5×5更容易冲4096</div>
+</div>
+
+<script>
+/* ======================================
+   2048 AI 5×5版
+   ====================================== */
+
+const SIZE = 5; // 5×5棋盘
+let grid, score, moving, gameRunning, gameEnded;
+let moveCount, startTime, aiTimer, timeInterval;
+let batchResults = [];
+let isBatching = false;
+let moveHistory = [];
+let bestBatchGame = null;
+let aiStepsLimit = 0;
+let aiStepsRemaining = 0;
+let isManualMode = false;
+
+// DOM
+const scoreEl = document.getElementById('score');
+const maxTileEl = document.getElementById('maxTile');
+const movesEl = document.getElementById('moves');
+const depthEl = document.getElementById('depth');
+const elapsedEl = document.getElementById('elapsed');
+const statusEl = document.getElementById('status');
+const startBtn = document.getElementById('startBtn');
+const resetBtn = document.getElementById('resetBtn');
+const batchBtn = document.getElementById('batchBtn');
+const tileLayer = document.getElementById('tileLayer');
+const boardBg = document.getElementById('boardBg');
+const batchPanel = document.getElementById('batchPanel');
+const speedSlider = document.getElementById('speedSlider');
+const speedLabel = document.getElementById('speedLabel');
+
+speedSlider.addEventListener('input', () => {
+  speedLabel.textContent = speedSlider.value;
+});
+
+function getDelay() {
+  const v = parseInt(speedSlider.value);
+  return Math.max(10, Math.round(300 - (v / 100) * 290));
+}
+
+function initBoardBg() {
+  boardBg.innerHTML = '';
+  for (let i = 0; i < SIZE * SIZE; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell-bg';
+    boardBg.appendChild(cell);
+  }
+}
+
+function newGame() {
+  grid = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+  score = 0;
+  moveCount = 0;
+  gameEnded = false;
+  moveHistory = [];
+  scoreEl.textContent = '0';
+  maxTileEl.textContent = '0';
+  movesEl.textContent = '0';
+  elapsedEl.textContent = '0s';
+  statusEl.textContent = '就绪';
+  addRandomTile();
+  addRandomTile();
+  recordMove('init');
+  renderTiles();
+}
+
+function emptyCells() {
+  const cells = [];
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (grid[r][c] === 0) cells.push({ r, c });
+  return cells;
+}
+
+function addRandomTile() {
+  const cells = emptyCells();
+  if (!cells.length) return;
+  const { r, c } = cells[Math.floor(Math.random() * cells.length)];
+  grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+}
+
+function getMaxTile() {
+  let max = 0;
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (grid[r][c] > max) max = grid[r][c];
+  return max;
+}
+
+function recordMove(direction) {
+  moveHistory.push({
+    step: moveHistory.length,
+    direction: direction,
+    grid: grid.map(r => [...r]),
+    score: score,
+    maxTile: getMaxTile(),
+    emptyCount: emptyScore(grid),
+    timestamp: Date.now()
+  });
+}
+
+function renderTiles() {
+  tileLayer.innerHTML = '';
+  const wrapper = document.getElementById('boardWrapper');
+  const boardPx = wrapper.offsetWidth;
+  const padding = boardPx * (8 / 520);
+  const gap = boardPx * (8 / 520);
+  const cellSize = (boardPx - padding * 2 - gap * (SIZE - 1)) / SIZE;
+
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      const val = grid[r][c];
+      if (!val) continue;
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.setAttribute('data-value', val);
+      tile.textContent = val;
+      const left = padding + c * (cellSize + gap);
+      const top = padding + r * (cellSize + gap);
+      tile.style.left = left + 'px';
+      tile.style.top = top + 'px';
+      tile.style.width = cellSize + 'px';
+      tile.style.height = cellSize + 'px';
+      const fontSize = val >= 1000 ? cellSize * 0.24
+                     : val >= 100  ? cellSize * 0.30
+                     :               cellSize * 0.40;
+      tile.style.fontSize = fontSize + 'px';
+      tileLayer.appendChild(tile);
+    }
+  }
+
+  scoreEl.textContent = score;
+  maxTileEl.textContent = getMaxTile();
+  movesEl.textContent = moveCount;
+  if (startTime) {
+    elapsedEl.textContent = Math.round((Date.now() - startTime) / 1000) + 's';
+  }
+}
+
+/* ========== 游戏逻辑 ========== */
+function cloneGrid(g) {
+  return g.map(r => [...r]);
+}
+
+function slideRow(row, size) {
+  let arr = row.filter(v => v);
+  let sc = 0;
+  for (let i = 0; i < arr.length - 1; i++) {
+    if (arr[i] === arr[i + 1]) {
+      arr[i] *= 2;
+      sc += arr[i];
+      arr.splice(i + 1, 1);
+    }
+  }
+  while (arr.length < size) arr.push(0);
+  return { row: arr, score: sc };
+}
+
+function simulateMove(g, sc, direction) {
+  let newGrid = cloneGrid(g);
+  let newScore = sc;
+  let moved = false;
+
+  if (direction === 0) { // left
+    for (let r = 0; r < SIZE; r++) {
+      const result = slideRow(newGrid[r], SIZE);
+      newGrid[r] = result.row;
+      newScore += result.score;
+    }
+  } else if (direction === 1) { // right
+    for (let r = 0; r < SIZE; r++) {
+      const result = slideRow(newGrid[r].reverse(), SIZE);
+      newGrid[r] = result.row.reverse();
+      newScore += result.score;
+    }
+  } else if (direction === 2) { // up
+    for (let c = 0; c < SIZE; c++) {
+      let col = [];
+      for (let r = 0; r < SIZE; r++) col.push(newGrid[r][c]);
+      const result = slideRow(col, SIZE);
+      for (let r = 0; r < SIZE; r++) newGrid[r][c] = result.row[r];
+      newScore += result.score;
+    }
+  } else if (direction === 3) { // down
+    for (let c = 0; c < SIZE; c++) {
+      let col = [];
+      for (let r = 0; r < SIZE; r++) col.push(newGrid[r][c]);
+      const result = slideRow(col.reverse(), SIZE);
+      const newRow = result.row.reverse();
+      for (let r = 0; r < SIZE; r++) newGrid[r][c] = newRow[r];
+      newScore += result.score;
+    }
+  }
+
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (newGrid[r][c] !== g[r][c]) moved = true;
+
+  return moved ? { grid: newGrid, score: newScore } : null;
+}
+
+function canMoveOnGrid(g) {
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++) {
+      if (g[r][c] === 0) return true;
+      if (c < SIZE - 1 && g[r][c] === g[r][c + 1]) return true;
+      if (r < SIZE - 1 && g[r][c] === g[r + 1][c]) return true;
+    }
+  return false;
+}
+
+/* ========== AI评估函数 ========== */
+function emptyScore(g) {
+  let count = 0;
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (g[r][c] === 0) count++;
+  return count;
+}
+
+// 蛇形权重矩阵 - 从右下角向外递减
+function snakeWeightScore(g) {
+  // 5×5权重矩阵，右下角权重最高
+  const WEIGHT = [
+    [ 0,  1,  2,  3,  4],
+    [ 9,  8,  7,  6,  5],
+    [10, 11, 12, 13, 14],
+    [19, 18, 17, 16, 15],
+    [20, 21, 22, 23, 24]
+  ];
+
+  let score = 0;
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (g[r][c] > 0)
+        score += g[r][c] * WEIGHT[r][c];
+  return score;
+}
+
+// 单调性
+function monotonicityScore(g) {
+  let score = 0;
+
+  // 行单调性 (左->右递减)
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE - 1; c++) {
+      if (g[r][c] >= g[r][c + 1]) score += g[r][c + 1];
+      else score -= (g[r][c + 1] - g[r][c]) * 2;
+    }
+  }
+
+  // 列单调性 (上->下递减)
+  for (let c = 0; c < SIZE; c++) {
+    for (let r = 0; r < SIZE - 1; r++) {
+      if (g[r][c] >= g[r + 1][c]) score += g[r + 1][c];
+      else score -= (g[r + 1][c] - g[r][c]) * 2;
+    }
+  }
+
+  return score;
+}
+
+// 角落策略
+function cornerScore(g) {
+  let maxVal = 0, maxR = 0, maxC = 0;
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (g[r][c] > maxVal) {
+        maxVal = g[r][c];
+        maxR = r;
+        maxC = c;
+      }
+    }
+  }
+
+  // 右下角是最佳位置
+  if (maxR === SIZE - 1 && maxC === SIZE - 1) return maxVal * 10;
+  // 其他角落
+  if ((maxR === 0 || maxR === SIZE - 1) && (maxC === 0 || maxC === SIZE - 1)) return maxVal * 4;
+  // 边缘
+  if (maxR === 0 || maxR === SIZE - 1 || maxC === 0 || maxC === SIZE - 1) return maxVal * 1;
+  // 中间
+  return -maxVal * 2;
+}
+
+// 合并潜力
+function mergeScore(g) {
+  let merges = 0;
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (g[r][c] === 0) continue;
+      if (c < SIZE - 1 && g[r][c] === g[r][c + 1]) merges += g[r][c];
+      if (r < SIZE - 1 && g[r][c] === g[r + 1][c]) merges += g[r][c];
+    }
+  }
+  return merges;
+}
+
+// 大数字连续性
+function continuityScore(g) {
+  const threshold = 32;
+  const bigTiles = [];
+
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (g[r][c] >= threshold)
+        bigTiles.push({ r, c, val: g[r][c] });
+
+  bigTiles.sort((a, b) => b.val - a.val);
+  if (bigTiles.length < 2) return 0;
+
+  let score = 0;
+  for (let i = 0; i < bigTiles.length - 1; i++) {
+    const curr = bigTiles[i];
+    const next = bigTiles[i + 1];
+    const dist = Math.abs(curr.r - next.r) + Math.abs(curr.c - next.c);
+
+    if (dist === 1) score += next.val * 5;
+    else if (dist === 2) score += next.val * 1;
+    else score -= next.val * 3;
+  }
+
+  return score;
+}
+
+// 综合评估
+function evaluate(g, sc) {
+  const empty = emptyScore(g);
+  const snake = snakeWeightScore(g);
+  const mono = monotonicityScore(g);
+  const corner = cornerScore(g);
+  const merge = mergeScore(g);
+  const continuity = continuityScore(g);
+
+  let emptyWeight;
+  if (empty <= 3) emptyWeight = 30000;
+  else if (empty <= 6) emptyWeight = 15000;
+  else if (empty <= 10) emptyWeight = 6000;
+  else emptyWeight = 2000;
+
+  return sc * 0.1
+       + snake * 3.0
+       + mono * 6.0
+       + corner * 12.0
+       + continuity * 10.0
+       + empty * emptyWeight
+       + merge * 800;
+}
+
+/* ========== Expectimax搜索 ========== */
+const SEARCH_DEPTH = 3;
+
+function playerNode(g, sc, depth) {
+  if (depth <= 0) return evaluate(g, sc);
+
+  let best = -Infinity;
+  for (let dir = 0; dir < 4; dir++) {
+    const result = simulateMove(g, sc, dir);
+    if (!result) continue;
+    const val = chanceNode(result.grid, result.score, depth);
+    if (val > best) best = val;
+  }
+
+  return best === -Infinity ? evaluate(g, sc) : best;
+}
+
+function chanceNode(g, sc, depth) {
+  const empties = [];
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (g[r][c] === 0) empties.push({ r, c });
+
+  if (empties.length === 0) {
+    return canMoveOnGrid(g) ? playerNode(g, sc, depth - 1) : -1e9;
+  }
+
+  // 智能采样
+  let samples = empties;
+  if (empties.length > 6) {
+    let maxVal = 0, maxR = 0, maxC = 0;
+    for (let r = 0; r < SIZE; r++)
+      for (let c = 0; c < SIZE; c++)
+        if (g[r][c] > maxVal) { maxVal = g[r][c]; maxR = r; maxC = c; }
+
+    empties.sort((a, b) => {
+      const distA = Math.abs(a.r - maxR) + Math.abs(a.c - maxC);
+      const distB = Math.abs(b.r - maxR) + Math.abs(b.c - maxC);
+      return distA - distB;
+    });
+    samples = empties.slice(0, 6);
+  }
+
+  let totalVal = 0;
+  for (const { r, c } of samples) {
+    g[r][c] = 2;
+    totalVal += playerNode(g, sc, depth - 1) * 0.9;
+    g[r][c] = 4;
+    totalVal += playerNode(g, sc, depth - 1) * 0.1;
+    g[r][c] = 0;
+  }
+
+  return totalVal / samples.length;
+}
+
+function aiChooseDirection() {
+  let bestDir = -1;
+  let bestVal = -Infinity;
+
+  for (let dir = 0; dir < 4; dir++) {
+    const result = simulateMove(grid, score, dir);
+    if (!result) continue;
+    const val = chanceNode(result.grid, result.score, SEARCH_DEPTH - 1);
+    if (val > bestVal) {
+      bestVal = val;
+      bestDir = dir;
+    }
+  }
+
+  return bestDir;
+}
+
+/* ========== AI执行 ========== */
+function aiStep() {
+  if (gameEnded || !gameRunning) return;
+
+  const dir = aiChooseDirection();
+
+  if (dir === -1) {
+    gameEnded = true;
+    gameRunning = false;
+    statusEl.textContent = '结束';
+    startBtn.textContent = '▶ 开始AI';
+    startBtn.classList.remove('running');
+    clearInterval(timeInterval);
+    timeInterval = null;
+
+    if (!isBatching) {
+      if (getMaxTile() >= 2048) showGameOverModal();
+    } else {
+      onGameEnd();
+    }
+    return;
+  }
+
+  const result = simulateMove(grid, score, dir);
+  if (result) {
+    grid = result.grid;
+    score = result.score;
+    moveCount++;
+    addRandomTile();
+
+    const dirNames = ['left', 'right', 'up', 'down'];
+    recordMove(dirNames[dir]);
+    renderTiles();
+
+    if (aiStepsLimit > 0) {
+      aiStepsRemaining--;
+      statusEl.textContent = `AI ${aiStepsRemaining}步`;
+      if (aiStepsRemaining <= 0) {
+        gameRunning = false;
+        startBtn.textContent = '▶ 继续';
+        startBtn.classList.remove('running');
+        statusEl.textContent = 'AI完成';
+        clearTimeout(aiTimer);
+        clearInterval(timeInterval);
+        timeInterval = null;
+        return;
+      }
+    }
+  }
+
+  if (gameRunning && !isManualMode) {
+    aiTimer = setTimeout(aiStep, getDelay());
+  }
+}
+
+/* ========== 控制 ========== */
+function startAI() {
+  if (gameEnded) newGame();
+
+  aiStepsLimit = parseInt(document.getElementById('aiStepsInput').value) || 0;
+  aiStepsRemaining = aiStepsLimit;
+  gameRunning = !gameRunning;
+  isManualMode = false;
+
+  if (gameRunning) {
+    startBtn.textContent = '⏸ 暂停';
+    startBtn.classList.add('running');
+    statusEl.textContent = aiStepsLimit > 0 ? `AI ${aiStepsRemaining}步` : '运行中';
+    startTime = startTime || Date.now();
+    document.getElementById('manualBtn').style.display = 'inline-block';
+
+    if (!timeInterval) {
+      timeInterval = setInterval(() => {
+        if (startTime && gameRunning)
+          elapsedEl.textContent = Math.round((Date.now() - startTime) / 1000) + 's';
+      }, 1000);
+    }
+
+    aiStep();
+  } else {
+    startBtn.textContent = '▶ 继续';
+    startBtn.classList.remove('running');
+    statusEl.textContent = '暂停';
+    clearTimeout(aiTimer);
+    clearInterval(timeInterval);
+    timeInterval = null;
+  }
+}
+
+function toggleManualMode() {
+  isManualMode = !isManualMode;
+  const manualBtn = document.getElementById('manualBtn');
+
+  if (isManualMode) {
+    manualBtn.textContent = '🤖 AI模式';
+    manualBtn.classList.add('running');
+    statusEl.textContent = '手动模式';
+    clearTimeout(aiTimer);
+  } else {
+    manualBtn.textContent = '🎮 手动模式';
+    manualBtn.classList.remove('running');
+    statusEl.textContent = 'AI模式';
+    if (gameRunning && !gameEnded) aiStep();
+  }
+}
+
+function manualMove(direction) {
+  if (gameEnded || isBatching) return;
+  if (!isManualMode && gameRunning) return;
+
+  const result = simulateMove(grid, score, direction);
+  if (result) {
+    grid = result.grid;
+    score = result.score;
+    moveCount++;
+    addRandomTile();
+
+    const dirNames = ['left', 'right', 'up', 'down'];
+    recordMove('manual-' + dirNames[direction]);
+    renderTiles();
+
+    if (!canMoveOnGrid(grid)) {
+      gameEnded = true;
+      gameRunning = false;
+      statusEl.textContent = '结束';
+      startBtn.textContent = '▶ 开始AI';
+      startBtn.classList.remove('running');
+      clearInterval(timeInterval);
+      timeInterval = null;
+
+      if (!isBatching && getMaxTile() >= 2048) showGameOverModal();
+    }
+  }
+}
+
+function resetGame() {
+  gameRunning = false;
+  gameEnded = false;
+  isBatching = false;
+  clearTimeout(aiTimer);
+  clearInterval(timeInterval);
+  timeInterval = null;
+  startBtn.textContent = '▶ 开始AI';
+  startBtn.classList.remove('running');
+  startTime = null;
+  newGame();
+}
+
+/* ========== 批量测试 ========== */
+function startBatch() {
+  if (isBatching) return;
+  isBatching = true;
+  batchResults = [];
+  bestBatchGame = null;
+  batchPanel.style.display = 'block';
+  batchBtn.disabled = true;
+  batchBtn.textContent = '测试中...';
+
+  const oldBest = document.getElementById('bestGameInfo');
+  if (oldBest) oldBest.remove();
+
+  speedSlider.value = 100;
+  speedLabel.textContent = '100';
+  runBatchGame();
+}
+
+function runBatchGame() {
+  newGame();
+  moveHistory = [];
+  gameRunning = true;
+  startTime = Date.now();
+  statusEl.textContent = `第${batchResults.length + 1}/10局`;
+  aiStep();
+}
+
+function onGameEnd() {
+  const gameResult = {
+    score, maxTile: getMaxTile(), moves: moveCount,
+    time: Math.round((Date.now() - startTime) / 1000),
+    grid: grid.map(r => [...r]),
+    moveHistory: moveHistory.map(m => ({...m, grid: m.grid.map(r => [...r])}))
+  };
+
+  batchResults.push(gameResult);
+  if (!bestBatchGame || gameResult.score > bestBatchGame.score) bestBatchGame = gameResult;
+  updateBatchStats();
+
+  if (batchResults.length < 10) {
+    setTimeout(runBatchGame, 300);
+  } else {
+    isBatching = false;
+    batchBtn.disabled = false;
+    batchBtn.textContent = '📊 跑10局';
+    statusEl.textContent = '完成';
+    speedSlider.value = 80;
+    speedLabel.textContent = '80';
+    showBestGameInfo();
+  }
+}
+
+function updateBatchStats() {
+  const n = batchResults.length;
+  if (n === 0) return;
+  document.getElementById('avgScore').textContent = Math.round(batchResults.reduce((a, b) => a + b.score, 0) / n);
+  document.getElementById('highScore').textContent = Math.max(...batchResults.map(b => b.score));
+  document.getElementById('avgMax').textContent = Math.round(batchResults.reduce((a, b) => a + b.maxTile, 0) / n);
+}
+
+function showBestGameInfo() {
+  if (!bestBatchGame) return;
+  const oldBest = document.getElementById('bestGameInfo');
+  if (oldBest) oldBest.remove();
+
+  const bestInfo = document.createElement('div');
+  bestInfo.id = 'bestGameInfo';
+  bestInfo.style.cssText = 'margin-top:10px; padding:10px; background:rgba(76,175,80,0.1); border:1px solid rgba(76,175,80,0.3); border-radius:8px;';
+  bestInfo.innerHTML = `
+    <h4 style="color:#4CAF50; margin-bottom:6px;">🏆 最佳一局</h4>
+    <div style="font-size:13px; color:#776e65;">
+      <div>分数: <strong>${bestBatchGame.score}</strong> | 最大: <strong>${bestBatchGame.maxTile}</strong></div>
+      <div>步数: <strong>${bestBatchGame.moves}</strong> | 耗时: <strong>${bestBatchGame.time}秒</strong></div>
+    </div>
+    <div style="margin-top:6px; display:flex; gap:6px;">
+      <button class="btn" style="padding:6px 10px; font-size:11px;" onclick="downloadBestReplay()">🎬 导出回放</button>
+      <button class="btn" style="padding:6px 10px; font-size:11px;" onclick="viewBestReplay()">▶️ 查看回放</button>
+    </div>
+  `;
+  batchPanel.appendChild(bestInfo);
+}
+
+function downloadBestReplay() {
+  if (!bestBatchGame) return;
+  const blob = new Blob([JSON.stringify({
+    version: '1.0', game: '2048-ai-5x5',
+    result: { score: bestBatchGame.score, maxTile: bestBatchGame.maxTile, moves: bestBatchGame.moves },
+    frames: bestBatchGame.moveHistory
+  }, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.download = `2048-ai-5x5-${bestBatchGame.score}.json`;
+  link.href = URL.createObjectURL(blob);
+  link.click();
+}
+
+function viewBestReplay() {
+  if (!bestBatchGame) return;
+  moveHistory = bestBatchGame.moveHistory;
+  grid = bestBatchGame.grid.map(r => [...r]);
+  score = bestBatchGame.score;
+  startReplay();
+}
+
+/* ========== 截图保存 ========== */
+let lastGameOverGrid, lastGameOverScore, lastGameOverMoves, lastGameOverMaxTile;
+
+function showGameOverModal() {
+  lastGameOverGrid = grid.map(r => [...r]);
+  lastGameOverScore = score;
+  lastGameOverMoves = moveCount;
+  lastGameOverMaxTile = getMaxTile();
+
+  document.getElementById('finalStats').innerHTML = `
+    <div>分数: <strong>${lastGameOverScore}</strong></div>
+    <div>最大方块: <strong>${lastGameOverMaxTile}</strong></div>
+    <div>步数: <strong>${lastGameOverMoves}</strong></div>
+    <div>耗时: <strong>${Math.round((Date.now() - startTime) / 1000)}秒</strong></div>
+  `;
+
+  let boardHtml = '<div style="display:grid; grid-template-columns:repeat(5,1fr); gap:3px; max-width:200px; margin:0 auto;">';
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++) {
+      const val = lastGameOverGrid[r][c];
+      const bg = val === 0 ? 'rgba(238,228,218,0.35)' : getTileColor(val);
+      boardHtml += `<div style="background:${bg}; color:${val > 4 ? '#f9f6f2' : '#776e65'}; padding:6px 2px; border-radius:3px; font-weight:700; font-size:${val >= 100 ? '10px' : '12px'};">${val || ''}</div>`;
+    }
+  boardHtml += '</div>';
+  document.getElementById('boardSnapshot').innerHTML = boardHtml;
+  document.getElementById('replayInfo').textContent = `已记录 ${moveHistory.length} 帧`;
+  document.getElementById('gameOverModal').style.display = 'flex';
+}
+
+function getTileColor(val) {
+  const colors = { 2:'#eee4da', 4:'#ede0c8', 8:'#f2b179', 16:'#f59563', 32:'#f67c5f', 64:'#f65e3b', 128:'#edcf72', 256:'#edcc61', 512:'#edc850', 1024:'#edc53f', 2048:'#edc22e', 4096:'#3c3a32' };
+  return colors[val] || '#3c3a32';
+}
+
+function closeModal() { document.getElementById('gameOverModal').style.display = 'none'; }
+
+function downloadSnapshot() {
+  const canvas = document.createElement('canvas');
+  const size = 400;
+  canvas.width = size;
+  canvas.height = size + 60;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#bbada0';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#776e65';
+  ctx.font = 'bold 20px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(`2048 AI 5×5 - 分数: ${lastGameOverScore}`, size / 2, 25);
+
+  const padding = 8, gap = 6;
+  const cellSize = (size - padding * 2 - gap * 4) / 5;
+
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++) {
+      const val = lastGameOverGrid[r][c];
+      const x = padding + c * (cellSize + gap);
+      const y = 40 + padding + r * (cellSize + gap);
+      ctx.fillStyle = val === 0 ? 'rgba(238,228,218,0.35)' : getTileColor(val);
+      ctx.beginPath();
+      ctx.roundRect(x, y, cellSize, cellSize, 4);
+      ctx.fill();
+      if (val > 0) {
+        ctx.fillStyle = val > 4 ? '#f9f6f2' : '#776e65';
+        ctx.font = `bold ${val >= 100 ? 12 : 16}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(val.toString(), x + cellSize / 2, y + cellSize / 2);
+      }
+    }
+
+  ctx.fillStyle = '#776e65';
+  ctx.font = '12px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(`最大: ${lastGameOverMaxTile} | 步数: ${lastGameOverMoves}`, size / 2, size + 40);
+
+  const link = document.createElement('a');
+  link.download = `2048-ai-5x5-${lastGameOverScore}.png`;
+  link.href = canvas.toDataURL();
+  link.click();
+}
+
+function downloadText() {
+  let text = `2048 AI 5×5 游戏结束\n==================\n分数: ${lastGameOverScore}\n最大方块: ${lastGameOverMaxTile}\n步数: ${lastGameOverMoves}\n\n棋盘:\n`;
+  text += '+------+------+------+------+------+\n';
+  for (let r = 0; r < SIZE; r++) {
+    let row = '|';
+    for (let c = 0; c < SIZE; c++) {
+      const val = lastGameOverGrid[r][c];
+      row += (val === 0 ? '      ' : val.toString().padStart(6)) + '|';
+    }
+    text += row + '\n+------+------+------+------+------+\n';
+  }
+
+  const blob = new Blob([text], { type: 'text/plain' });
+  const link = document.createElement('a');
+  link.download = `2048-ai-5x5-${lastGameOverScore}.txt`;
+  link.href = URL.createObjectURL(blob);
+  link.click();
+}
+
+function downloadReplay() {
+  const blob = new Blob([JSON.stringify({
+    version: '1.0', game: '2048-ai-5x5',
+    result: { score: lastGameOverScore, maxTile: lastGameOverMaxTile, moves: lastGameOverMoves },
+    frames: moveHistory
+  }, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.download = `2048-ai-5x5-${lastGameOverScore}.json`;
+  link.href = URL.createObjectURL(blob);
+  link.click();
+}
+
+/* ========== 回放 ========== */
+let replayIndex = 0, replayTimer = null, isReplaying = false;
+
+function startReplay() {
+  if (moveHistory.length === 0) { alert('没有回放数据'); return; }
+  closeModal();
+  isReplaying = true;
+  replayIndex = 0;
+  showReplayControls();
+  playNextFrame();
+}
+
+function showReplayControls() {
+  const old = document.getElementById('replayControls');
+  if (old) old.remove();
+
+  const controls = document.createElement('div');
+  controls.id = 'replayControls';
+  controls.style.cssText = 'position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); padding:10px 16px; border-radius:8px; z-index:1000; display:flex; align-items:center; gap:10px;';
+  controls.innerHTML = `
+    <button class="btn" style="padding:6px 10px; font-size:11px;" onclick="replayPrev()">⏮</button>
+    <button class="btn" style="padding:6px 10px; font-size:11px;" onclick="replayTogglePause()">⏸</button>
+    <button class="btn" style="padding:6px 10px; font-size:11px;" onclick="replayNext()">⏭</button>
+    <span style="color:#fff; font-size:12px; min-width:70px;" id="replayProgress">0 / ${moveHistory.length}</span>
+    <input type="range" id="replaySlider" min="0" max="${moveHistory.length - 1}" value="0" style="width:120px;" oninput="replaySeek(this.value)">
+    <button class="btn" style="padding:6px 10px; font-size:11px; background:#f65e3b;" onclick="stopReplay()">✖</button>
+  `;
+  document.body.appendChild(controls);
+}
+
+function playNextFrame() {
+  if (!isReplaying || replayIndex >= moveHistory.length) { stopReplay(); return; }
+  renderReplayFrame(replayIndex);
+  replayIndex++;
+  document.getElementById('replayProgress').textContent = `${replayIndex} / ${moveHistory.length}`;
+  document.getElementById('replaySlider').value = replayIndex;
+  replayTimer = setTimeout(playNextFrame, 200);
+}
+
+function renderReplayFrame(index) {
+  const frame = moveHistory[index];
+  if (!frame) return;
+  grid = frame.grid.map(r => [...r]);
+  score = frame.score;
+  renderTiles();
+}
+
+function replayTogglePause() {
+  if (replayTimer) { clearTimeout(replayTimer); replayTimer = null; }
+  else playNextFrame();
+}
+
+function replayPrev() {
+  if (replayIndex > 0) {
+    replayIndex--;
+    renderReplayFrame(replayIndex);
+    document.getElementById('replayProgress').textContent = `${replayIndex} / ${moveHistory.length}`;
+    document.getElementById('replaySlider').value = replayIndex;
+  }
+}
+
+function replayNext() {
+  if (replayIndex < moveHistory.length - 1) {
+    replayIndex++;
+    renderReplayFrame(replayIndex);
+    document.getElementById('replayProgress').textContent = `${replayIndex} / ${moveHistory.length}`;
+    document.getElementById('replaySlider').value = replayIndex;
+  }
+}
+
+function replaySeek(value) {
+  replayIndex = parseInt(value);
+  renderReplayFrame(replayIndex);
+  document.getElementById('replayProgress').textContent = `${replayIndex} / ${moveHistory.length}`;
+}
+
+function stopReplay() {
+  isReplaying = false;
+  if (replayTimer) { clearTimeout(replayTimer); replayTimer = null; }
+  const controls = document.getElementById('replayControls');
+  if (controls) controls.remove();
+  grid = lastGameOverGrid.map(r => [...r]);
+  score = lastGameOverScore;
+  renderTiles();
+}
+
+/* ========== 事件 ========== */
+startBtn.addEventListener('click', startAI);
+resetBtn.addEventListener('click', resetGame);
+batchBtn.addEventListener('click', startBatch);
+document.getElementById('manualBtn').addEventListener('click', toggleManualMode);
+window.addEventListener('resize', renderTiles);
+
+document.addEventListener('keydown', (e) => {
+  const keyMap = { 'ArrowLeft': 0, 'ArrowRight': 1, 'ArrowUp': 2, 'ArrowDown': 3, 'a': 0, 'd': 1, 'w': 2, 's': 3 };
+  const direction = keyMap[e.key];
+  if (direction !== undefined) {
+    e.preventDefault();
+    if (isManualMode && gameRunning && !gameEnded) manualMove(direction);
+    else if (!gameRunning && !gameEnded && !isBatching) manualMove(direction);
+  }
+});
+
+/* ========== 启动 ========== */
+initBoardBg();
+newGame();
+</script>
+<script src="../js/history.js"></script>
+<script>
+  HistoryManager.injectBackButton();
+</script>
+</body>
+</html>

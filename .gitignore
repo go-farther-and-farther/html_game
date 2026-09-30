@@ -5,6 +5,9 @@
 # Node 依赖
 node_modules/
 
+# Capacitor 打包目录（构建产物，npm run build:web 自动生成）
+www/
+
 # 大体积录屏视频（GitHub 单文件上限 100MB）
 视频/
 
