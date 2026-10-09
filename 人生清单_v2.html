@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人生已完成清单</title>
+    <style>
+        :root {
+            --bg-color: #f7f9fc;
+            --text-color: #333;
+            --card-bg: #fff;
+            --checked-bg: #eef2f6;
+            --checked-text: #a0aab5;
+            --primary-color: #4a90e2;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px 10px;
+            display: flex;
+            justify-content: center;
+        }
+        /* 优化1：加宽容器并适配屏幕 */
+        .container {
+            width: 95%;
+            max-width: 1400px; /* 从 900px 拓宽到 1400px */
+            padding-bottom: 50px;
+        }
+        /* 优化2：顶部固定，方便长列表滑动 */
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-color);
+            z-index: 100;
+            padding: 10px 0 15px 0;
+            box-shadow: 0 4px 6px -6px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 26px;
+            margin: 0 0 8px 0;
+        }
+        .counter {
+            text-align: center;
+            font-size: 18px;
+            color: var(--primary-color);
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+        .btn:hover { opacity: 0.8; }
+        .btn.outline {
+            background-color: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+        /* 优化3：更智能的网格布局 */
+        .grid {
+            display: grid;
+            /* 最小宽度200px，电脑宽屏自动排多列，手机自动适应 */
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 12px;
+        }
+        .item {
+            background-color: var(--card-bg);
+            padding: 12px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .item:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .item.checked {
+            background-color: var(--checked-bg);
+            color: var(--checked-text);
+            text-decoration: line-through;
+            box-shadow: none;
+        }
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: 0.2s;
+        }
+        .item.checked .checkbox {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .checkbox::after {
+            content: '';
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+            margin-top: -2px;
+            opacity: 0;
+            transition: 0.2s;
+        }
+        .item.checked .checkbox::after { opacity: 1; }
+        
+        .text-area-container {
+            display: none;
+            margin: 15px auto 0 auto;
+            width: 100%;
+            max-width: 800px;
+        }
+        .text-area-container textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            resize: vertical;
+            font-family: monospace;
+            box-sizing: border-box;
+        }
+        .tip {
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        /* 手机端特别优化 */
+        @media (max-width: 600px) {
+            body { padding: 10px 5px; }
+            h1 { font-size: 22px; }
+            .grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* 手机端保证可以双列显示 */
+                gap: 8px;
+            }
+            .item {
+                padding: 10px 8px;
+                font-size: 13px;
+            }
+            .checkbox { width: 16px; height: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 粘性头部，方便随时看进度和按钮 -->
+        <div class="sticky-header">
+            <h1>人生已完成清单</h1>
+            <div class="counter" id="counter">已完成 0 / 185</div>
+            
+            <div class="controls">
+                <button class="btn" onclick="exportData()">导出进度</button>
+                <button class="btn outline" onclick="showImport()">导入进度</button>
+                <button class="btn outline" onclick="resetData()" style="border-color: #e74c3c; color: #e74c3c;">清空重置</button>
+            </div>
+
+            <div class="text-area-container" id="ioContainer">
+                <textarea id="ioText" placeholder="复制此段文字保存在云端或备忘录，然后在其他设备粘贴并点击导入..."></textarea>
+                <div style="display:flex; gap:10px; margin-top:10px; justify-content: center;">
+                    <button class="btn" onclick="doImport()">确认导入</button>
+                    <button class="btn outline" onclick="hideImport()">取消</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid" id="grid"></div>
+        <div class="tip">点击卡片即可勾选，进度自动保存在本地浏览器</div>
+    </div>
+
+    <script>
+        const itemsList = [
+            "送礼物", "被送礼物", "暗恋", "明恋", "失恋", "表白", "被表白", "留长发", "剪短发", "染发", "漂发", "烫发", "化妆", "做美甲", "放下一个人", "有过遗憾", "爱而不得", "双向奔赴", "当海王", "拒绝他人表白", "表白被拒", "被渣", "犯过傻", "装糊涂", "犯校规", "迟到", "旷课", "上课睡觉", "打架被叫家长", "去酒吧", "和朋友去KTV", "断片", "失眠", "睡一天", "吵架", "绝交", "晚上一个人哭", "献血", "住院", "做手术", "晕倒", "会做饭", "做一桌菜", "做饭给家人", "做甜品给喜欢的人", "有超过10年的好朋友", "有个无条件可信任的朋友", "买花", "被送花", "给自己买礼物", "通宵补作业", "一个人散步", "夜跑", "深夜散心", "向陌生人吐露心声", "一个人出去吃饭", "一个人看电影", "摄影", "一个人去酒吧", "一个人过生日",
+            "一个人逛超市", "一个人去图书馆", "一个人看病", "一个人去唱歌", "社死过", "一个人出门逛", "一个人在外难过", "给自己写信", "出国", "一个人旅游", "跟朋友旅游", "拥有要好的异性朋友", "谈恋爱", "考试不及格", "考试第一名", "当班干部", "竞选学生会", "上电视", "上报纸", "登台演出", "主持节目", "演讲", "野性消费", "被雪糕刺客伤过", "被老师点名表扬", "被老师点名批评", "全校表扬", "被背叛", "被伤害", "被坚定选择", "获奖", "学一种外语", "写论文", "写书", "写诗", "写日记", "写剧本", "写歌", "拍影片", "参加比赛", "拍写真", "买相机", "会一种乐器", "有过超过5年的兴趣爱好", "参加志愿活动", "自己一个人住宾馆", "看鬼片", "去密室", "去鬼屋", "去游乐场", "去看现场演唱会", "去音乐节", "偶遇明星", "去签售会", "在图书馆待一天",
+            "兼职", "打工", "看画展", "捐款", "道歉", "释怀", "失望", "淋雨", "种花", "养宠物", "泡温泉", "跳伞", "坐过山车", "蹦极", "骑马", "卡丁车", "攀岩", "游泳", "滑雪", "滑冰", "旱冰", "滑板", "去野炊", "登山", "看雪", "看海", "看日出", "看日落", "拿驾照", "自驾游", "给父母买衣服", "当伴娘/郎", "摆地摊", "和同学打水仗", "社团活动", "组建社团", "写信", "独自坐飞机", "拼拼图", "办生日会", "健身", "买名牌", "开网店", "练字", "沉迷游戏", "拍毕业照", "面试成功", "放孔明灯", "逛小吃街", "和网友见面", "发表成果", "买唱片", "异地恋", "异国恋", "认识不同国籍的人", "创业", "看极光", "进公司工作", "做未来规划", "搬家", "一个人租房", "转学", "被骗", "撒谎", "改掉一个坏习惯", "加入校队", "坐摩天轮", "在朋友家过夜", "擅长一项运动", "谈过一场刻骨铭心的恋爱"
+        ];
+
+        const TOTAL = itemsList.length;
+        let checkedState = new Array(TOTAL).fill(false);
+
+        function init() {
+            loadData();
+            renderGrid();
+            updateCounter();
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            itemsList.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = `item ${checkedState[index] ? 'checked' : ''}`;
+                div.onclick = () => toggleItem(index);
+                
+                const checkbox = document.createElement('div');
+                checkbox.className = 'checkbox';
+                
+                const text = document.createElement('div');
+                text.textContent = item;
+                
+                div.appendChild(checkbox);
+                div.appendChild(text);
+                grid.appendChild(div);
+            });
+        }
+
+        function toggleItem(index) {
+            checkedState[index] = !checkedState[index];
+            saveData();
+            renderGrid();
+            updateCounter();
+        }
+
+        function updateCounter() {
+            const count = checkedState.filter(Boolean).length;
+            document.getElementById('counter').textContent = `已完成 ${count} / ${TOTAL}`;
+        }
+
+        function saveData() {
+            localStorage.setItem('lifeChecklistData', JSON.stringify(checkedState));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('lifeChecklistData');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.length === TOTAL) {
+                        checkedState = parsed;
+                    }
+                } catch(e) { console.error('数据解析失败'); }
+            }
+        }
+
+        // 导出：自动复制到剪贴板
+        function exportData() {
+            const compactStr = checkedState.map(v => v ? 1 : 0).join('');
+            const container = document.getElementById('ioContainer');
+            const textarea = document.getElementById('ioText');
+            textarea.value = compactStr;
+            container.style.display = 'block';
+            textarea.select();
+            document.execCommand('copy');
+            alert('进度已复制到剪贴板！请粘贴保存在微信文件传输助手/备忘录/云盘。');
+        }
+
+        function showImport() {
+            const container = document.getElementById('ioContainer');
+            const textarea = document.getElementById('ioText');
+            textarea.value = '';
+            textarea.placeholder = '请粘贴导出的进度字符串（如: 0100101...）';
+            container.style.display = 'block';
+        }
+
+        function hideImport() {
+            document.getElementById('ioContainer').style.display = 'none';
+        }
+
+        function doImport() {
+            const textarea = document.getElementById('ioText');
+            const val = textarea.value.trim();
+            if (val.length !== TOTAL) {
+                alert(`数据长度不正确！预期 ${TOTAL} 位，实际 ${val.length} 位。请检查是否复制完整。`);
+                return;
+            }
+            checkedState = val.split('').map(char => char === '1');
+            saveData();
+            renderGrid();
+            updateCounter();
+            hideImport();
+            alert('导入成功！');
+        }
+
+        function resetData() {
+            if (confirm('确定要清空所有进度吗？此操作不可逆。')) {
+                checkedState = new Array(TOTAL).fill(false);
+                saveData();
+                renderGrid();
+                updateCounter();
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
