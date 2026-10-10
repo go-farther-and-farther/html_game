@@ -8,6 +8,10 @@ var HistoryManager = (function() {
 
   var GAME_NAMES = {
     '2048': '2048',
+    '2048-5x5': '2048 5×5',
+    '2048-ai': '2048 AI',
+    '2048-ai-5x5': '2048 AI 5×5',
+    '2048-auto': '2048 自动化',
     'tetris': '俄罗斯方块',
     'snake': '贪吃蛇',
     'snake-ai1': '人机贪吃蛇',
@@ -21,6 +25,10 @@ var HistoryManager = (function() {
 
   var GAME_ICONS = {
     '2048': '🔢',
+    '2048-5x5': '🔢',
+    '2048-ai': '🤖',
+    '2048-ai-5x5': '🤖',
+    '2048-auto': '⚡',
     'tetris': '🧱',
     'snake': '🐍',
     'snake-ai1': '⚔️',
