@@ -47,8 +47,8 @@
 | `pelican-free-ride.html` | 2026-09-26 | 55.5 KB | 3D 开放世界自由骑行 · WASD/跳跃/收集小鱼/里程/音乐 · **推荐** |
 | `pelican-bicycle-svg.html` | 2026-10-10 | 33.3 KB | 纯 HTML + SVG 循环动画 · 视差远景、辐条与太阳光芒 |
 | `index.html` | 2026-09-25 | 20.1 KB | 3D 展示场景 · 拖拽转视角、滚轮缩放、点鹈鹕逗它 |
-| `pelican-bicycle.html` | 2026-09-22 | 18.3 KB | 早期 2D 版 |
-| `pelican-cycling.html` | 2026-08-17 | 19.2 KB | 最早的一版 |
+| `pelican-3d-cdn.html` | 2026-09-22 | 18.3 KB | three.js 走 unpkg importmap 加载的 3D 展示版 · 与 `qwen3.8_27b_nvfp4_…-v2` 同源（仅差 90/45 行） |
+| `pelican-cycling-svg-v1.html` | 2026-08-17 | 19.2 KB | 单个内联 SVG 静态插画 + 简单动画 · 最早的一版 |
 
 **模型能力测试（5）** —— 单轮生成的能力验证产物，未做后续打磨，无历史记录：
 
@@ -74,6 +74,18 @@
 1. 一次性链接检查：遍历 `index.html` / `history.html` / `versions.html` 全部 `href`，确认目标文件存在。
 2. `node --check` 过改动的 `.mjs` / `.cjs`。
 3. commit + push（仓库已配 Clash 代理 `127.0.0.1:7897`）→ 等 Pages 生效 → 抓线上首页确认新卡片、抓 `versions.html` 确认 200。
+
+## 命名调整（同日追加）
+
+`鹈鹕骑车3D/` 的命名约定：
+
+- **手打带模型标识的名字 = 一次性生成测试**，原名不动：`鹈鹕5.3flash.html`、`pelican-bike27B.html`、`pelican_bicycleqwen38fn.html`、`qwen3.8_27b_nvfp4_pelican-riding-v2.html`、`deepseek_html_醍醐骑自行车.html`
+- **没有这种名字的，效果好的保留**：`pelican-free-ride.html`（1557 行，完整游戏）、`pelican-bicycle-svg.html`（709 行，SVG 循环动画）、`index.html`（533 行，本地 `three.min.js` + 「嘎！！」气泡互动，兼作文件夹入口）
+- **其余按内容重命名**（`git mv`，历史保留）：
+  - `pelican-bicycle.html` → `pelican-3d-cdn.html`：three.js 通过 unpkg importmap 加载的 3D 展示版，与 `qwen3.8_27b_nvfp4_…-v2` 同源
+  - `pelican-cycling.html` → `pelican-cycling-svg-v1.html`：单个内联 SVG 静态插画 + 简单动画，8/17 最早一版（同一天还产出了 `pelican-bike.svg` / `pelican_bicycle.svg` 两个素材）
+
+10 个文件内部都没有模型署名，模型归属只能靠文件名，所以重命名一律走「按内容」这条路。
 
 ## 不做
 
