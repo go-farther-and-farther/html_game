@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鹈鹕骑车 · 版本导航</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    min-height: 100vh;
+    padding: 32px 16px;
+    color: #fff;
+  }
+
+  .container { max-width: 960px; margin: 0 auto; }
+
+  .topbar { margin-bottom: 20px; }
+
+  .back-btn {
+    display: inline-block;
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    color: #fff;
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+
+  .back-btn:hover { background: rgba(255,255,255,0.18); }
+
+  .header { text-align: center; margin-bottom: 8px; }
+
+  .header h1 {
+    font-size: 32px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #f5af19, #f12711);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+
+  .header p { font-size: 14px; color: rgba(255,255,255,0.5); }
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 32px 0 6px;
+    padding-left: 12px;
+    border-left: 4px solid #f5af19;
+  }
+
+  .section-note {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    margin: 0 0 16px 16px;
+  }
+
+  .game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  .game-card {
+    display: block;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 22px 16px;
+    text-align: center;
+    text-decoration: none;
+    color: #fff;
+    transition: all 0.25s;
+  }
+
+  .game-card:hover {
+    background: rgba(255,255,255,0.14);
+    border-color: rgba(245,175,25,0.5);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  .game-card .icon { font-size: 34px; margin-bottom: 10px; }
+  .game-card .name { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .game-card .file { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 8px; word-break: break-all; }
+  .game-card .desc { font-size: 12px; color: rgba(255,255,255,0.55); line-height: 1.5; }
+  .game-card .meta { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 8px; }
+
+  .game-card .tag {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    background: linear-gradient(135deg, #f5af19, #f12711);
+    color: #fff;
+  }
+
+  .game-card.test { background: rgba(255,255,255,0.045); }
+
+  .game-card.test .tag {
+    background: rgba(255,255,255,0.14);
+    color: rgba(255,255,255,0.7);
+  }
+
+  footer {
+    text-align: center;
+    margin-top: 48px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+    line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="topbar">
+    <a class="back-btn" href="../index.html">← 返回合集首页</a>
+  </div>
+
+  <div class="header">
+    <h1>🚲 鹈鹕骑车 · 版本导航</h1>
+    <p>共 10 个版本 · 按修改时间倒序 · 正式迭代与模型能力测试分组</p>
+  </div>
+
+  <div class="section-title">🛠 正式迭代（5）</div>
+  <div class="section-note">持续打磨过的版本，玩这些</div>
+  <div class="game-grid">
+    <a class="game-card" href="pelican-free-ride.html">
+      <div class="icon">🚴</div>
+      <div class="name">鹈鹕自由骑行</div>
+      <div class="file">pelican-free-ride.html</div>
+      <div class="desc">3D 开放世界自由骑行 · WASD 骑行 · 蓄力跳跃 · 收集小鱼 · 里程记录 · 内置音乐</div>
+      <span class="tag">推荐</span>
+      <div class="meta">2026-09-26 · 55.5 KB</div>
+    </a>
+    <a class="game-card" href="pelican-bicycle-svg.html">
+      <div class="icon">🎞️</div>
+      <div class="name">鹈鹕骑自行车 · SVG 循环动画</div>
+      <div class="file">pelican-bicycle-svg.html</div>
+      <div class="desc">纯 HTML + SVG 循环动画 · 远景视差层 · 程序生成的辐条与太阳光芒</div>
+      <div class="meta">2026-10-10 · 33.3 KB</div>
+    </a>
+    <a class="game-card" href="index.html">
+      <div class="icon">🐦</div>
+      <div class="name">3D 鹈鹕骑自行车</div>
+      <div class="file">index.html</div>
+      <div class="desc">3D 展示场景 · 拖拽旋转视角 · 滚轮/双指缩放 · 点一下鹈鹕逗逗它</div>
+      <div class="meta">2026-09-25 · 20.1 KB</div>
+    </a>
+    <a class="game-card" href="pelican-bicycle.html">
+      <div class="icon">🚲</div>
+      <div class="name">鹈鹕骑车（早期 2D）</div>
+      <div class="file">pelican-bicycle.html</div>
+      <div class="desc">早期 2D 版本 · Pelican on a Bicycle</div>
+      <div class="meta">2026-09-22 · 18.3 KB</div>
+    </a>
+    <a class="game-card" href="pelican-cycling.html">
+      <div class="icon">🚲</div>
+      <div class="name">鹈鹕骑自行车（最早）</div>
+      <div class="file">pelican-cycling.html</div>
+      <div class="desc">这个项目的第一个版本</div>
+      <div class="meta">2026-08-17 · 19.2 KB</div>
+    </a>
+  </div>
+
+  <div class="section-title">🧪 模型能力测试（5）</div>
+  <div class="section-note">单轮生成的能力验证产物，未做后续打磨，也没有历史记录</div>
+  <div class="game-grid">
+    <a class="game-card test" href="鹈鹕5.3flash.html">
+      <div class="icon">🧪</div>
+      <div class="name">鹈鹕骑自行车 · 循环动画</div>
+      <div class="file">鹈鹕5.3flash.html</div>
+      <div class="desc">单轮生成测试</div>
+      <span class="tag">测试</span>
+      <div class="meta">2026-10-09 · 25.8 KB</div>
+    </a>
+    <a class="game-card test" href="pelican_bicycleqwen38fn.html">
+      <div class="icon">🧪</div>
+      <div class="name">鹈鹕骑自行车 · 循环动画</div>
+      <div class="file">pelican_bicycleqwen38fn.html</div>
+      <div class="desc">单轮生成测试</div>
+      <span class="tag">测试</span>
+      <div class="meta">2026-10-09 · 18.7 KB</div>
+    </a>
+    <a class="game-card test" href="pelican-bike27B.html">
+      <div class="icon">🧪</div>
+      <div class="name">鹈鹕骑自行车</div>
+      <div class="file">pelican-bike27B.html</div>
+      <div class="desc">单轮生成测试</div>
+      <span class="tag">测试</span>
+      <div class="meta">2026-10-09 · 17.1 KB</div>
+    </a>
+    <a class="game-card test" href="qwen3.8_27b_nvfp4_pelican-riding-v2.html">
+      <div class="icon">🧪</div>
+      <div class="name">鹈鹕骑车 · Pelican on a Bicycle</div>
+      <div class="file">qwen3.8_27b_nvfp4_pelican-riding-v2.html</div>
+      <div class="desc">单轮生成测试</div>
+      <span class="tag">测试</span>
+      <div class="meta">2026-09-24 · 20.1 KB</div>
+    </a>
+    <a class="game-card test" href="deepseek_html_醍醐骑自行车.html">
+      <div class="icon">🧪</div>
+      <div class="name">鹈鹕骑车 · Pelican Riding a Bicycle</div>
+      <div class="file">deepseek_html_醍醐骑自行车.html</div>
+      <div class="desc">单轮生成测试</div>
+      <span class="tag">测试</span>
+      <div class="meta">2026-09-22 · 17.8 KB</div>
+    </a>
+  </div>
+
+  <footer>
+    同目录还有 <code>pelican-bike.svg</code> / <code>pelican_bicycle.svg</code> 两个素材文件和 <code>three.min.js</code>，不是可玩版本。<br>
+    新增版本时按命名归组：带模型标识的进「模型能力测试」，其余进「正式迭代」。
+  </footer>
+</div>
+</body>
+</html>

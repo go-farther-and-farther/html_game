@@ -5,11 +5,12 @@ import { rmSync, mkdirSync, readdirSync, statSync, readFileSync, writeFileSync }
 import { join } from 'node:path';
 
 // 打包进 APK 的内容：首页、历史页、共享脚本、全部游戏目录
-// 新增游戏文件夹时在下面列表补一行即可
+// 新增游戏时在下面列表补一行即可：文件夹名直接写文件夹名，根目录的单文件游戏要单独写一行
 const items = [
   'index.html',
   'history.html',
   'js',
+  '人生清单_v2.html',
   '2048',
   '俄罗斯方块',
   '贪吃蛇',
