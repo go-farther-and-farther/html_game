@@ -98,6 +98,65 @@ APK 输出路径：`android/app/build/outputs/apk/debug/app-debug.apk`
 - 渲染优化：食物批量绘制、长蛇跳帧、粒子数量限制、视口裁剪
 - AI 优化：决策频率调整、平方距离替代开方运算
 
+## 🧪 模型 × Agent 记录规则
+
+**以后任何 agent 在这个仓库里新做一个 HTML，都必须写下用了什么模型、什么 agent。** 目的是把模型能力的变化留在仓库里 —— 隔一段时间回看，能看出进步到底在哪、哪些毛病一直没解决。
+
+### 1. 文件名：`<模型>_<agent>_<内容>.html`
+
+```
+qwen3.8-27b-nvfp4_dsh_pelican-riding-3d.html
+deepseek-v4_zcode_rainy-gas-station.html
+glm-5.3-flash_web_tower-defense-v8.html
+```
+
+- **模型**：具体型号，小写，带上关键限定（量化方式、版本），如 `qwen3.8-27b-nvfp4`、`glm-5.3-flash`
+- **agent**：驱动它的 agent / harness，如 `dsh`（DeepSeek Harness）、`zcode`、`codex`、`web`（网页版对话）
+- **内容**：这个 HTML 是什么，如 `pelican-riding-3d`、`tower-defense-v8`
+
+沿用现有约定：**文件名带模型标识 = 一次性生成测试**。正式迭代的主文件（如 `pelican-free-ride.html`）可以不带模型标识，但下面第 2 条的记录块仍然必写。
+
+### 2. HTML 内部记录块：放在 `<head>` 里，必写
+
+```html
+<!-- ==================== 生成记录 ====================
+模型   : Qwen3.8-27B (nvfp4 本地量化)
+Agent  : DSH (DeepSeek Harness)
+日期   : 2026-10-10
+提示词 : 一句话写清给了它什么要求
+轮次   : 一次生成 / 多轮迭代的第 N 轮
+结果   : 能不能直接玩、有没有外部依赖（CDN / three.min.js）
+评价   : 效果好的点 1~2 条 + 明显的毛病 1~2 条
+===================================================== -->
+<meta name="x-model" content="Qwen3.8-27B-nvfp4">
+<meta name="x-agent" content="DSH">
+<meta name="x-date" content="2026-10-10">
+<meta name="x-round" content="1">
+```
+
+注释给人看，`meta` 给脚本看 —— 以后可以扫全部 HTML 的 `x-model` / `x-date` 自动生成模型能力时间线。
+
+### 3. 新文件在下表追加一行
+
+模型或 agent 不确定就写「未记录」，**不要猜**。
+
+| 日期 | 文件 | 模型 | Agent | 一句话结论 |
+|---|---|---|---|---|
+| 2026-08-17 | `鹈鹕骑车3D/pelican-cycling-svg-v1.html` | 未记录 | 未记录 | 最早一版，单个内联 SVG 静态插画 |
+| 2026-09-22 | `鹈鹕骑车3D/deepseek_html_醍醐骑自行车.html` | DeepSeek（按文件名） | 未记录 | 一次性生成测试 |
+| 2026-09-22 | `鹈鹕骑车3D/pelican-3d-cdn.html` | 未记录 | 未记录 | three.js 走 unpkg CDN 的 3D 展示版，与 qwen3.8_27b v2 同源 |
+| 2026-09-24 | `鹈鹕骑车3D/qwen3.8_27b_nvfp4_pelican-riding-v2.html` | Qwen3.8-27B nvfp4（按文件名） | 未记录 | 一次性生成测试 v2 |
+| 2026-09-25 | `鹈鹕骑车3D/index.html` | 未记录 | 未记录 | 本地 three.min.js 3D 场景 + 「嘎！！」气泡互动 |
+| 2026-09-26 | `鹈鹕骑车3D/pelican-free-ride.html` | 未记录 | 未记录 | 1557 行完整游戏，这批里效果最好 |
+| 2026-10-09 | `鹈鹕骑车3D/pelican-bike27B.html` | 27B（按文件名） | 未记录 | 一次性生成测试 |
+| 2026-10-09 | `鹈鹕骑车3D/鹈鹕5.3flash.html` | 5.3 flash（按文件名） | 未记录 | 一次性生成测试 |
+| 2026-10-09 | `鹈鹕骑车3D/pelican_bicycleqwen38fn.html` | Qwen3.8（按文件名） | 未记录 | 一次性生成测试 |
+| 2026-10-10 | `鹈鹕骑车3D/pelican-bicycle-svg.html` | 未记录 | 未记录 | 709 行 HTML+SVG 循环动画，细节最足 |
+
+### 4. 旧文件不追溯
+
+2026-10-10 之前已有的文件不补模型标识、不改名，只按内容补了名字（`pelican-3d-cdn.html`、`pelican-cycling-svg-v1.html`）。表里凡标「按文件名」的模型归属都是从文件名推断的，不是实测。
+
 ## 🚀 使用方法
 
 1. 克隆仓库或下载 ZIP
