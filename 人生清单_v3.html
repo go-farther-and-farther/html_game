@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>人生清单 V3</title>
+<style>
+    :root {
+        --bg: #f5f7fb;
+        --bg-soft: #ffffff;
+        --text: #2b3440;
+        --text-dim: #8b97a5;
+        --line: #e3e8ef;
+        --card: #ffffff;
+        --card-done: #eef2f7;
+        --primary: #4a90e2;
+        --primary-soft: rgba(74, 144, 226, 0.12);
+        --danger: #e05563;
+        --shadow: 0 2px 6px rgba(20, 30, 45, 0.06);
+        --shadow-strong: 0 6px 18px rgba(20, 30, 45, 0.12);
+        --radius: 10px;
+    }
+    [data-theme="dark"] {
+        --bg: #12161d;
+        --bg-soft: #1a2029;
+        --text: #e6ebf2;
+        --text-dim: #8894a3;
+        --line: #2b3441;
+        --card: #1e242e;
+        --card-done: #232c37;
+        --primary: #6aa9f0;
+        --primary-soft: rgba(106, 169, 240, 0.16);
+        --danger: #ef7383;
+        --shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+        --shadow-strong: 0 6px 18px rgba(0, 0, 0, 0.5);
+    }
+    * { box-sizing: border-box; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", Roboto, "PingFang SC", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        margin: 0;
+        padding: 18px 10px 60px;
+        display: flex;
+        justify-content: center;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .container { width: 96%; max-width: 1440px; }
+
+    /* ---------- 顶部 ---------- */
+    .sticky-header {
+        position: sticky; top: 0; z-index: 200;
+        background: var(--bg);
+        padding: 8px 0 12px;
+        margin-bottom: 14px;
+        border-bottom: 1px solid var(--line);
+    }
+    .title-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    h1 { font-size: 24px; margin: 0; letter-spacing: 1px; }
+    .ver {
+        font-size: 12px; background: var(--primary); color: #fff;
+        border-radius: 6px; padding: 2px 7px; vertical-align: middle; font-weight: 700;
+    }
+    .sub { font-size: 12px; color: var(--text-dim); }
+
+    .stats { display: flex; gap: 8px; justify-content: center; margin: 10px 0 8px; flex-wrap: wrap; }
+    .stat {
+        background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius);
+        padding: 6px 14px; min-width: 92px; text-align: center; box-shadow: var(--shadow);
+    }
+    .stat b { display: block; font-size: 17px; color: var(--primary); line-height: 1.25; }
+    .stat span { font-size: 11px; color: var(--text-dim); }
+
+    .bar { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 4px 0 12px; }
+    .bar-fill {
+        height: 100%; width: 0%; border-radius: 999px;
+        background: linear-gradient(90deg, #4a90e2, #6fc2a8);
+        transition: width .35s ease;
+    }
+
+    .toolbar, .actions { display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+    .seg { display: inline-flex; background: var(--bg-soft); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+    .seg button {
+        border: none; background: transparent; color: var(--text-dim); cursor: pointer;
+        font-size: 13px; padding: 6px 12px; border-radius: 999px; transition: .18s; white-space: nowrap;
+    }
+    .seg button.on { background: var(--primary); color: #fff; font-weight: 600; }
+    .search {
+        border: 1px solid var(--line); background: var(--bg-soft); color: var(--text);
+        border-radius: 999px; padding: 8px 14px; font-size: 13px; min-width: 150px; outline: none;
+    }
+    .search:focus { border-color: var(--primary); }
+
+    .btn {
+        padding: 8px 14px; border: 1px solid transparent; border-radius: 8px;
+        background: var(--primary); color: #fff; cursor: pointer; font-size: 13px; transition: .18s;
+    }
+    .btn:hover { filter: brightness(1.06); }
+    .btn.outline { background: transparent; border-color: var(--primary); color: var(--primary); }
+    .btn.ghost { background: var(--bg-soft); border-color: var(--line); color: var(--text-dim); }
+    .btn.danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+    .btn.primary { background: #2f9e6f; }
+    [data-theme="dark"] .btn.primary { background: #35a878; }
+
+    .panel {
+        display: none; margin: 6px auto 0; width: 100%; max-width: 860px;
+        background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius);
+        padding: 12px; box-shadow: var(--shadow-strong);
+    }
+    .panel textarea {
+        width: 100%; height: 92px; padding: 10px; border: 1px solid var(--line); border-radius: 8px;
+        resize: vertical; font-family: ui-monospace, Consolas, monospace; font-size: 12px;
+        background: var(--bg); color: var(--text);
+    }
+    .panel .row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+    .opt { font-size: 13px; color: var(--text-dim); display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+    .panel-note { font-size: 11px; color: var(--text-dim); text-align: center; margin-top: 8px; line-height: 1.6; }
+
+    /* ---------- 分类分块 ---------- */
+    .block { margin-bottom: 22px; }
+    .block-head {
+        display: flex; align-items: center; gap: 10px; margin: 0 0 10px;
+        padding: 4px 0;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .block-head h2 { font-size: 16px; margin: 0; }
+    .block-head .cnt { font-size: 12px; color: var(--text-dim); margin-left: auto; white-space: nowrap; }
+    .mini-bar { height: 5px; width: 100%; border-radius: 999px; background: var(--line); overflow: hidden; margin-bottom: 10px; }
+    .mini-bar i { display: block; height: 100%; border-radius: 999px; transition: width .3s; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+    .item {
+        background: var(--card); border: 1px solid var(--line);
+        padding: 11px 12px; border-radius: var(--radius); cursor: pointer; user-select: none;
+        display: flex; align-items: center; gap: 9px; transition: .16s; font-size: 14px;
+        box-shadow: var(--shadow); position: relative; overflow: hidden;
+    }
+    .item:hover { box-shadow: var(--shadow-strong); transform: translateY(-1px); }
+    .item.checked { background: var(--card-done); color: var(--text-dim); border-color: transparent; }
+    .item.checked .txt { text-decoration: line-through; }
+    .box {
+        width: 18px; height: 18px; border: 2px solid #c3ccd6; border-radius: 5px;
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: .18s;
+    }
+    .item.checked .box { background: var(--cat, var(--primary)); border-color: var(--cat, var(--primary)); }
+    .box::after {
+        content: ''; width: 5px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0;
+        transform: rotate(45deg); margin-top: -2px; opacity: 0; transition: .18s;
+    }
+    .item.checked .box::after { opacity: 1; }
+    .txt { flex: 1; min-width: 0; word-break: break-word; }
+    .star { font-size: 11px; color: #d4a017; flex-shrink: 0; }
+    .item.checked .star { color: #b8860b; opacity: .7; }
+    .empty { text-align: center; color: var(--text-dim); font-size: 14px; padding: 40px 0; }
+
+    .tip { font-size: 12px; color: var(--text-dim); text-align: center; margin-top: 26px; line-height: 1.8; }
+
+    /* ---------- Toast ---------- */
+    #toast {
+        position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
+        background: #222b36; color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 13px;
+        opacity: 0; pointer-events: none; transition: .25s; z-index: 500; display: flex; gap: 12px; align-items: center;
+        box-shadow: 0 8px 24px rgba(0,0,0,.25); max-width: 90%;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+    #toast button { background: rgba(255,255,255,.16); color: #fff; border: none; border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 12px; }
+
+    @media (max-width: 640px) {
+        body { padding: 10px 4px 50px; }
+        h1 { font-size: 20px; }
+        .sticky-header { position: static; padding-bottom: 8px; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+        .stat { min-width: 0; padding: 5px 4px; }
+        .stat b { font-size: 14px; }
+        .stat span { font-size: 10px; }
+        .grid { grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 8px; }
+        .item { padding: 9px 8px; font-size: 13px; gap: 7px; }
+        .box { width: 16px; height: 16px; }
+        .block-head { position: static; }
+        .search { min-width: 0; flex: 1 1 100%; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <header class="sticky-header">
+        <div class="title-row">
+            <h1>人生清单 <span class="ver">V3</span></h1>
+            <div class="sub">核心 100 条 · 全部 400 条 · 自动保存在本机浏览器</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat"><b id="statDone">0</b><span>已完成</span></div>
+            <div class="stat"><b id="statTodo">400</b><span>未完成</span></div>
+            <div class="stat"><b id="statCore">0 / 100</b><span>核心完成</span></div>
+            <div class="stat"><b id="statPct">0%</b><span>完成率</span></div>
+        </div>
+        <div class="bar"><div class="bar-fill" id="barFill"></div></div>
+
+        <div class="toolbar">
+            <div class="seg" id="filterSeg">
+                <button data-f="all" class="on">全部</button>
+                <button data-f="todo">未完成</button>
+                <button data-f="done">已完成</button>
+            </div>
+            <div class="seg" id="scopeSeg">
+                <button data-s="all" class="on">全部 400</button>
+                <button data-s="core">核心 100</button>
+                <button data-s="noncore">非核心 300</button>
+            </div>
+            <input id="search" class="search" placeholder="搜索清单…" autocomplete="off">
+            <button class="btn ghost" id="groupBtn">分块显示</button>
+            <button class="btn ghost" id="themeBtn">深色模式</button>
+        </div>
+
+        <div class="actions">
+            <button class="btn primary" id="imgBtn">导出图片</button>
+            <button class="btn" id="exportBtn">导出进度</button>
+            <button class="btn outline" id="importBtn">导入进度</button>
+            <button class="btn danger" id="resetBtn">清空重置</button>
+        </div>
+
+        <!-- 图片导出面板 -->
+        <div class="panel" id="imgPanel">
+            <div class="row">
+                <label class="opt"><input type="radio" name="imgscope" value="all" checked> 全部 400 条</label>
+                <label class="opt"><input type="radio" name="imgscope" value="core"> 核心 100 条</label>
+                <label class="opt"><input type="radio" name="imgscope" value="done"> 仅已完成</label>
+            </div>
+            <div class="row">
+                <button class="btn primary" id="imgDownload">生成并下载 PNG</button>
+                <button class="btn outline" id="imgCopy">复制到剪贴板</button>
+                <button class="btn ghost" id="imgClose">关闭</button>
+            </div>
+            <div class="panel-note">图片按分类分块排版，已完成的条目带勾选与分类色，核心条目带 ★。生成后自动下载。</div>
+        </div>
+
+        <!-- 文本导入/导出口面板 -->
+        <div class="panel" id="ioPanel">
+            <textarea id="ioText" placeholder="导出的进度串会显示在这里；也可以把 V2 的 185 位进度串粘贴进来直接导入。"></textarea>
+            <div class="row">
+                <button class="btn" id="doImport">确认导入</button>
+                <button class="btn outline" id="copyIo">复制上方内容</button>
+                <button class="btn outline" id="exportV2">导出 V2 格式(185位)</button>
+                <button class="btn ghost" id="ioClose">关闭</button>
+            </div>
+            <div class="panel-note">
+                导入自动识别三种格式：V3 进度串（<code>LIFE3:</code> + 400 位）、V2 进度串（185 位）、V3 JSON 备份。<br>
+                首次打开 V3 时会自动读取 V2 的本地进度（按条目文字对应，不依赖顺序）。
+            </div>
+        </div>
+    </header>
+
+    <div id="blocks"></div>
+    <div class="tip">
+        点击卡片勾选 · 进度自动保存 · ★ 为核心条目 · 分块显示可切换为平铺<br>
+        换设备：在旧设备点「导出进度」复制到剪贴板，存到备忘录/云盘，再在新设备「导入进度」粘贴
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* =========================================================
+   人生清单 V3
+   - 兼容 V2：自动迁移 V2 本地进度 / 可导入 V2 的 185 位进度串
+   - 分块：11 个分类；筛选：全部 / 未完成 / 已完成；范围：全部 / 核心 / 非核心
+   - 核心 100 条 + 非核心 300 条 = 400 条
+   - 导出图片：原生 Canvas 绘制海报并下载 PNG（无需联网、无外部依赖）
+   ========================================================= */
+
+const CATS = [
+    { key: 'love',     name: '恋爱与情感', color: '#e0556f' },
+    { key: 'social',   name: '友情与社交', color: '#3f8efc' },
+    { key: 'family',   name: '家人与亲情', color: '#f2994a' },
+    { key: 'self',     name: '情绪与自我', color: '#9b59b6' },
+    { key: 'school',   name: '校园与学业', color: '#27ae60' },
+    { key: 'work',     name: '工作与事业', color: '#2d8f8f' },
+    { key: 'creative', name: '创作与技能', color: '#d4a017' },
+    { key: 'travel',   name: '旅行与探索', color: '#16a3b8' },
+    { key: 'sports',   name: '运动与冒险', color: '#e2703a' },
+    { key: 'life',     name: '生活与体验', color: '#6b7fd7' },
+    { key: 'health',   name: '身体与健康', color: '#c0392b' }
+];
+
+/* 条目格式："*xxx" 表示核心条目 */
+const RAW = [
+    { key: 'love', items: [
+        "*暗恋", "*表白", "*失恋", "*谈恋爱", "*双向奔赴", "*放下一个人", "*被坚定选择", "*第一次牵手", "*第一次接吻",
+        "明恋", "被表白", "爱而不得", "当海王", "拒绝他人表白", "表白被拒", "被渣", "异地恋", "异国恋", "谈过一场刻骨铭心的恋爱",
+        "网恋", "约会", "过纪念日", "分手", "复合", "暗恋成真", "被暗恋", "为喜欢的人学一样东西", "恋爱中旅行",
+        "冷战后和好", "主动结束一段关系", "单身很多年", "求过婚或被求过婚", "给喜欢的人写过歌", "为爱放弃过一次机会", "失恋后自愈"
+    ]},
+    { key: 'social', items: [
+        "*有超过10年的好朋友", "*有个无条件可信任的朋友", "*吵架", "*绝交", "*社死过", "*交到一个新朋友",
+        "*帮过朋友一个大忙", "*主动和解过", "*办生日会",
+        "和朋友去KTV", "向陌生人吐露心声", "拥有要好的异性朋友", "被背叛", "被伤害", "当伴娘/郎",
+        "和同学打水仗", "社团活动", "组建社团", "和网友见面", "认识不同国籍的人", "在朋友家过夜",
+        "主动联系老朋友", "组过一次局", "被朋友帮过大忙", "有过忘年交", "参加过同学聚会", "被朋友误解过",
+        "和朋友聊到深夜", "借过钱给朋友", "陪朋友度过低谷", "被朋友放过鸽子", "交到比自己小的朋友",
+        "交到比自己大的朋友", "一个人参加过聚会", "组织过一次旅行团"
+    ]},
+    { key: 'family', items: [
+        "*给父母买衣服", "*做饭给家人", "*带父母旅行", "*给父母过生日", "*给父母写过一封信", "*被家人坚定支持过",
+        "*带父母体检", "*和家人吵过后和好", "*给父母拍过一张正式合照", "*收到过父母的礼物",
+        "给父母做一顿饭", "给家里打过长电话", "和家人深谈过一次", "教父母用过一个新科技", "带父母看过一场电影",
+        "给家人包过饺子", "带父母看过病", "和兄弟姐妹旅行过", "给家人买过贵重礼物", "独立后回家给父母做饭",
+        "修好过家里的东西", "带父母看过一场演唱会", "陪父母做过一次重要决定", "给父母做过一次早餐",
+        "和家人一起搬过一次家", "给家人织过或做过一件东西", "带父母去过一次游乐园", "和父母聊过自己的童年",
+        "给父母转过一次账", "回家时给家人带过礼物"
+    ]},
+    { key: 'self', items: [
+        "*晚上一个人哭", "*释怀", "*道歉", "*改掉一个坏习惯", "*有过遗憾", "*大哭过一场",
+        "*原谅过伤害自己的人", "*拒绝过一次不合理要求", "*坚持过一个习惯超过100天",
+        "犯过傻", "装糊涂", "失眠", "睡一天", "给自己买礼物", "一个人散步", "深夜散心", "一个人过生日",
+        "一个人在外难过", "给自己写信", "失望", "被骗", "撒谎",
+        "情绪崩溃过", "说过一次不", "主动求助过", "做过一次心理咨询", "冥想过", "独处过一整天不焦虑",
+        "给自己写过未来的信", "独自做过一个重要决定", "戒掉过一个瘾", "停止内耗的一天", "独自面对过一次恐惧",
+        "写过情绪日记", "承认过自己的错误"
+    ]},
+    { key: 'school', items: [
+        "*考试第一名", "*考试不及格", "*通宵补作业", "*拍毕业照", "*当班干部", "*拿过奖学金",
+        "*考过一个证书", "*自学完一门课", "*犯校规",
+        "迟到", "旷课", "上课睡觉", "打架被叫家长", "竞选学生会", "被老师点名表扬", "被老师点名批评",
+        "全校表扬", "写论文", "参加比赛", "在图书馆待一天", "转学", "加入校队",
+        "挂过科", "补考过", "早自习", "晚自习", "当过课代表", "组织过班级活动", "做过实验报告",
+        "做过毕业答辩", "休学过", "交换过留学", "旁听过一门课", "拿过一次满分", "毕业多年后回过学校"
+    ]},
+    { key: 'work', items: [
+        "*拿到过第一份工资", "*有过第一份正式工作", "*面试成功", "*进公司工作", "*创业", "*涨过薪",
+        "*辞职过", "*带过团队", "*独立负责过一个项目",
+        "兼职", "打工", "摆地摊", "开网店", "发表成果", "做未来规划",
+        "被录用过", "面试被拒过很多次", "换过工作", "被辞退过", "招过人", "谈成一单生意", "谈成过一次合作",
+        "做过一次公开汇报", "做过一次项目复盘", "被同事认可过", "被领导批评过", "被领导表扬过",
+        "加过一次大夜班", "自己赚过十万", "做过自由职业", "接过一个外包", "做过自媒体", "有过一个副业",
+        "卖过自己的作品", "拒绝过一次不合理加班"
+    ]},
+    { key: 'creative', items: [
+        "*摄影", "*写书", "*写歌", "*会一种乐器", "*有过超过5年的兴趣爱好", "*学一种外语",
+        "*登台演出", "*获奖", "*作品被发表过",
+        "上电视", "上报纸", "主持节目", "演讲", "写诗", "写日记", "写剧本", "拍影片", "拍写真",
+        "买相机", "看画展", "写信", "拼拼图", "练字",
+        "画过一幅画", "学过画画", "剪过一个视频", "做过一期播客", "写过代码", "做过一个网站",
+        "做过一个游戏", "设计过一个logo", "做过一件手工", "学过跳舞", "组过乐队", "教过一个人一项技能"
+    ]},
+    { key: 'travel', items: [
+        "*出国", "*一个人旅游", "*看海", "*看日出", "*看极光", "*登山", "*自驾游", "*露营过一夜", "*背包走过一次",
+        "一个人出门逛", "跟朋友旅游", "自己一个人住宾馆", "泡温泉", "去野炊", "看雪", "看日落",
+        "独自坐飞机", "逛小吃街",
+        "一个人坐过长途火车", "住过青年旅社", "徒步过10公里以上", "骑行过20公里以上", "去过一个陌生的城市",
+        "迷路过一次", "赶过一次火车或飞机", "看过一次星空", "看过流星", "去过沙漠", "去过草原",
+        "去过古镇", "潜过水", "坐过邮轮", "做过一次完整旅行攻略", "环游过一个省", "一个人看过一场演出"
+    ]},
+    { key: 'sports', items: [
+        "*擅长一项运动", "*健身", "*游泳", "*夜跑", "*跑过一次5公里", "*连续跑步超过30天",
+        "*跳伞", "*参加过一场比赛并完赛", "*学会过一项新运动",
+        "去密室", "去鬼屋", "去游乐场", "坐过山车", "蹦极", "骑马", "卡丁车", "攀岩",
+        "滑雪", "滑冰", "旱冰", "滑板", "坐摩天轮",
+        "跑过一次10公里", "完成过一次马拉松", "打过篮球", "打过羽毛球", "打过乒乓球", "练过拳",
+        "练过瑜伽", "做过引体向上", "平板支撑超过3分钟", "玩过漂流", "玩过射箭", "玩过真人CS", "玩过剧本杀"
+    ]},
+    { key: 'life', items: [
+        "*送礼物", "*会做饭", "*养宠物", "*拿驾照", "*一个人出去吃饭", "*去看现场演唱会", "*捐款",
+        "*搬家", "*断舍离过一次", "*做过一次生日惊喜给别人", "*一个人住过超过一年", "*学会做一道拿手菜",
+        "被送礼物", "留长发", "剪短发", "染发", "漂发", "烫发", "化妆", "做美甲", "去酒吧", "断片",
+        "做一桌菜", "做甜品给喜欢的人", "买花", "被送花", "一个人看电影", "一个人去酒吧", "一个人逛超市",
+        "一个人去图书馆", "一个人去唱歌", "野性消费", "被雪糕刺客伤过", "参加志愿活动", "看鬼片",
+        "去音乐节", "偶遇明星", "去签售会", "淋雨", "种花", "买名牌", "沉迷游戏", "放孔明灯",
+        "买唱片", "一个人租房",
+        "养过一只猫或狗", "捡过一次流浪动物", "做过一次大扫除", "布置过自己的房间", "坚持记账超过三个月",
+        "一个人看过一次烟花", "放过一次烟花", "一个人吃过一次自助餐", "学会做过一个蛋糕", "学会冲过一次手冲咖啡",
+        "修好过一件坏掉的电器", "一个人逛过一次夜市", "做过一次月度计划并执行", "买过一束花给自己",
+        "一个人看过一次展", "做过一次旧物改造", "给未来的自己存过一件东西", "一个人度过过一次完整的周末",
+        "坚持自己洗碗超过一个月", "给房间换过一次布置风格"
+    ]},
+    { key: 'health', items: [
+        "*献血", "*住院", "*体检过一次", "*减重成功过", "*坚持早睡超过30天", "*一个人看病",
+        "做手术", "晕倒",
+        "看过牙医", "拔过牙", "治好过一次久病", "增肌成功过", "戒过一次糖或烟", "学会过一次急救",
+        "打过一次疫苗", "治好过一次长期失眠", "做过一次视力检查", "控制过一次情绪性进食",
+        "坚持喝够水超过30天", "做过一次体测并达标", "治好过一次胃病", "学会过一套拉伸",
+        "戒过一次熬夜", "陪家人做过一次体检", "学会过一项自救技能"
+    ]}
+];
+
+/* V2 的 185 条原始条目（顺序与 V2 完全一致，用于迁移与导入 V2 进度串） */
+const V2_ITEMS = [
+    "送礼物", "被送礼物", "暗恋", "明恋", "失恋", "表白", "被表白", "留长发", "剪短发", "染发", "漂发", "烫发", "化妆", "做美甲", "放下一个人", "有过遗憾", "爱而不得", "双向奔赴", "当海王", "拒绝他人表白", "表白被拒", "被渣", "犯过傻", "装糊涂", "犯校规", "迟到", "旷课", "上课睡觉", "打架被叫家长", "去酒吧", "和朋友去KTV", "断片", "失眠", "睡一天", "吵架", "绝交", "晚上一个人哭", "献血", "住院", "做手术", "晕倒", "会做饭", "做一桌菜", "做饭给家人", "做甜品给喜欢的人", "有超过10年的好朋友", "有个无条件可信任的朋友", "买花", "被送花", "给自己买礼物",
+    "通宵补作业", "一个人散步", "夜跑", "深夜散心", "向陌生人吐露心声", "一个人出去吃饭", "一个人看电影", "摄影", "一个人去酒吧", "一个人过生日", "一个人逛超市", "一个人去图书馆", "一个人看病", "一个人去唱歌", "社死过", "一个人出门逛", "一个人在外难过", "给自己写信", "出国", "一个人旅游", "跟朋友旅游", "拥有要好的异性朋友", "谈恋爱", "考试不及格", "考试第一名", "当班干部", "竞选学生会", "上电视", "上报纸", "登台演出", "主持节目", "演讲", "野性消费", "被雪糕刺客伤过", "被老师点名表扬", "被老师点名批评", "全校表扬", "被背叛", "被伤害", "被坚定选择", "获奖", "学一种外语", "写论文", "写书", "写诗", "写日记", "写剧本", "写歌", "拍影片", "参加比赛", "拍写真", "买相机", "会一种乐器", "有过超过5年的兴趣爱好", "参加志愿活动", "自己一个人住宾馆", "看鬼片", "去密室", "去鬼屋", "去游乐场", "去看现场演唱会", "去音乐节", "偶遇明星", "去签售会", "在图书馆待一天",
+    "兼职", "打工", "看画展", "捐款", "道歉", "释怀", "失望", "淋雨", "种花", "养宠物", "泡温泉", "跳伞", "坐过山车", "蹦极", "骑马", "卡丁车", "攀岩", "游泳", "滑雪", "滑冰", "旱冰", "滑板", "去野炊", "登山", "看雪", "看海", "看日出", "看日落", "拿驾照", "自驾游", "给父母买衣服", "当伴娘/郎", "摆地摊", "和同学打水仗", "社团活动", "组建社团", "写信", "独自坐飞机", "拼拼图", "办生日会", "健身", "买名牌", "开网店", "练字", "沉迷游戏", "拍毕业照", "面试成功", "放孔明灯", "逛小吃街", "和网友见面", "发表成果", "买唱片", "异地恋", "异国恋", "认识不同国籍的人", "创业", "看极光", "进公司工作", "做未来规划", "搬家", "一个人租房", "转学", "被骗", "撒谎", "改掉一个坏习惯", "加入校队", "坐摩天轮", "在朋友家过夜", "擅长一项运动", "谈过一场刻骨铭心的恋爱"
+];
+
+/* ---------- 构建索引 ---------- */
+const ITEMS = [];
+RAW.forEach(group => {
+    const cat = CATS.find(c => c.key === group.key);
+    group.items.forEach(raw => {
+        const core = raw.charAt(0) === '*';
+        ITEMS.push({ text: core ? raw.slice(1) : raw, cat: cat, core: core });
+    });
+});
+const BY_TEXT = new Map(ITEMS.map(it => [it.text, it]));
+const TOTAL = ITEMS.length;
+const CORE_TOTAL = ITEMS.filter(i => i.core).length;
+const V2_TOTAL = V2_ITEMS.length;
+
+const KEY_V3 = 'lifeChecklistData_v3';
+const KEY_V2 = 'lifeChecklistData';
+
+/* ---------- 状态 ---------- */
+const state = {
+    done: new Map(),          // text -> 完成时间戳
+    filter: 'all',            // all | todo | done
+    scope: 'all',             // all | core | noncore
+    q: '',
+    grouped: true,
+    theme: 'light',
+    lastToggle: null
+};
+
+function isDone(text) { return state.done.has(text); }
+
+/* ---------- 存取 ---------- */
+let NO_SAVE = false;
+function save() {
+    if (NO_SAVE) return;
+    const payload = { v: 3, savedAt: Date.now(), done: {} };
+    state.done.forEach((ts, text) => { payload.done[text] = ts; });
+    try { localStorage.setItem(KEY_V3, JSON.stringify(payload)); } catch (e) { toast('本地保存失败：' + e.message); }
+}
+
+function migrateFromV2(fromKey) {
+    let raw = null;
+    try { raw = localStorage.getItem(fromKey || KEY_V2); } catch (e) { return null; }
+    if (!raw) return null;
+    try {
+        const arr = JSON.parse(raw);
+        if (!Array.isArray(arr)) return null;
+        const map = new Map();
+        arr.forEach((v, i) => {
+            const text = V2_ITEMS[i];
+            if (v && text && BY_TEXT.has(text)) map.set(text, Date.now());
+        });
+        return map;
+    } catch (e) { return null; }
+}
+
+function load() {
+    let loaded = false;
+    try {
+        const raw = localStorage.getItem(KEY_V3);
+        if (raw) {
+            const obj = JSON.parse(raw);
+            const done = obj && obj.done ? obj.done : obj;
+            Object.keys(done).forEach(text => { if (BY_TEXT.has(text)) state.done.set(text, done[text] || Date.now()); });
+            loaded = true;
+        }
+    } catch (e) { /* 损坏则走迁移 */ }
+
+    if (!loaded) {
+        const migrated = migrateFromV2();
+        if (migrated && migrated.size) {
+            state.done = migrated;
+            save();
+            setTimeout(() => toast('已从 V2 迁移 ' + migrated.size + ' 条已完成进度'), 300);
+        }
+    }
+    try {
+        const t = localStorage.getItem('lifeChecklistTheme_v3');
+        if (t === 'dark') setTheme('dark', true);
+    } catch (e) {}
+}
+
+/* ---------- 视图筛选 ---------- */
+function visibleItems() {
+    const q = state.q.trim();
+    return ITEMS.filter(it => {
+        if (state.scope === 'core' && !it.core) return false;
+        if (state.scope === 'noncore' && it.core) return false;
+        if (state.filter === 'todo' && isDone(it.text)) return false;
+        if (state.filter === 'done' && !isDone(it.text)) return false;
+        if (q && it.text.indexOf(q) === -1) return false;
+        return true;
+    });
+}
+
+function scopeItems() {
+    return ITEMS.filter(it => {
+        if (state.scope === 'core') return it.core;
+        if (state.scope === 'noncore') return !it.core;
+        return true;
+    });
+}
+
+/* ---------- 渲染 ---------- */
+function makeCard(it) {
+    const div = document.createElement('div');
+    div.className = 'item' + (isDone(it.text) ? ' checked' : '');
+    div.dataset.text = it.text;
+    div.style.setProperty('--cat', it.cat.color);
+    if (it.core) div.title = it.cat.name + ' · 核心条目';
+    else div.title = it.cat.name;
+
+    const box = document.createElement('div');
+    box.className = 'box';
+    const txt = document.createElement('div');
+    txt.className = 'txt';
+    txt.textContent = it.text;
+    div.appendChild(box);
+    div.appendChild(txt);
+    if (it.core) {
+        const star = document.createElement('span');
+        star.className = 'star';
+        star.textContent = '★';
+        div.appendChild(star);
+    }
+    return div;
+}
+
+function render() {
+    const host = document.getElementById('blocks');
+    host.innerHTML = '';
+    const list = visibleItems();
+
+    if (!list.length) {
+        const e = document.createElement('div');
+        e.className = 'empty';
+        e.textContent = state.q ? '没有匹配「' + state.q + '」的条目' : '这个筛选下没有条目';
+        host.appendChild(e);
+        updateStats();
+        return;
+    }
+
+    if (state.grouped) {
+        CATS.forEach(cat => {
+            const items = list.filter(it => it.cat.key === cat.key);
+            if (!items.length) return;
+            const scopeAll = ITEMS.filter(it => it.cat.key === cat.key &&
+                (state.scope !== 'core' || it.core) && (state.scope !== 'noncore' || !it.core));
+            host.appendChild(makeBlock(cat, items, scopeAll));
+        });
+    } else {
+        const flat = { key: 'all', name: '全部条目', color: '#4a90e2' };
+        host.appendChild(makeBlock(flat, list, scopeItems()));
+    }
+    updateStats();
+}
+
+function makeBlock(cat, items, scopeAll) {
+    const block = document.createElement('section');
+    block.className = 'block';
+    block.dataset.cat = cat.key;
+
+    const doneCount = scopeAll.filter(it => isDone(it.text)).length;
+    const pct = scopeAll.length ? Math.round(doneCount / scopeAll.length * 100) : 0;
+
+    const head = document.createElement('div');
+    head.className = 'block-head';
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.style.background = cat.color;
+    const h2 = document.createElement('h2');
+    h2.textContent = cat.name;
+    const cnt = document.createElement('span');
+    cnt.className = 'cnt';
+    cnt.textContent = doneCount + ' / ' + scopeAll.length + ' · ' + pct + '%';
+    head.appendChild(dot); head.appendChild(h2); head.appendChild(cnt);
+
+    const bar = document.createElement('div');
+    bar.className = 'mini-bar';
+    const fill = document.createElement('i');
+    fill.style.width = pct + '%';
+    fill.style.background = cat.color;
+    bar.appendChild(fill);
+
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    items.forEach(it => grid.appendChild(makeCard(it)));
+
+    block.appendChild(head);
+    block.appendChild(bar);
+    block.appendChild(grid);
+    return block;
+}
+
+function updateStats() {
+    const scope = scopeItems();
+    const done = scope.filter(it => isDone(it.text)).length;
+    const allDone = ITEMS.filter(it => isDone(it.text)).length;
+    const coreDone = ITEMS.filter(it => it.core && isDone(it.text)).length;
+
+    document.getElementById('statDone').textContent = done;
+    document.getElementById('statTodo').textContent = scope.length - done;
+    document.getElementById('statCore').textContent = coreDone + ' / ' + CORE_TOTAL;
+    const pct = scope.length ? Math.round(done / scope.length * 100) : 0;
+    document.getElementById('statPct').textContent = pct + '%';
+    const allPct = TOTAL ? Math.round(allDone / TOTAL * 100) : 0;
+    document.getElementById('barFill').style.width = allPct + '%';
+}
+
+/* ---------- 勾选 ---------- */
+function toggle(text) {
+    const wasDone = isDone(text);
+    if (wasDone) state.done.delete(text); else state.done.set(text, Date.now());
+    state.lastToggle = { text: text, wasDone: wasDone };
+    save();
+
+    // 无筛选时可原地更新，避免整页重绘闪烁
+    if (state.filter === 'all' && !state.q.trim()) {
+        const card = document.querySelector('.item[data-text="' + cssEscape(text) + '"]');
+        if (card) {
+            card.classList.toggle('checked', !wasDone);
+            refreshBlockCounts();
+            updateStats();
+        } else render();
+    } else {
+        render();
+    }
+
+    const it = BY_TEXT.get(text);
+    toast((wasDone ? '已取消：' : '完成：') + text + (it && it.core ? ' ★' : ''), true);
+}
+
+function refreshBlockCounts() {
+    document.querySelectorAll('.block').forEach(block => {
+        const key = block.dataset.cat;
+        let scopeAll;
+        if (key === 'all') scopeAll = scopeItems();
+        else scopeAll = ITEMS.filter(it => it.cat.key === key &&
+            (state.scope !== 'core' || it.core) && (state.scope !== 'noncore' || !it.core));
+        const doneCount = scopeAll.filter(it => isDone(it.text)).length;
+        const pct = scopeAll.length ? Math.round(doneCount / scopeAll.length * 100) : 0;
+        const cnt = block.querySelector('.cnt');
+        if (cnt) cnt.textContent = doneCount + ' / ' + scopeAll.length + ' · ' + pct + '%';
+        const fill = block.querySelector('.mini-bar i');
+        if (fill) fill.style.width = pct + '%';
+    });
+}
+
+function cssEscape(s) { return (window.CSS && CSS.escape) ? CSS.escape(s) : s.replace(/["\\]/g, '\\$&'); }
+
+/* ---------- 文本导入 / 导出 ---------- */
+function exportString() {
+    return 'LIFE3:' + ITEMS.map(it => isDone(it.text) ? '1' : '0').join('');
+}
+function exportV2String() {
+    return V2_ITEMS.map(t => isDone(t) ? '1' : '0').join('');
+}
+function exportJSON() {
+    const o = { v: 3, savedAt: Date.now(), done: {} };
+    state.done.forEach((ts, t) => { o.done[t] = ts; });
+    return JSON.stringify(o);
+}
+
+function applyBits(bits, isV2, persist) {
+    const map = new Map();
+    const list = isV2 ? V2_ITEMS : ITEMS.map(i => i.text);
+    for (let i = 0; i < list.length; i++) {
+        if (bits.charAt(i) === '1' && BY_TEXT.has(list[i])) map.set(list[i], Date.now());
+    }
+    state.done = map;
+    if (persist !== false) save();
+    render();
+    return map.size;
+}
+
+function doImport() {
+    const raw = document.getElementById('ioText').value.trim();
+    if (!raw) { toast('内容为空'); return; }
+
+    // 1) JSON 备份
+    if (raw.charAt(0) === '{') {
+        try {
+            const obj = JSON.parse(raw);
+            const done = obj.done || {};
+            const map = new Map();
+            Object.keys(done).forEach(t => { if (BY_TEXT.has(t)) map.set(t, done[t] || Date.now()); });
+            state.done = map; save(); render(); closePanel('ioPanel');
+            toast('导入成功：' + map.size + ' 条已完成');
+            return;
+        } catch (e) { toast('JSON 解析失败，请检查内容完整'); return; }
+    }
+
+    // 2) 位串（V3 带前缀 / V3 400 位 / V2 185 位）
+    let bits = raw;
+    const m = raw.match(/LIFE3[:\-]?\s*([01]+)/);
+    if (m) bits = m[1];
+    bits = bits.replace(/[^01]/g, '');
+
+    if (bits.length === TOTAL) { applyBits(bits, false); closePanel('ioPanel'); toast('导入成功：' + state.done.size + ' 条已完成'); return; }
+    if (bits.length === V2_TOTAL) {
+        const n = applyBits(bits, true); closePanel('ioPanel');
+        toast('已按 V2 格式导入：' + n + ' 条已完成'); return;
+    }
+    toast('长度不匹配：读到 ' + bits.length + ' 位，应为 ' + TOTAL + ' 位(V3) 或 ' + V2_TOTAL + ' 位(V2)');
+}
+
+/* ---------- 重置 ---------- */
+function resetData() {
+    if (!confirm('确定清空所有进度？此操作不可撤销（建议先导出进度）。')) return;
+    state.done.clear();
+    save(); render();
+    toast('已清空全部进度');
+}
+
+/* ---------- 图片导出 ---------- */
+function hexA(hex, a) {
+    const h = hex.replace('#', '');
+    const r = parseInt(h.substring(0, 2), 16), g = parseInt(h.substring(2, 4), 16), b = parseInt(h.substring(4, 6), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+}
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+}
+function fitText(ctx, text, x, y, maxW) {
+    if (ctx.measureText(text).width <= maxW) { ctx.fillText(text, x, y); return; }
+    let t = text;
+    while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+    ctx.fillText(t + '…', x, y);
+}
+
+function buildImageModel(scope) {
+    const out = [];
+    CATS.forEach(cat => {
+        let items = ITEMS.filter(it => it.cat.key === cat.key);
+        if (scope === 'core') items = items.filter(it => it.core);
+        if (scope === 'done') items = items.filter(it => isDone(it.text));
+        if (items.length) out.push({ cat: cat, items: items });
+    });
+    return out;
+}
+
+function renderPoster(scope) {
+    const model = buildImageModel(scope);
+    const shown = model.reduce((s, b) => s + b.items.length, 0);
+    const shownDone = model.reduce((s, b) => s + b.items.filter(i => isDone(i.text)).length, 0);
+
+    const W = 1240, PAD = 44, COLS = shown > 260 ? 5 : 4, GAP = 10, CARD_H = 30, ROW_GAP = 9;
+    const cardW = (W - PAD * 2 - GAP * (COLS - 1)) / COLS;
+    const FONT = '"Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif';
+    const CARD_FONT = (COLS === 5 ? 14 : 15) + 'px ' + FONT;
+
+    const scopeLabel = scope === 'core' ? '核心 100 条' : (scope === 'done' ? '仅已完成' : '全部 ' + TOTAL + ' 条');
+
+    const HEAD_H = 168, FOOT_H = 74, BLOCK_GAP = 20, CAT_HEAD_H = 40, BAR_H = 6, BAR_GAP = 12;
+    let H = HEAD_H + FOOT_H;
+    model.forEach(b => {
+        const rows = Math.ceil(b.items.length / COLS);
+        H += CAT_HEAD_H + BAR_H + BAR_GAP + rows * (CARD_H + ROW_GAP) + BLOCK_GAP;
+    });
+    if (!shown) H += 60;
+
+    const scale = 2;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(W * scale);
+    canvas.height = Math.round(H * scale);
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+
+    // 背景
+    ctx.fillStyle = '#f5f7fb'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#ffffff'; roundRect(ctx, PAD - 14, 18, W - (PAD - 14) * 2, H - 36, 18); ctx.fill();
+
+    // 标题
+    ctx.fillStyle = '#2b3440';
+    ctx.font = '700 34px ' + FONT;
+    ctx.fillText('人生清单 V3', PAD, 62);
+    ctx.font = '700 15px ' + FONT;
+    ctx.fillStyle = '#4a90e2';
+    ctx.fillText(scopeLabel, PAD + ctx.measureText('人生清单 V3').width + 220, 60);
+
+    const today = new Date();
+    const dateStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+    ctx.font = '14px ' + FONT;
+    ctx.fillStyle = '#8b97a5';
+    ctx.fillText('生成于 ' + dateStr + '　·　本次范围完成 ' + shownDone + ' / ' + shown +
+        '　·　总进度 ' + ITEMS.filter(i => isDone(i.text)).length + ' / ' + TOTAL, PAD, 88);
+
+    // 总进度条
+    const allDone = ITEMS.filter(i => isDone(i.text)).length;
+    const pct = TOTAL ? allDone / TOTAL : 0;
+    ctx.fillStyle = '#e3e8ef'; roundRect(ctx, PAD, 104, W - PAD * 2, 12, 6); ctx.fill();
+    if (pct > 0) {
+        const grad = ctx.createLinearGradient(PAD, 0, W - PAD, 0);
+        grad.addColorStop(0, '#4a90e2'); grad.addColorStop(1, '#6fc2a8');
+        ctx.fillStyle = grad; roundRect(ctx, PAD, 104, Math.max(12, (W - PAD * 2) * pct), 12, 6); ctx.fill();
+    }
+    ctx.font = '13px ' + FONT; ctx.fillStyle = '#8b97a5';
+    ctx.fillText('总完成率 ' + Math.round(pct * 100) + '%　·　核心 ' +
+        ITEMS.filter(i => i.core && isDone(i.text)).length + ' / ' + CORE_TOTAL, PAD, 140);
+
+    const coreDone = ITEMS.filter(i => i.core && isDone(i.text)).length;
+    const corePct = CORE_TOTAL ? coreDone / CORE_TOTAL : 0;
+    ctx.fillStyle = '#eef2f7'; roundRect(ctx, PAD, 150, W - PAD * 2, 6, 3); ctx.fill();
+    if (corePct > 0) { ctx.fillStyle = '#d4a017'; roundRect(ctx, PAD, 150, Math.max(6, (W - PAD * 2) * corePct), 6, 3); ctx.fill(); }
+
+    // 分类块
+    let y = HEAD_H;
+    model.forEach(b => {
+        const color = b.cat.color;
+        const doneCount = b.items.filter(i => isDone(i.text)).length;
+        const p = Math.round(doneCount / b.items.length * 100);
+
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(PAD + 6, y + 12, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#2b3440'; ctx.font = '700 19px ' + FONT;
+        ctx.fillText(b.cat.name, PAD + 20, y + 19);
+        ctx.font = '13px ' + FONT; ctx.fillStyle = '#8b97a5';
+        const label = doneCount + ' / ' + b.items.length + ' · ' + p + '%';
+        ctx.fillText(label, W - PAD - ctx.measureText(label).width, y + 18);
+        y += CAT_HEAD_H;
+
+        ctx.fillStyle = '#e9edf3'; roundRect(ctx, PAD, y, W - PAD * 2, BAR_H, 3); ctx.fill();
+        if (doneCount) { ctx.fillStyle = color; roundRect(ctx, PAD, y, Math.max(6, (W - PAD * 2) * doneCount / b.items.length), BAR_H, 3); ctx.fill(); }
+        y += BAR_H + BAR_GAP;
+
+        b.items.forEach((it, idx) => {
+            const col = idx % COLS, row = Math.floor(idx / COLS);
+            const x = PAD + col * (cardW + GAP);
+            const cy0 = y + row * (CARD_H + ROW_GAP);
+            drawCard(ctx, it, x, cy0, cardW, CARD_H, color, CARD_FONT, FONT);
+        });
+        const rows = Math.ceil(b.items.length / COLS);
+        y += rows * (CARD_H + ROW_GAP) + BLOCK_GAP;
+    });
+
+    if (!shown) {
+        ctx.font = '16px ' + FONT;
+        ctx.fillStyle = '#8b97a5';
+        ctx.fillText('还没有已完成的条目 —— 回到清单里点几张卡片，再来导出这张海报。', PAD, HEAD_H + 30);
+    }
+
+    // 页脚
+    ctx.font = '12px ' + FONT; ctx.fillStyle = '#a7b1bd';
+    ctx.fillText('人生清单 V3 · 核心 ' + CORE_TOTAL + ' 条 / 全部 ' + TOTAL + ' 条 · ★ 为核心条目 · 深色勾选为已完成', PAD, H - 34);
+
+    return canvas;
+}
+
+function drawCard(ctx, it, x, y, w, h, color, cardFont, FONT) {
+    const done = isDone(it.text);
+    roundRect(ctx, x, y, w, h, 8);
+    ctx.fillStyle = done ? hexA(color, 0.13) : '#f6f8fb';
+    ctx.fill();
+    ctx.strokeStyle = done ? hexA(color, 0.45) : '#e4e9f0';
+    ctx.lineWidth = 1; ctx.stroke();
+
+    const cx = x + 16, cy = y + h / 2, r = 7;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    if (done) {
+        ctx.fillStyle = color; ctx.fill();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3.4, cy + 0.4); ctx.lineTo(cx - 1, cy + 3); ctx.lineTo(cx + 4, cy - 3.2);
+        ctx.stroke();
+    } else {
+        ctx.strokeStyle = '#c8d1db'; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+
+    ctx.font = cardFont;
+    ctx.fillStyle = done ? '#2b3440' : '#93a0ad';
+    fitText(ctx, it.text, x + 30, cy + 5, w - (it.core ? 54 : 38));
+
+    if (it.core) {
+        ctx.font = '12px ' + FONT;
+        ctx.fillStyle = done ? '#c9971f' : '#c3ccd6';
+        ctx.fillText('★', x + w - 16, cy + 4);
+    }
+}
+
+function downloadCanvas(canvas) {
+    canvas.toBlob(function (blob) {
+        if (!blob) { toast('图片生成失败'); return; }
+        const d = new Date();
+        const name = '人生清单V3_' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '.png';
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 8000);
+        toast('图片已生成并下载：' + name);
+    }, 'image/png');
+}
+
+function copyCanvas(canvas) {
+    canvas.toBlob(function (blob) {
+        if (!blob) { toast('图片生成失败'); return; }
+        if (navigator.clipboard && window.ClipboardItem) {
+            navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+                .then(() => toast('图片已复制到剪贴板'))
+                .catch(() => { downloadCanvas(canvas); toast('剪贴板不可用，已改为下载'); });
+        } else {
+            downloadCanvas(canvas);
+            toast('浏览器不支持复制图片，已改为下载');
+        }
+    }, 'image/png');
+}
+
+/* ---------- UI 事件 ---------- */
+function openPanel(id) { document.getElementById(id).style.display = 'block'; }
+function closePanel(id) { document.getElementById(id).style.display = 'none'; }
+
+function setSeg(segId, attr, value) {
+    document.querySelectorAll('#' + segId + ' button').forEach(b => b.classList.toggle('on', b.dataset[attr] === value));
+}
+
+function setTheme(theme, silent) {
+    state.theme = theme;
+    document.documentElement.setAttribute('data-theme', theme);
+    document.getElementById('themeBtn').textContent = theme === 'dark' ? '浅色模式' : '深色模式';
+    if (!silent) { try { localStorage.setItem('lifeChecklistTheme_v3', theme); } catch (e) {} }
+}
+
+let toastTimer = null;
+function toast(msg, withUndo) {
+    const el = document.getElementById('toast');
+    el.innerHTML = '';
+    const span = document.createElement('span');
+    span.textContent = msg;
+    el.appendChild(span);
+    if (withUndo && state.lastToggle) {
+        const btn = document.createElement('button');
+        btn.textContent = '撤销';
+        btn.onclick = () => {
+            const t = state.lastToggle;
+            if (!t) return;
+            if (t.wasDone) state.done.set(t.text, Date.now()); else state.done.delete(t.text);
+            save(); render(); toast('已撤销');
+        };
+        el.appendChild(btn);
+    }
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), withUndo ? 2600 : 2000);
+}
+
+function bind() {
+    document.getElementById('blocks').addEventListener('click', e => {
+        const card = e.target.closest('.item');
+        if (card && card.dataset.text) toggle(card.dataset.text);
+    });
+
+    document.getElementById('filterSeg').addEventListener('click', e => {
+        const b = e.target.closest('button'); if (!b) return;
+        state.filter = b.dataset.f; setSeg('filterSeg', 'f', state.filter); render();
+    });
+    document.getElementById('scopeSeg').addEventListener('click', e => {
+        const b = e.target.closest('button'); if (!b) return;
+        state.scope = b.dataset.s; setSeg('scopeSeg', 's', state.scope); render();
+    });
+
+    let searchTimer = null;
+    document.getElementById('search').addEventListener('input', e => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => { state.q = e.target.value; render(); }, 160);
+    });
+
+    document.getElementById('groupBtn').addEventListener('click', () => {
+        state.grouped = !state.grouped;
+        document.getElementById('groupBtn').textContent = state.grouped ? '分块显示' : '平铺显示';
+        render();
+    });
+    document.getElementById('themeBtn').addEventListener('click', () => setTheme(state.theme === 'dark' ? 'light' : 'dark'));
+
+    document.getElementById('exportBtn').addEventListener('click', () => {
+        const ta = document.getElementById('ioText');
+        document.getElementById('ioPanel').style.display = 'none';
+        ta.value = exportString();
+        openPanel('ioPanel');
+        copyText(ta.value);
+        toast('V3 进度已复制到剪贴板（400 位）');
+    });
+    document.getElementById('importBtn').addEventListener('click', () => {
+        const ta = document.getElementById('ioText');
+        ta.value = '';
+        ta.placeholder = '粘贴 V3 进度串（LIFE3:…）、V2 的 185 位串，或 JSON 备份';
+        openPanel('ioPanel');
+        ta.focus();
+    });
+    document.getElementById('doImport').addEventListener('click', doImport);
+    document.getElementById('copyIo').addEventListener('click', () => copyText(document.getElementById('ioText').value));
+    document.getElementById('exportV2').addEventListener('click', () => {
+        document.getElementById('ioText').value = exportV2String();
+        toast('已生成 V2 兼容格式（185 位）');
+    });
+    document.getElementById('ioClose').addEventListener('click', () => closePanel('ioPanel'));
+
+    document.getElementById('imgBtn').addEventListener('click', () => openPanel('imgPanel'));
+    document.getElementById('imgClose').addEventListener('click', () => closePanel('imgPanel'));
+    document.getElementById('imgDownload').addEventListener('click', () => {
+        const scope = document.querySelector('input[name="imgscope"]:checked').value;
+        toast('正在生成图片…');
+        setTimeout(() => downloadCanvas(renderPoster(scope)), 30);
+    });
+    document.getElementById('imgCopy').addEventListener('click', () => {
+        const scope = document.querySelector('input[name="imgscope"]:checked').value;
+        setTimeout(() => copyCanvas(renderPoster(scope)), 30);
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', resetData);
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { closePanel('ioPanel'); closePanel('imgPanel'); }
+        if (e.key === '/' && document.activeElement !== document.getElementById('search')) {
+            e.preventDefault(); document.getElementById('search').focus();
+        }
+    });
+}
+
+function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(() => legacyCopy(text));
+    } else legacyCopy(text);
+}
+function legacyCopy(text) {
+    const ta = document.getElementById('ioText');
+    ta.value = text; ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+}
+
+/* ---------- 启动 ---------- */
+load();
+bind();
+render();
+
+/* ---------- 自检（仅 URL 带 ?selftest=1 时运行，不写本地存储，不影响正常使用） ---------- */
+function selfTest() {
+    const out = [];
+    const dump = () => {
+        NO_SAVE = false;
+        let pre = document.getElementById('selftest-result');
+        if (!pre) { pre = document.createElement('pre'); pre.id = 'selftest-result'; document.body.appendChild(pre); }
+        pre.textContent = 'SELFTEST_RESULT\n' + out.join('\n');
+    };
+    try {
+        NO_SAVE = true;
+        out.push('total=' + TOTAL + ' core=' + CORE_TOTAL + ' noncore=' + (TOTAL - CORE_TOTAL) + ' v2=' + V2_TOTAL);
+        const backup = new Map(state.done);
+        state.done.clear();
+        ITEMS.slice(0, 137).forEach(it => state.done.set(it.text, Date.now()));
+        const seeded = new Map(state.done);
+
+        render();
+        out.push('cards=' + document.querySelectorAll('.item').length + ' blocks=' + document.querySelectorAll('.block').length);
+        const cw = document.documentElement.clientWidth;
+        const over = [];
+        document.querySelectorAll('body *').forEach(el => {
+            const r = el.getBoundingClientRect();
+            if (r.right > cw + 1) over.push((el.className || el.tagName) + '@' + Math.round(r.right));
+        });
+        out.push('clientW=' + cw + ' scrollW=' + document.documentElement.scrollWidth + ' overflow=' + (over.length ? over.slice(0, 10).join(' , ') : 'none'));
+        out.push('statDone=' + document.getElementById('statDone').textContent + ' statCore=' + document.getElementById('statCore').textContent);
+
+        state.filter = 'done'; render(); out.push('filterDoneCards=' + document.querySelectorAll('.item').length);
+        state.filter = 'todo'; render(); out.push('filterTodoCards=' + document.querySelectorAll('.item').length);
+        state.filter = 'all'; state.scope = 'core'; render(); out.push('scopeCoreCards=' + document.querySelectorAll('.item').length);
+        state.scope = 'noncore'; render(); out.push('scopeNoncoreCards=' + document.querySelectorAll('.item').length);
+        state.scope = 'all'; state.grouped = false; render();
+        out.push('flatBlocks=' + document.querySelectorAll('.block').length + ' flatCards=' + document.querySelectorAll('.item').length);
+        out.push('flatHeadCount=' + (document.querySelector('.block .cnt') || {}).textContent);
+        state.grouped = true; state.q = '一个人'; render(); out.push('searchCards=' + document.querySelectorAll('.item').length);
+        state.q = ''; render();
+
+        // 勾选 / 撤销 / 特殊字符选择器测试
+        const tricky = '学会过一项自救技能';
+        toggle(tricky);
+        const card = document.querySelector('.item[data-text="' + cssEscape(tricky) + '"]');
+        out.push('toggle=' + isDone(tricky) + ' cardChecked=' + (card ? card.classList.contains('checked') : 'noCard'));
+        if (state.lastToggle.wasDone) state.done.set(tricky, Date.now()); else state.done.delete(tricky);
+        out.push('undo=' + isDone(tricky));
+        const slash = '当伴娘/郎';
+        out.push('slashSelector=' + !!document.querySelector('.item[data-text="' + cssEscape(slash) + '"]'));
+        render();
+
+        out.push('exportLen=' + exportString().length + ' v2ExportLen=' + exportV2String().length);
+        out.push('jsonLen=' + exportJSON().length);
+
+        // V2 迁移测试（用独立测试 key，不触碰真实 V2 数据）
+        const TEST_KEY = 'lifeChecklistData_selftest';
+        const fake = new Array(V2_TOTAL).fill(false);
+        [0, 2, 4, 45, 90, 184].forEach(i => fake[i] = true);
+        localStorage.setItem(TEST_KEY, JSON.stringify(fake));
+        const migrated = migrateFromV2(TEST_KEY);
+        localStorage.removeItem(TEST_KEY);
+        out.push('migratedFromV2=' + (migrated ? migrated.size : 'null') + ' expect=6');
+
+        // 导入位串测试（persist=false，不写本地存储）
+        const v2bits = V2_ITEMS.map((t, i) => i % 3 === 0 ? '1' : '0').join('');
+        out.push('importV2bits=' + applyBits(v2bits, true, false) + ' expect=' + V2_ITEMS.filter((t, i) => i % 3 === 0).length);
+        const v3bits = ITEMS.map((it, i) => i % 4 === 0 ? '1' : '0').join('');
+        out.push('importV3bits=' + applyBits(v3bits, false, false) + ' expect=' + ITEMS.filter((it, i) => i % 4 === 0).length);
+        state.done = new Map(seeded); render();
+
+        ['all', 'core', 'done'].forEach(scope => {
+            const c = renderPoster(scope);
+            out.push('poster_' + scope + '=' + c.width + 'x' + c.height);
+        });
+        renderPoster('all').toBlob(b => {
+            out.push('pngBytes=' + (b ? b.size : 'null'));
+            state.done = backup; render(); dump();
+        }, 'image/png');
+    } catch (e) {
+        out.push('ERROR ' + e.message + '\n' + (e.stack || ''));
+        dump();
+    }
+}
+if (location.search.indexOf('selftest') !== -1) selfTest();
+
+/* 预览用（不写本地存储）：?demo=1 造一些进度；?postertest=1&scope=all|core|done 在页面内预览海报 */
+if (location.search.indexOf('demo') !== -1) {
+    ITEMS.slice(0, 137).forEach(it => state.done.set(it.text, Date.now()));
+    if (location.search.indexOf('dark') !== -1) setTheme('dark', true);
+    render();
+}
+if (location.search.indexOf('panels') !== -1) {
+    document.getElementById('ioText').value = exportString();
+    openPanel('imgPanel'); openPanel('ioPanel');
+}
+if (location.search.indexOf('postertest') !== -1) {
+    const scope = (location.search.match(/scope=(\w+)/) || [])[1] || 'core';
+    ITEMS.slice(0, 90).forEach(it => state.done.set(it.text, Date.now()));
+    const poster = renderPoster(scope);
+    poster.style.width = '100%';
+    poster.style.display = 'block';
+    const host = document.querySelector('.container');
+    host.innerHTML = '';
+    host.appendChild(poster);
+}
+</script>
+</body>
+</html>
