@@ -11,6 +11,7 @@ const items = [
   'history.html',
   'js',
   '人生清单_v2.html',
+  '人生清单_v3.html',
   '2048',
   '俄罗斯方块',
   '贪吃蛇',
