@@ -50,7 +50,7 @@ global.localStorage = {
 };
 global.requestAnimationFrame = () => {};
 
-const html = fs.readFileSync('elemental_outpostV6.html', 'utf-8');
+const html = fs.readFileSync(require('path').join(__dirname, '..', 'elemental_outpostV6.html'), 'utf-8');
 eval(html.match(/<script>([\s\S]*)<\/script>/)[1]);
 global.__boot();
 

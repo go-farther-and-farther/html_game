@@ -55,7 +55,7 @@ global.localStorage = {
 global.requestAnimationFrame = () => {};   // 不自动跑渲染循环
 
 /* ---- 载入游戏脚本 ---- */
-const html = fs.readFileSync('elemental_outpostV6.html', 'utf-8');
+const html = fs.readFileSync(require('path').join(__dirname, '..', 'elemental_outpostV6.html'), 'utf-8');
 const m = html.match(/<script>([\s\S]*)<\/script>/);
 eval(m[1]);
 

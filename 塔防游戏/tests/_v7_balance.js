@@ -10,7 +10,7 @@ global.addEventListener = () => {};
 global.document = { body: el(), getElementById: id => id === 'game' ? canvas : id === 'stage' ? { clientWidth: 960, clientHeight: 640 } : el(), querySelectorAll: () => [], addEventListener() {} };
 const storage = new Map();
 global.localStorage = { getItem: k => storage.has(k) ? storage.get(k) : null, setItem: (k, v) => storage.set(k, String(v)), removeItem: k => storage.delete(k) };
-const html = fs.readFileSync('elemental_outpostV7.html', 'utf8');
+const html = fs.readFileSync(require('path').join(__dirname, '..', 'elemental_outpostV7.html'), 'utf8');
 eval(html.match(/<script>([\s\S]*)<\/script>/)[1]);
 const { Game, TOWERS } = global.ElementalOutpostV7;
 
