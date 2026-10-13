@@ -189,6 +189,8 @@
   .tile[data-value="2048"] { background: #edc22e; color: #f9f6f2; }
   .tile[data-value="4096"] { background: #3c3a32; color: #f9f6f2; }
   .tile[data-value="8192"] { background: #3c3a32; color: #f9f6f2; }
+  /* 超过 8192 的方块：深色兜底 */
+  .tile { background: #3c3a32; color: #f9f6f2; }
 
   /* ---------- 覆盖层（游戏结束 / 胜利） ---------- */
   .overlay {
@@ -252,7 +254,7 @@
 <div class="container">
   <!-- 顶栏 -->
   <div class="header">
-    <div class="title">2048<span class="mode">5×5</span></div>
+    <div class="title">2048<span class="mode">5×5 困难</span></div>
     <div class="scores">
       <div class="score-box">
         <div class="label">分数</div>
@@ -267,7 +269,7 @@
 
   <!-- 操作栏 -->
   <div class="actions">
-    <div class="subtitle">合并数字，达到 <b>2048</b>！</div>
+    <div class="subtitle">每步生成 <b>2 个方块</b>，达到 <b>2048</b>！</div>
     <button class="btn" id="newGameBtn">新游戏</button>
   </div>
 
@@ -295,7 +297,8 @@
    2048 游戏核心逻辑 - 5×5版本
    ====================================== */
 
-const SIZE = 5;  // 5×5棋盘
+const SIZE = 5;          // 5×5棋盘
+const SPAWN_PER_MOVE = 2; // 困难模式：每次移动生成 2 个方块（改成 1 即原来的简单版）
 let grid, score, best, won, keepPlaying, moving;
 
 // ---- DOM ----
@@ -321,14 +324,14 @@ function initBoardBg() {
 
 /* ---------- 读取最高分 ---------- */
 function loadBest() {
-  best = parseInt(localStorage.getItem('2048_5x5_best') || '0', 10);
+  best = parseInt(localStorage.getItem('2048_5x5_hard_best') || '0', 10);
   bestEl.textContent = best;
 }
 
 function saveBest() {
   if (score > best) {
     best = score;
-    localStorage.setItem('2048_5x5_best', best);
+    localStorage.setItem('2048_5x5_hard_best', best);
     bestEl.textContent = best;
   }
 }
@@ -457,7 +460,7 @@ function move(direction) {
     renderTiles();
 
     setTimeout(() => {
-      addRandomTile();
+      for (let i = 0; i < SPAWN_PER_MOVE; i++) addRandomTile();
       renderTiles();
       moving = false;
       checkGameState();

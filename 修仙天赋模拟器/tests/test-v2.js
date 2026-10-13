@@ -1,10 +1,10 @@
 'use strict';
 /* 《测灵台·修仙天赋模拟器 v2》验收断言测试(设计文档第九节)
- * 运行:node test-v2.js
+ * 运行:node tests/test-v2.js（在游戏目录下）
  * 从单文件 HTML 中提取 <script id="app"> 的核心逻辑,以最小方式直接执行(不加载 DOM)。
  */
 const fs = require('fs'), path = require('path');
-const file = path.join(__dirname, '修仙天赋模拟器-v2.html');
+const file = path.join(__dirname, '..', '修仙天赋模拟器-v2.html');
 const html = fs.readFileSync(file, 'utf8');
 const m = html.match(/<script id="app">([\s\S]*?)<\/script>/);
 if (!m){ console.error('未找到 <script id="app">'); process.exit(1); }

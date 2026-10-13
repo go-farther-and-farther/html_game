@@ -12,7 +12,7 @@ function eq(actual, expected, name) {
 }
 
 console.log('== V7 产物 ==');
-const path = 'elemental_outpostV7.html';
+const path = require('path').join(__dirname, '..', 'elemental_outpostV7.html');
 ok(fs.existsSync(path), 'V7 单文件存在');
 if (!fs.existsSync(path)) {
   console.log(`\n结果：${pass} 通过，${fail} 失败`);
