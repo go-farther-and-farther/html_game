@@ -132,13 +132,39 @@
     color: var(--muted);
     font-size: 13px;
     line-height: 1.75;
-    white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
 
   .release-notes.is-empty {
     color: var(--faint);
-    white-space: normal;
+  }
+
+  .release-notes .note-h {
+    margin: 12px 0 5px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .release-notes .note-h:first-child {
+    margin-top: 0;
+  }
+
+  .release-notes .note-li {
+    position: relative;
+    margin: 3px 0;
+    padding-left: 13px;
+  }
+
+  .release-notes .note-li::before {
+    content: '•';
+    position: absolute;
+    left: 1px;
+    color: var(--accent);
+  }
+
+  .release-notes .note-p {
+    margin: 5px 0;
   }
 
   .tip {
@@ -327,6 +353,40 @@
       els.btn.textContent = '⬇️ ' + label;
     }
 
+    // 极简 Markdown 渲染：只处理标题、列表和普通段落，全部用 textContent 防注入
+    function renderNotes(markdown) {
+      els.notes.textContent = '';
+
+      if (!markdown) {
+        els.notes.textContent = '这个版本没有写更新说明。';
+        els.notes.classList.add('is-empty');
+        return;
+      }
+
+      markdown.split(/\r?\n/).forEach(function (line) {
+        const text = line.trim();
+        if (!text) return;
+
+        let el;
+        if (/^#{1,6}\s+/.test(text)) {
+          el = document.createElement('div');
+          el.className = 'note-h';
+          el.textContent = text.replace(/^#{1,6}\s+/, '');
+        } else if (/^[-*]\s+/.test(text)) {
+          el = document.createElement('div');
+          el.className = 'note-li';
+          el.textContent = text.replace(/^[-*]\s+/, '');
+        } else {
+          el = document.createElement('div');
+          el.className = 'note-p';
+          el.textContent = text;
+        }
+        els.notes.append(el);
+      });
+
+      els.notes.classList.remove('is-empty');
+    }
+
     function renderRelease(release, fromCache) {
       const tag = release.tag_name || '';
       const apk = (release.assets || []).find(function (asset) {
@@ -360,8 +420,7 @@
       els.date.textContent = published;
 
       const body = (release.body || '').trim();
-      els.notes.textContent = body || '这个版本没有写更新说明。';
-      els.notes.classList.toggle('is-empty', !body);
+      renderNotes(body);
     }
 
     function renderFallback(message) {
