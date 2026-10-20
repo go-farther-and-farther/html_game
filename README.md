@@ -104,14 +104,16 @@ APK 输出路径：`android/app/build/outputs/apk/debug/app-debug.apk`
 
 ```bash
 # 1. 改 android/app/build.gradle 的 versionCode / versionName
-# 2. 重新构建并把 APK 复制到根目录
+# 2. 重新构建，并按固定的 ASCII 资源名发布（download.html 的兜底链接用这个名字）
 cd android && ./gradlew.bat assembleDebug
-Copy-Item android/app/build/outputs/apk/debug/app-debug.apk ../HTML游戏合集.apk
+Copy-Item android/app/build/outputs/apk/debug/app-debug.apk ../html-game-collection.apk
 
 # 3. 推送代码后发布 Release（download.html 自动读取 latest）
 git push origin master
-gh release create v1.1.0 "HTML游戏合集.apk" --title "v1.1.0" --notes "更新说明"
+gh release create v1.1.0 "html-game-collection.apk" --title "v1.1.0" --notes "更新说明"
 ```
+
+根目录的 `HTML游戏合集.apk` 是给人手动安装的副本；GitHub Release 里统一用 `html-game-collection.apk`，保证 `releases/latest/download/html-game-collection.apk` 这个固定链接始终可用。
 
 ## 🐍 人机版贪吃蛇3（完整版）
 
