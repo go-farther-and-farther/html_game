@@ -9,6 +9,7 @@ var HistoryManager = (function() {
   var GAME_NAMES = {
     '2048': '2048',
     '2048-5x5': '2048 5×5',
+    '2048-5x5-hard': '2048 5×5 困难',
     '2048-ai': '2048 AI',
     '2048-ai-5x5': '2048 AI 5×5',
     '2048-auto': '2048 自动化',
@@ -21,12 +22,15 @@ var HistoryManager = (function() {
     'snake-ai4': '人机贪吃蛇4',
     'snake-ai5': '人机贪吃蛇5',
     'snake-adventure': '贪吃蛇大冒险',
-    '2048-auto-5x5': '2048 自动 5×5'
+    '2048-auto-5x5': '2048 自动 5×5',
+    'tower-defense': '塔防 · 元素前哨',
+    'pelican-free-ride': '鹈鹕自由骑行'
   };
 
   var GAME_ICONS = {
     '2048': '🔢',
     '2048-5x5': '🔢',
+    '2048-5x5-hard': '🔢',
     '2048-ai': '🤖',
     '2048-ai-5x5': '🤖',
     '2048-auto': '⚡',
@@ -39,7 +43,9 @@ var HistoryManager = (function() {
     'snake-ai4': '🔥',
     'snake-ai5': '💎',
     'snake-adventure': '🗺️',
-    '2048-auto-5x5': '⚡'
+    '2048-auto-5x5': '⚡',
+    'tower-defense': '🏹',
+    'pelican-free-ride': '🚴'
   };
 
   function _loadAll() {

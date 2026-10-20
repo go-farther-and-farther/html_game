@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>2048 · 合集</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <style>
@@ -134,7 +134,7 @@
     min-width: 0;
     padding: 7px 3px;
     border-radius: 8px;
-    background: #bbada0;
+    background: #83705d;
     color: #fff;
     text-align: center;
   }
@@ -143,7 +143,7 @@
     margin-bottom: 2px;
     font-size: 10px;
     letter-spacing: 0.04em;
-    opacity: 0.86;
+    opacity: 1;
   }
 
   .stat .value {
@@ -196,17 +196,18 @@
     transition: left 0.1s ease, top 0.1s ease, transform 0.1s ease;
   }
 
+  /* 浅色方块用深色字，保证对比度（白字在 #f2b179 / #edcf72 上不到 2:1） */
   .tile[data-value="2"]    { background: #eee4da; color: #776e65; }
   .tile[data-value="4"]    { background: #ede0c8; color: #776e65; }
-  .tile[data-value="8"]    { background: #f2b179; color: #f9f6f2; }
-  .tile[data-value="16"]   { background: #f59563; color: #f9f6f2; }
-  .tile[data-value="32"]   { background: #f67c5f; color: #f9f6f2; }
+  .tile[data-value="8"]    { background: #f2b179; color: #4a3b2a; }
+  .tile[data-value="16"]   { background: #f59563; color: #4a3b2a; }
+  .tile[data-value="32"]   { background: #f67c5f; color: #3c3328; }
   .tile[data-value="64"]   { background: #f65e3b; color: #f9f6f2; }
-  .tile[data-value="128"]  { background: #edcf72; color: #f9f6f2; }
-  .tile[data-value="256"]  { background: #edcc61; color: #f9f6f2; }
-  .tile[data-value="512"]  { background: #edc850; color: #f9f6f2; }
-  .tile[data-value="1024"] { background: #edc53f; color: #f9f6f2; }
-  .tile[data-value="2048"] { background: #edc22e; color: #f9f6f2; }
+  .tile[data-value="128"]  { background: #edcf72; color: #4a3b2a; }
+  .tile[data-value="256"]  { background: #edcc61; color: #4a3b2a; }
+  .tile[data-value="512"]  { background: #edc850; color: #4a3b2a; }
+  .tile[data-value="1024"] { background: #edc53f; color: #4a3b2a; }
+  .tile[data-value="2048"] { background: #edc22e; color: #4a3b2a; }
   .tile[data-value="4096"] { background: #3c3a32; color: #f9f6f2; }
   .tile[data-value="8192"] { background: #2f2b27; color: #f9f6f2; }
   .tile[data-value="16384"] { background: #252220; color: #f9f6f2; }
@@ -225,12 +226,14 @@
     border-radius: 12px;
     background: rgba(238, 228, 218, 0.9);
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, visibility 0.2s;
   }
 
   .overlay.show {
     opacity: 1;
+    visibility: visible;
     pointer-events: auto;
   }
 
@@ -389,8 +392,8 @@
   }
 
   .modal-close {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border: 0;
     border-radius: 8px;
     background: #eee4da;
@@ -409,12 +412,13 @@
 
   .lb-tab {
     flex: 0 0 auto;
-    padding: 6px 9px;
+    min-height: 36px;
+    padding: 8px 10px;
     border: 0;
     border-radius: 999px;
     background: #eee4da;
     color: #8f7a66;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 800;
   }
 
@@ -441,6 +445,11 @@
     border-bottom: 1px solid #f0e9df;
     text-align: right;
     white-space: nowrap;
+  }
+
+  /* 排行榜条目保持 40px 行高，触摸/点击区域够大 */
+  .lb-table td {
+    height: 40px;
   }
 
   .lb-table th:first-child,
@@ -483,7 +492,8 @@
   }
 
   .link-btn {
-    padding: 4px 0;
+    min-height: 36px;
+    padding: 8px 2px;
     border: 0;
     background: none;
     color: #d9825f;
@@ -530,13 +540,13 @@
 
   <div class="switch-row">
     <div class="seg" id="modeSeg" role="tablist" aria-label="模式">
-      <button data-mode="manual" class="active" type="button">手动</button>
-      <button data-mode="ai" type="button">AI</button>
-      <button data-mode="auto" type="button">自动</button>
+      <button data-mode="manual" class="active" type="button" role="tab" aria-selected="true">手动</button>
+      <button data-mode="ai" type="button" role="tab" aria-selected="false">AI</button>
+      <button data-mode="auto" type="button" role="tab" aria-selected="false">自动</button>
     </div>
     <div class="seg" id="sizeSeg" role="tablist" aria-label="盘子大小">
-      <button data-size="4" class="active" type="button">4×4</button>
-      <button data-size="5" type="button">5×5</button>
+      <button data-size="4" class="active" type="button" role="tab" aria-selected="true">4×4</button>
+      <button data-size="5" type="button" role="tab" aria-selected="false">5×5</button>
     </div>
   </div>
 
@@ -550,8 +560,8 @@
   <div class="board-wrapper" id="boardWrapper">
     <div class="board" id="boardBg"></div>
     <div class="tile-layer" id="tileLayer"></div>
-    <div class="overlay" id="overlay">
-      <div class="overlay-msg" id="overlayMsg">游戏结束</div>
+    <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="overlayMsg" aria-hidden="true">
+      <div class="overlay-msg" id="overlayMsg" aria-live="polite">游戏结束</div>
       <div class="overlay-score" id="overlayScore"></div>
       <div class="overlay-actions">
         <button class="btn" id="againBtn" type="button">再来一局</button>
@@ -566,7 +576,7 @@
     <button class="btn primary" id="runBtn" type="button" hidden>▶ 开始</button>
     <div class="speed" id="speedWrap" hidden>
       <span>速度</span>
-      <input type="range" id="speed" min="1" max="100" value="60" aria-label="速度">
+      <input type="range" id="speed" min="1" max="100" value="60" aria-label="速度" title="速度越高移动越快、AI 思考时间越短">
       <b id="speedLabel">60</b>
     </div>
   </div>
@@ -587,7 +597,7 @@
   </div>
 </div>
 
-<div class="modal" id="lbModal" hidden>
+<div class="modal" id="lbModal" role="dialog" aria-modal="true" aria-label="本机排行榜" hidden>
   <div class="modal-card">
     <div class="modal-head">
       <strong>🏆 本机排行榜</strong>
@@ -679,11 +689,13 @@
   let keepPlaying = false;
   let gameOver = false;
   let recorded = false;
+  let winRecorded = false;
   let elapsed = 0;
   let running = false;
   let speed = 60;
   let stepTimer = null;
   let clockTimer = null;
+  let clockLastTick = 0;
   let aiDeadline = 0;
   let lbSelectedKey = 'manual4';
   let touchStartX = null;
@@ -731,8 +743,10 @@
   function writeJSON(key, value) {
     try {
       localStorage.setItem(key, JSON.stringify(value));
+      return true;
     } catch (err) {
-      /* 忽略隐私模式/空间不足 */
+      /* 隐私模式 / 空间不足：交给调用方提示，不再假装成功 */
+      return false;
     }
   }
 
@@ -751,11 +765,12 @@
   }
 
   // 兼容旧版 2048 的最高分记录（旧页面还在，不迁移到排行榜，只用于「最高」显示）
+  // 5×5 新版每步只生成 1 个方块，用独立键 2048_5x5_best；困难版（每次 2 个）仍用自己的键
   function legacyBest() {
     if (mode !== 'manual') return 0;
     try {
       if (SIZE === 4) return parseInt(localStorage.getItem('2048_best') || '0', 10) || 0;
-      if (SIZE === 5) return parseInt(localStorage.getItem('2048_5x5_hard_best') || '0', 10) || 0;
+      if (SIZE === 5) return parseInt(localStorage.getItem('2048_5x5_best') || '0', 10) || 0;
     } catch (err) {
       return 0;
     }
@@ -783,6 +798,7 @@
       keepPlaying: keepPlaying,
       gameOver: gameOver,
       recorded: recorded,
+      winRecorded: winRecorded,
       elapsed: elapsed,
       savedAt: Date.now(),
     });
@@ -809,45 +825,63 @@
   /* ---------- 排行榜 ---------- */
   function addScore() {
     const key = lbKey(mode, SIZE);
+    // 写入前重新读取，避免把另一个标签页刚写进去的榜单整对象覆盖掉
     const data = getLB();
-    const list = Array.isArray(data[key]) ? data[key] : [];
-    list.push({
+    const list = Array.isArray(data[key]) ? data[key].slice() : [];
+    const entry = {
       score: score,
       max: getMaxTile(),
       moves: moves,
       date: Date.now(),
       duration: elapsed,
-    });
+    };
+    list.push(entry);
     list.sort((a, b) => (b.score - a.score) || (b.max - a.max) || (b.moves - a.moves));
-    data[key] = list.slice(0, 10);
-    writeJSON(LB_KEY, data);
+    const top = list.slice(0, 10);
+    const index = top.indexOf(entry);
+    data[key] = top;
+    const saved = writeJSON(LB_KEY, data);
+    return { saved: saved, inserted: index >= 0, rank: index >= 0 ? index + 1 : 0 };
   }
 
   function recordResult() {
-    if (recorded) return;
-    recorded = true;
+    // 已经记录过（或同一局重复调用）就不再写第二条
+    if (recorded) return { skipped: true, saved: true, inserted: false, rank: 0 };
+
     best = Math.max(best, score);
-    addScore();
+    const lb = addScore();
+    const isWin = won && !winRecorded;
 
     // 同步旧版最高分键，保证从旧页面回来时「最高」不会倒退
     if (mode === 'manual') {
       try {
-        localStorage.setItem(SIZE === 4 ? '2048_best' : '2048_5x5_hard_best', String(best));
+        localStorage.setItem(SIZE === 4 ? '2048_best' : '2048_5x5_best', String(best));
       } catch (err) {
         /* 忽略存储失败 */
       }
     }
 
     if (typeof HistoryManager !== 'undefined' && HistoryManager.record) {
-      HistoryManager.record(HISTORY_IDS[lbKey(mode, SIZE)], {
-        score: score,
-        bestScore: best,
-        result: won ? 'win' : 'lose',
-        duration: Math.round(elapsed / 1000),
-      });
+      try {
+        HistoryManager.record(HISTORY_IDS[lbKey(mode, SIZE)], {
+          score: score,
+          bestScore: best,
+          result: isWin ? 'win' : 'lose',
+          duration: Math.round(elapsed / 1000),
+        });
+      } catch (err) {
+        /* 历史写入失败不影响排行榜 */
+      }
     }
 
-    saveState();
+    // 只有榜单真的写进去了才算「已记录」，否则下次结束还能重试
+    if (lb.saved) {
+      recorded = true;
+      if (isWin) winRecorded = true;
+      saveState();
+    }
+
+    return lb;
   }
 
   function formatDate(ts) {
@@ -922,10 +956,20 @@
     lbSelectedKey = lbKey(mode, SIZE);
     renderLB();
     lbModal.hidden = false;
+    try {
+      $('lbClose').focus({ preventScroll: true });
+    } catch (err) {
+      /* 忽略 */
+    }
   }
 
   function closeLB() {
     lbModal.hidden = true;
+    try {
+      $('lbBtn').focus({ preventScroll: true });
+    } catch (err) {
+      /* 忽略 */
+    }
   }
 
   /* ---------- 工具 ---------- */
@@ -1052,7 +1096,10 @@
         if (val >= 1000) ratio = SIZE === 5 ? 0.25 : 0.29;
         else if (val >= 100) ratio = SIZE === 5 ? 0.31 : 0.34;
         else if (SIZE === 5) ratio = 0.4;
-        tile.style.fontSize = (cellSize * ratio) + 'px';
+        let fontPx = cellSize * ratio;
+        // 320px 宽时 5×5 的四位数只剩 12px 左右，给个下限
+        if (SIZE === 5 && val >= 1000) fontPx = Math.max(fontPx, 13.5);
+        tile.style.fontSize = fontPx + 'px';
 
         tileLayer.append(tile);
       }
@@ -1066,10 +1113,10 @@
   function updateStatus() {
     if (gameOver) {
       statusEl.textContent = '本局结束';
-    } else if (running) {
-      statusEl.textContent = mode === 'ai' ? 'AI 运行中…' : '自动运行中…';
     } else if (mode === 'manual') {
       statusEl.textContent = '手动模式 · 自动保存';
+    } else if (running) {
+      statusEl.textContent = mode === 'ai' ? 'AI 运行中…' : '自动运行中…';
     } else {
       statusEl.textContent = '已暂停 · 点开始继续';
     }
@@ -1097,17 +1144,21 @@
         ? '⏸ 暂停'
         : (mode === 'ai' ? '▶ 开始 AI' : '▶ 开始自动');
       hintEl.textContent = mode === 'ai'
-        ? 'AI 使用 expectimax 搜索；可以随时暂停，进度会自动保存'
+        ? 'AI 使用 expectimax 搜索；速度越快，每步思考时间越短；可以随时暂停，进度会自动保存'
         : '自动模式一直往右下走，卡住时用左/上救场';
     }
   }
 
   function setActiveSegments() {
     modeSeg.querySelectorAll('button').forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.mode === mode);
+      const active = btn.dataset.mode === mode;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', active ? 'true' : 'false');
     });
     sizeSeg.querySelectorAll('button').forEach((btn) => {
-      btn.classList.toggle('active', Number(btn.dataset.size) === SIZE);
+      const active = Number(btn.dataset.size) === SIZE;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', active ? 'true' : 'false');
     });
   }
 
@@ -1125,6 +1176,7 @@
     keepPlaying = false;
     gameOver = false;
     recorded = false;
+    winRecorded = false;
     elapsed = 0;
     best = currentBest();
 
@@ -1149,6 +1201,7 @@
     keepPlaying = !!data.keepPlaying;
     gameOver = !!data.gameOver;
     recorded = !!data.recorded;
+    winRecorded = !!data.winRecorded;
     elapsed = Number(data.elapsed) || 0;
     best = Math.max(currentBest(), score);
 
@@ -1229,8 +1282,17 @@
         stopRun();
         render();
         updateAll();
+        // 先写榜单/历史，再弹胜利层；写失败时要知道
+        const winResult = recordResult();
         saveState();
         showOverlay('你赢了！🎉', '本局得分 ' + score + ' · 最大 ' + getMaxTile(), true);
+        if (winResult && !winResult.saved) {
+          showToast('未能保存（存储空间不足 / 隐私模式）');
+        } else if (winResult && winResult.inserted) {
+          showToast('已记录到排行榜 · 第 ' + winResult.rank + ' 名');
+        } else if (winResult) {
+          showToast('未进前 10 · 已写入历史');
+        }
         return true;
       }
       keepPlaying = true;
@@ -1249,10 +1311,18 @@
     if (gameOver) return;
     gameOver = true;
     stopRun();
-    recordResult();
+    const result = recordResult();
     updateAll();
     showOverlay('游戏结束', '本局得分 ' + score + ' · 最大 ' + getMaxTile(), false);
-    showToast('已记录到排行榜');
+    if (result && result.skipped) {
+      /* 本局已经记录过，不重复写 */
+    } else if (!result || !result.saved) {
+      showToast('未能保存（存储空间不足 / 隐私模式）');
+    } else if (!result.inserted) {
+      showToast('未进前 10 · 已写入历史');
+    } else {
+      showToast('已记录到排行榜 · 第 ' + result.rank + ' 名');
+    }
     saveState();
   }
 
@@ -1261,22 +1331,49 @@
     overlayMsg.textContent = title;
     overlayScore.textContent = sub || '';
     keepBtn.hidden = !showKeep;
+    overlay.setAttribute('aria-hidden', 'false');
     overlay.classList.add('show');
+    // 焦点移入遮罩，键盘/读屏用户能直接操作
+    try {
+      $('againBtn').focus({ preventScroll: true });
+    } catch (err) {
+      /* 老浏览器忽略 focus 参数即可 */
+    }
   }
 
   function hideOverlay() {
     overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden', 'true');
     keepBtn.hidden = true;
+    if (overlay.contains(document.activeElement)) {
+      try {
+        newBtn.focus({ preventScroll: true });
+      } catch (err) {
+        /* 忽略 */
+      }
+    }
   }
 
   /* ---------- 计时 / 暂停 ---------- */
   function startClock() {
     clearInterval(clockTimer);
+    // 手动局没有暂停按钮：只要本局没结束、也没有停在胜利层，就视为 running
+    if (mode === 'manual') running = !gameOver && !(won && !keepPlaying);
+    clockLastTick = Date.now();
+    let lastSavedElapsed = elapsed;
+
     clockTimer = setInterval(() => {
-      if (document.hidden || gameOver) return;
-      elapsed += 1000;
+      const now = Date.now();
+      const delta = now - clockLastTick;
+      clockLastTick = now;
+      if (!running || document.hidden || gameOver) return;
+      // 用真实时间差累计，避免 interval 漂移；切后台/休眠回来不补记
+      elapsed += Math.min(Math.max(delta, 0), 2000);
       updateTimer();
-      if (elapsed % 5000 === 0) saveState();
+      if (elapsed - lastSavedElapsed >= 5000) {
+        lastSavedElapsed = elapsed;
+        saveState();
+      }
     }, 1000);
   }
 
@@ -1313,6 +1410,14 @@
 
   function getDelay() {
     return Math.max(0, Math.round(600 - speed * 5.6));
+  }
+
+  // 速度滑杆只在 60 以上压缩搜索预算：默认速度 60 保持 650ms 强度，100 → 120ms
+  function getThinkBudget() {
+    const clamped = Math.min(100, Math.max(1, speed));
+    if (clamped <= 60) return 650;
+    const ratio = (clamped - 60) / 40;
+    return Math.round(650 - ratio * (650 - 120));
   }
 
   /* ---------- 自动模式 ---------- */
@@ -1602,7 +1707,7 @@
   }
 
   function aiChooseDirection() {
-    aiDeadline = performance.now() + 650;
+    aiDeadline = performance.now() + getThinkBudget();
     const profile = AI_PROFILES[SIZE];
     let bestDir = null;
     let bestValue = -Infinity;
@@ -1729,7 +1834,21 @@
 
   keepBtn.addEventListener('click', () => {
     keepPlaying = true;
+    // 允许最终结束时再记录一条最终成绩（一条 win + 一条最终 lose）
+    recorded = false;
     hideOverlay();
+
+    // 合成 2048 后棋盘其实已经无路可走：直接结束，别让玩家卡死
+    if (!canMove()) {
+      endGame();
+      return;
+    }
+
+    if (mode === 'manual') {
+      running = true;
+      startClock();
+    }
+    updateStatus();
     saveState();
   });
 
@@ -1750,18 +1869,45 @@
     if (!confirm('清空「' + (LB_TABS.find((t) => t.key === lbSelectedKey) || {}).label + '」的全部记录？')) return;
     const data = getLB();
     delete data[lbSelectedKey];
-    writeJSON(LB_KEY, data);
+    const saved = writeJSON(LB_KEY, data);
     renderLB();
-    showToast('已清空本榜');
+    showToast(saved ? '已清空本榜' : '未能保存（存储空间不足 / 隐私模式）');
   });
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       saveState();
-      if (running) {
+      // 手动局没有暂停概念，切后台只停计时（由 startClock 里的 document.hidden 负责）
+      if (running && mode !== 'manual') {
         stopRun();
         statusEl.textContent = '已暂停（切后台）';
       }
+    } else {
+      clockLastTick = Date.now();
+    }
+  });
+
+  /* ---------- 多标签页：别把别的标签页刚写的榜单/存档冲掉 ---------- */
+  window.addEventListener('storage', (e) => {
+    if (!e.key) return;
+
+    if (e.key === LB_KEY) {
+      best = Math.max(best, bestFromLB(), legacyBest());
+      bestEl.textContent = best;
+      if (!lbModal.hidden) renderLB();
+      return;
+    }
+
+    if (e.key === stateKey()) {
+      // 本页有进行中的对局时忽略，保留自己的存档
+      if (running && !gameOver && moves > 0) {
+        showToast('另一个标签页也在玩，已保留本页进度');
+        return;
+      }
+      const next = loadState(mode, SIZE);
+      if (!next) return;
+      restoreState(next);
+      showToast('已同步另一个标签页的存档');
     }
   });
 
