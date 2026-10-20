@@ -43,11 +43,12 @@
     pointer-events: none; z-index: 20;
   }
 </style>
+<!-- Three.js 0.160.0 已本地化到 ../js/three/0.160.0/，离线可用 -->
 <script type="importmap">
 {
   "imports": {
-    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    "three": "../js/three/0.160.0/three.module.js",
+    "three/addons/": "../js/three/0.160.0/addons/"
   }
 }
 </script>
@@ -69,6 +70,7 @@
 <div id="compass">→ 东</div>
 <div id="toast"></div>
 
+<script src="../js/history.js"></script>
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -1133,6 +1135,25 @@ function wrappedDist(x1, z1, x2, z2) {
 let distance = 0;
 let bestDistance = parseFloat(localStorage.getItem('pelicanBestDistance') || '0');
 bestEl.textContent = '最佳 ' + (bestDistance / 1000).toFixed(2) + ' km';
+
+// 关闭/离开页面时把本次里程写进「历史记录」，只写一次
+let rideHistoryRecorded = false;
+function recordRideHistory() {
+  if (rideHistoryRecorded || !(distance > 0)) return;
+  if (typeof HistoryManager === 'undefined' || !HistoryManager.record) return;
+  rideHistoryRecorded = true;
+  try {
+    HistoryManager.record('pelican-free-ride', {
+      score: Math.round(distance),
+      result: 'quit',
+      duration: Math.round(performance.now() / 1000),
+      extra: '里程 ' + (distance / 1000).toFixed(2) + ' km'
+    });
+  } catch (err) {
+    /* 存储失败时忽略，不影响游戏 */
+  }
+}
+window.addEventListener('pagehide', recordRideHistory);
 
 /* ---------- 音频 ---------- */
 let audioCtx = null, musicPlaying = false, muted = false;

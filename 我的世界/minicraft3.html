@@ -73,6 +73,7 @@
   #tJump {right:22px;bottom:62px}
   #tPause{right:14px;top:82px;width:44px;height:44px;font-size:18px}
 </style>
+<!-- Three.js 已本地化：../js/three/r128/three.min.js（等同原 CDN r128），离线可用 -->
 </head>
 <body>
 
@@ -97,7 +98,7 @@
 <div id="overlay">
   <div class="card">
     <h1>迷你方块 2</h1>
-    <div class="sub">Minecraft · 单文件网页版（CDN 加载 Three.js，首次需联网）</div>
+    <div class="sub">Minecraft · 单文件网页版（本地加载 Three.js，离线可玩）</div>
     <div class="seedRow"><label>世界种子</label><input id="seedInput" placeholder="随机" maxlength="10" inputmode="numeric"></div>
     <ul>
       <li><kbd>W A S D</kbd>移动　<kbd>空格</kbd>跳跃/上浮　<kbd>F</kbd>飞行（再按切换）</li>
@@ -111,7 +112,7 @@
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="../js/three/r128/three.min.js"></script>
 <script>
 "use strict";
 /* ================================================================
