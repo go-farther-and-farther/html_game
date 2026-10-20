@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<!-- GitHub Pages 的项目站：深层不存在的路径下用 base 让相对资源仍指到站点根 -->
+<base href="/html_game/">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>页面走丢了 · HTML 游戏合集</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="robots" content="noindex, follow">
+<meta name="description" content="页面走丢了。回到 HTML 游戏合集首页挑个游戏，或去下载页看看最新版本。">
+<script src="js/app-detect.js"></script>
+<link rel="stylesheet" href="css/site.css">
+<style>
+  .notfound-code {
+    margin: 6px 0 4px;
+    font-size: clamp(72px, 20vw, 128px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    background: linear-gradient(135deg, #ffd36e 0%, #f5af19 38%, #f12711 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .notfound-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 26px;
+  }
+
+  @media (max-width: 640px) {
+    .notfound-actions .btn-primary,
+    .notfound-actions .btn-secondary {
+      flex: 1 1 100%;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <span class="brand-mark">🎮</span>
+      <span class="brand-text">HTML 游戏合集</span>
+    </a>
+    <nav class="topnav" aria-label="快捷入口">
+      <a class="nav-btn" href="index.html">← 首页</a>
+      <a class="nav-btn primary" href="download.html">⬇️ 下载</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <p class="eyebrow">404 · NOT FOUND</p>
+    <div class="notfound-code" aria-hidden="true">404</div>
+    <h1>页面走丢了</h1>
+    <p class="hero-sub">这个地址可能已经改名、被移动，或者从来没有存在过。回首页挑个游戏，或者去下载页看看最新版本。</p>
+    <div class="notfound-actions">
+      <a class="btn-primary" href="index.html">🏠 返回首页</a>
+      <a class="btn-secondary" href="download.html">⬇️ 去下载页</a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-links">
+      <a href="index.html">返回合集</a>
+      <a href="download.html">下载 / 更新</a>
+      <a href="history.html">历史记录</a>
+    </div>
+    HTML 游戏合集 · 页面不存在 · <a href="LICENSE">MIT License</a>
+  </footer>
+</div>
+</body>
+</html>

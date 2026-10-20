@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://go-farther-and-farther.github.io/html_game/sitemap.xml

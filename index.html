@@ -6,15 +6,21 @@
 <title>HTML 游戏合集</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="description" content="纯 HTML / CSS / JavaScript 小游戏合集：2048、贪吃蛇、俄罗斯方块、塔防、我的世界、修仙模拟器，以及 3D 场景与实用工具。">
+<link rel="canonical" href="https://go-farther-and-farther.github.io/html_game/index.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="HTML 游戏合集">
+<meta property="og:title" content="HTML 游戏合集 · 打开即玩">
+<meta property="og:description" content="纯 HTML / CSS / JavaScript 小游戏合集：2048、贪吃蛇、俄罗斯方块、塔防、我的世界、修仙模拟器，以及 3D 场景与实用工具。">
+<meta property="og:url" content="https://go-farther-and-farther.github.io/html_game/index.html">
+<meta property="og:image" content="https://go-farther-and-farther.github.io/html_game/img/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="HTML 游戏合集 · 打开即玩">
+<meta name="twitter:description" content="纯 HTML / CSS / JavaScript 小游戏合集：2048、贪吃蛇、俄罗斯方块、塔防、我的世界、修仙模拟器，以及 3D 场景与实用工具。">
+<meta name="twitter:image" content="https://go-farther-and-farther.github.io/html_game/img/og-cover.png">
+<script src="js/app-detect.js"></script>
 <link rel="stylesheet" href="css/site.css">
-<script>
-  // 判断是否运行在 Capacitor APK 内：APK 内隐藏「仅网页」内容
-  (function () {
-    var isApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())
-      || (location.protocol === 'https:' && location.hostname === 'localhost');
-    if (isApp) document.documentElement.classList.add('is-app');
-  })();
-</script>
 </head>
 <body>
 <div class="container">
@@ -53,6 +59,22 @@
       <button class="chip" data-filter="tool" type="button">工具</button>
     </div>
   </div>
+
+  <noscript>
+    <section class="panel noscript-panel">
+      <h2>JavaScript 未启用</h2>
+      <p>搜索和下方的主列表由脚本生成。没有 JavaScript 时，可以直接打开这些页面：</p>
+      <ul class="noscript-list">
+        <li><a href="2048/index.html">🔢 2048 合集</a></li>
+        <li><a href="俄罗斯方块/俄罗斯方块.html">🧱 俄罗斯方块</a></li>
+        <li><a href="贪吃蛇/贪吃蛇.html">🐍 贪吃蛇</a></li>
+        <li><a href="塔防游戏/elemental_outpostV7.html">🏹 塔防 · 元素前哨</a></li>
+        <li><a href="我的世界/minicraft3.html">⛏️ 我的世界</a></li>
+        <li><a href="鹈鹕骑车3D/pelican-free-ride.html">🚴 鹈鹕自由骑行</a></li>
+        <li><a href="download.html">⬇️ 下载 / 更新</a></li>
+      </ul>
+    </section>
+  </noscript>
 
   <!-- 动画是网页专属内容，APK 内自动隐藏；也不参与 APK 打包 -->
   <a class="banner web-only" href="animations.html">
@@ -162,10 +184,6 @@
 
     if (game.id) {
       card.dataset.game = game.id;
-      const last = document.createElement('div');
-      last.className = 'last-play';
-      last.id = 'last-' + game.id;
-      card.append(last);
     }
 
     return card;
@@ -193,6 +211,7 @@
 
       const count = document.createElement('span');
       count.className = 'section-count';
+      count.dataset.total = String(games.length);
       count.textContent = games.length + ' 个';
 
       head.append(title, count);
@@ -214,23 +233,75 @@
   }
 
   // 显示每个游戏的最近游玩时间（游戏 ID 直接来自 GAMES 清单）
+  // 2048 统一页会写 2048 / 2048-5x5 / 2048-ai 等 6 个 id，这里按 2048 前缀聚合
+  function getGameRecords(games, game) {
+    if (game.id !== '2048') {
+      return Array.isArray(games[game.id]) ? games[game.id] : [];
+    }
+    let records = [];
+    Object.keys(games).forEach(function (id) {
+      if ((id === '2048' || id.indexOf('2048-') === 0) && Array.isArray(games[id])) {
+        records = records.concat(games[id]);
+      }
+    });
+    return records;
+  }
+
   function showLastPlayTimes() {
-    if (typeof HistoryManager === 'undefined') return;
-    const games = HistoryManager.getAllGames();
+    if (typeof HistoryManager === 'undefined' || !HistoryManager) return;
+    const games = HistoryManager.getAllGames() || {};
 
     GAMES.filter(game => game.id).forEach(game => {
-      const el = document.getElementById('last-' + game.id);
-      if (!el) return;
-      const records = games[game.id] || [];
-      if (records.length === 0) return;
+      const card = document.querySelector('.game-card[data-game="' + game.id + '"]');
+      if (!card) return;
 
-      const last = records[records.length - 1];
-      const d = new Date(last.time);
+      const records = getGameRecords(games, game).filter(r => r && typeof r === 'object');
+      if (records.length === 0) {
+        // 没有记录就不插入 .last-play，避免卡片高度不齐
+        const stale = card.querySelector('.last-play');
+        if (stale) stale.remove();
+        return;
+      }
+
+      let last = null;
+      let best = 0;
+      records.forEach(r => {
+        const time = Number(r.time) || 0;
+        if (!last || time >= (Number(last.time) || 0)) last = r;
+        const score = Number(r.bestScore || r.score || 0) || 0;
+        if (score > best) best = score;
+      });
+
+      const d = new Date(Number(last.time) || 0);
+      if (isNaN(d.getTime())) return;
       const dateStr = (d.getMonth() + 1) + '/' + d.getDate() + ' ' +
                       d.getHours().toString().padStart(2, '0') + ':' +
                       d.getMinutes().toString().padStart(2, '0');
-      el.textContent = '最近: ' + dateStr + ' · 最高 ' + (last.bestScore || last.score || '-') + '分';
+
+      let el = card.querySelector('.last-play');
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'last-play';
+        card.append(el);
+      }
+      el.textContent = '最近: ' + dateStr + ' · 最高 ' + best + '分';
     });
+  }
+
+  // pageshow（含 bfcache 返回）可能连续触发，合并成一次渲染
+  let lastPlayScheduled = false;
+  function scheduleLastPlayTimes() {
+    if (lastPlayScheduled) return;
+    lastPlayScheduled = true;
+    const run = function () {
+      lastPlayScheduled = false;
+      showLastPlayTimes();
+    };
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(run);
+    } else {
+      setTimeout(run, 16);
+    }
   }
 
   // 搜索 + 类型筛选
@@ -250,6 +321,16 @@
         if (show) visible++;
       });
       section.hidden = visible === 0;
+
+      // 分组计数跟随筛选结果，避免只剩 1 个还写「14 个」
+      const countEl = section.querySelector('.section-count');
+      if (countEl) {
+        const sectionTotal = Number(countEl.dataset.total) || 0;
+        countEl.textContent = visible === sectionTotal
+          ? sectionTotal + ' 个'
+          : visible + ' / ' + sectionTotal + ' 个';
+      }
+
       total += visible;
     });
 
@@ -257,6 +338,10 @@
   }
 
   function clearAllHistory() {
+    if (typeof HistoryManager === 'undefined' || !HistoryManager) {
+      alert('历史记录模块未加载，暂时无法清空。');
+      return;
+    }
     if (confirm('确定清空所有游戏历史记录？')) {
       HistoryManager.clearAll();
       location.reload();
@@ -270,7 +355,7 @@
 
   renderCatalog();
   showLastPlayTimes();
-  window.addEventListener('pageshow', showLastPlayTimes);
+  window.addEventListener('pageshow', scheduleLastPlayTimes);
 
   document.getElementById('search').addEventListener('input', applyFilters);
 
@@ -283,11 +368,6 @@
   });
 
   document.getElementById('clear-history').addEventListener('click', clearAllHistory);
-
-  // Capacitor 注入较晚时再补一次判断
-  if (location.protocol === 'https:' && location.hostname === 'localhost') {
-    document.documentElement.classList.add('is-app');
-  }
 </script>
 </body>
 </html>

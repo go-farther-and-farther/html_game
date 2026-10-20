@@ -2,15 +2,31 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>游戏历史记录</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>游戏历史记录 · HTML 游戏合集</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="description" content="查看 HTML 游戏合集的本地历史记录：总局数、最高分、平均分、胜负统计与每局明细。数据只保存在本机。">
+<meta name="theme-color" content="#0f0c29">
+<link rel="canonical" href="https://go-farther-and-farther.github.io/html_game/history.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="HTML 游戏合集">
+<meta property="og:title" content="游戏历史记录 · HTML 游戏合集">
+<meta property="og:description" content="查看 HTML 游戏合集的本地历史记录：总局数、最高分、平均分、胜负统计与每局明细。数据只保存在本机。">
+<meta property="og:url" content="https://go-farther-and-farther.github.io/html_game/history.html">
+<meta property="og:image" content="https://go-farther-and-farther.github.io/html_game/img/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="游戏历史记录 · HTML 游戏合集">
+<meta name="twitter:description" content="查看 HTML 游戏合集的本地历史记录：总局数、最高分、平均分、胜负统计与每局明细。数据只保存在本机。">
+<meta name="twitter:image" content="https://go-farther-and-farther.github.io/html_game/img/og-cover.png">
+<script src="js/app-detect.js"></script>
 <style>
   * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
-    user-select: none;
   }
 
   body {
@@ -49,6 +65,20 @@
 
   .back-btn:active {
     transform: scale(0.95);
+  }
+
+  /* 允许缩放和复制分数文本，仅按钮不参与选择 */
+  .filter-btn,
+  .page-btn,
+  .back-btn {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .record-info,
+  .record-score {
+    -webkit-user-select: text;
+    user-select: text;
   }
 
   .header h1 {
@@ -219,6 +249,7 @@
   /* ---------- 分页 ---------- */
   .pagination {
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     gap: 8px;
     margin-top: 20px;
@@ -243,6 +274,23 @@
   .page-btn:disabled {
     opacity: 0.3;
     cursor: not-allowed;
+  }
+
+  .page-ellipsis {
+    padding: 8px 2px;
+    color: rgba(255,255,255,0.3);
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  @media (max-width: 360px) {
+    .page-btn {
+      padding: 8px 11px;
+    }
+
+    .pagination {
+      gap: 6px;
+    }
   }
 </style>
 </head>
@@ -269,6 +317,23 @@
   var currentPage = 1;
   var pageSize = 20;
 
+  // localStorage 可能被手工写入或篡改，所有插值字段一律先转义
+  function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+    });
+  }
+
+  function toScore(value) {
+    var score = Number(value);
+    return isFinite(score) ? score : 0;
+  }
+
+  function getGameRecords(games, id) {
+    if (!Array.isArray(games[id])) return [];
+    return games[id].filter(function(r) { return r && typeof r === 'object'; });
+  }
+
   function renderFilters() {
     var container = document.getElementById('filters');
     var games = HistoryManager.getAllGames();
@@ -276,8 +341,9 @@
 
     var gameIds = Object.keys(games);
     gameIds.forEach(function(id) {
-      html += '<div class="filter-btn ' + (currentFilter === id ? 'active' : '') + '" data-filter="' + id + '">' +
-              HistoryManager.getGameIcon(id) + ' ' + HistoryManager.getGameName(id) + '</div>';
+      var active = currentFilter === id ? ' active' : '';
+      html += '<div class="filter-btn' + active + '" data-filter="' + escapeHtml(id) + '">' +
+              escapeHtml(HistoryManager.getGameIcon(id)) + ' ' + escapeHtml(HistoryManager.getGameName(id)) + '</div>';
     });
 
     container.innerHTML = html;
@@ -300,10 +366,10 @@
 
     if (currentFilter === 'all') {
       Object.keys(games).forEach(function(id) {
-        games[id].forEach(function(r) { allRecords.push(r); });
+        getGameRecords(games, id).forEach(function(r) { allRecords.push(r); });
       });
     } else {
-      allRecords = games[currentFilter] || [];
+      allRecords = getGameRecords(games, currentFilter);
     }
 
     if (allRecords.length === 0) {
@@ -311,7 +377,7 @@
       return;
     }
 
-    var scores = allRecords.map(function(r) { return r.score || 0; });
+    var scores = allRecords.map(function(r) { return toScore(r.score); });
     var wins = allRecords.filter(function(r) { return r.result === 'win'; }).length;
     var bestScore = Math.max.apply(null, scores);
     var avgScore = Math.round(scores.reduce(function(a,b) { return a+b; }, 0) / scores.length);
@@ -323,6 +389,42 @@
       '<div class="stat-card"><div class="value">' + wins + '</div><div class="label">胜利</div></div>';
   }
 
+  var RESULT_META = {
+    win: { cls: 'result-win', text: '胜利' },
+    lose: { cls: 'result-lose', text: '失败' },
+    quit: { cls: 'result-quit', text: '退出' }
+  };
+
+  // 以当前页为中心的滑动窗口，页码最多 7 个，省略号只在真的跳过页码时出现
+  function getPageItems(current, total) {
+    var items = [];
+    var i;
+    if (total <= 7) {
+      for (i = 1; i <= total; i++) items.push(i);
+      return items;
+    }
+
+    var start;
+    var end;
+    if (current <= 4) {
+      start = 2;
+      end = 6;
+    } else if (current >= total - 3) {
+      start = total - 5;
+      end = total - 1;
+    } else {
+      start = current - 2;
+      end = current + 2;
+    }
+
+    items.push(1);
+    if (start > 2) items.push('...');
+    for (i = start; i <= end; i++) items.push(i);
+    if (end < total - 1) items.push('...');
+    items.push(total);
+    return items;
+  }
+
   function renderRecords() {
     var container = document.getElementById('record-list');
     var games = HistoryManager.getAllGames();
@@ -330,18 +432,18 @@
 
     if (currentFilter === 'all') {
       Object.keys(games).forEach(function(id) {
-        games[id].forEach(function(r) {
+        getGameRecords(games, id).forEach(function(r) {
           allRecords.push(Object.assign({}, r, { gameId: id }));
         });
       });
     } else {
-      (games[currentFilter] || []).forEach(function(r) {
+      getGameRecords(games, currentFilter).forEach(function(r) {
         allRecords.push(Object.assign({}, r, { gameId: currentFilter }));
       });
     }
 
     // 按时间倒序
-    allRecords.sort(function(a, b) { return (b.time || 0) - (a.time || 0); });
+    allRecords.sort(function(a, b) { return (toScore(b.time)) - (toScore(a.time)); });
 
     if (allRecords.length === 0) {
       container.innerHTML = '<div class="empty-state">' +
@@ -361,20 +463,21 @@
 
     var html = '';
     pageRecords.forEach(function(r) {
-      var resultClass = 'result-' + (r.result || 'quit');
-      var resultText = r.result === 'win' ? '胜利' : r.result === 'lose' ? '失败' : '退出';
-      var extra = r.extra ? '<div class="record-extra">' + r.extra + '</div>' : '';
-      var duration = r.duration ? ' · ' + HistoryManager.formatDuration(r.duration) : '';
+      var result = RESULT_META[r.result] ? r.result : 'quit';
+      var resultClass = RESULT_META[result].cls;
+      var resultText = RESULT_META[result].text;
+      var extra = r.extra ? '<div class="record-extra">' + escapeHtml(r.extra) + '</div>' : '';
+      var duration = r.duration ? ' · ' + escapeHtml(HistoryManager.formatDuration(r.duration)) : '';
 
       html += '<div class="record-item">' +
-        '<div class="record-icon">' + HistoryManager.getGameIcon(r.gameId) + '</div>' +
+        '<div class="record-icon">' + escapeHtml(HistoryManager.getGameIcon(r.gameId)) + '</div>' +
         '<div class="record-info">' +
-          '<div class="game-name">' + HistoryManager.getGameName(r.gameId) + '</div>' +
-          '<div class="record-time">' + HistoryManager.formatTime(r.time) + duration + '</div>' +
+          '<div class="game-name">' + escapeHtml(HistoryManager.getGameName(r.gameId)) + '</div>' +
+          '<div class="record-time">' + escapeHtml(HistoryManager.formatTime(r.time)) + duration + '</div>' +
           extra +
         '</div>' +
         '<div class="record-score">' +
-          '<div class="score">' + (r.score || 0) + '</div>' +
+          '<div class="score">' + toScore(r.score) + '</div>' +
           '<div class="result ' + resultClass + '">' + resultText + '</div>' +
         '</div>' +
       '</div>';
@@ -389,20 +492,29 @@
     }
 
     var pagHtml = '';
-    pagHtml += '<button class="page-btn" ' + (currentPage <= 1 ? 'disabled' : '') + ' onclick="goPage(' + (currentPage-1) + ')">‹</button>';
-    for (var i = 1; i <= totalPages; i++) {
-      if (totalPages > 7 && i > 2 && i < totalPages - 1 && Math.abs(i - currentPage) > 1) {
-        if (i === 3 || i === totalPages - 2) pagHtml += '<span style="color:rgba(255,255,255,0.3);padding:8px 4px;">…</span>';
-        continue;
+    pagHtml += '<button class="page-btn" type="button" aria-label="上一页" ' + (currentPage <= 1 ? 'disabled' : '') +
+               ' onclick="goPage(' + (currentPage - 1) + ')">‹</button>';
+
+    getPageItems(currentPage, totalPages).forEach(function(item) {
+      if (item === '...') {
+        pagHtml += '<span class="page-ellipsis" aria-hidden="true">…</span>';
+        return;
       }
-      pagHtml += '<button class="page-btn ' + (i === currentPage ? 'active' : '') + '" onclick="goPage(' + i + ')">' + i + '</button>';
-    }
-    pagHtml += '<button class="page-btn" ' + (currentPage >= totalPages ? 'disabled' : '') + ' onclick="goPage(' + (currentPage+1) + ')">›</button>';
+      var active = item === currentPage;
+      pagHtml += '<button class="page-btn' + (active ? ' active' : '') + '" type="button"' +
+                 (active ? ' aria-current="page"' : '') +
+                 ' onclick="goPage(' + item + ')">' + item + '</button>';
+    });
+
+    pagHtml += '<button class="page-btn" type="button" aria-label="下一页" ' + (currentPage >= totalPages ? 'disabled' : '') +
+               ' onclick="goPage(' + (currentPage + 1) + ')">›</button>';
     document.getElementById('pagination').innerHTML = pagHtml;
   }
 
   function goPage(p) {
-    currentPage = p;
+    p = Number(p);
+    if (!isFinite(p) || p < 1) return;
+    currentPage = Math.floor(p);
     renderRecords();
     window.scrollTo(0, 0);
   }

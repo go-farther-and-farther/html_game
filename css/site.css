@@ -554,6 +554,36 @@ a {
   background: rgba(255, 255, 255, 0.12);
 }
 
+/* ---------------- noscript 兜底链接 ---------------- */
+
+.noscript-panel {
+  margin-top: 22px;
+}
+
+.noscript-list {
+  margin-top: 12px;
+  padding-left: 20px;
+  columns: 2;
+  column-gap: 24px;
+  list-style: disc;
+}
+
+.noscript-list li {
+  margin: 4px 0;
+  break-inside: avoid;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.noscript-list a {
+  color: #ffd36e;
+  text-decoration: none;
+}
+
+.noscript-list a:hover {
+  text-decoration: underline;
+}
+
 /* ---------------- 页脚 ---------------- */
 
 footer {
@@ -787,6 +817,11 @@ footer a:hover {
 
   .panel h2 {
     font-size: 16px;
+  }
+
+  .noscript-list {
+    columns: 1;
+    padding-left: 18px;
   }
 
   .btn-primary,
