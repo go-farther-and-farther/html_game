@@ -1,6 +1,6 @@
 # HTML 游戏合集
 
-经典小游戏的纯 HTML/CSS/JavaScript 实现，打开即玩，无需安装。已打包为 Android APK。
+经典小游戏的纯 HTML/CSS/JavaScript 实现，打开即玩，无需安装。已打包为 Android APK（v1.3.0），3D 页面已全部本地化，离线可玩。
 
 ## 🎮 游戏列表
 
@@ -10,7 +10,7 @@
 
 | 游戏 | 文件 | 说明 |
 |------|------|------|
-| 2048 合集 | `2048/index.html` | 手动 / AI / 自动 × 4×4 / 5×5；本机排行榜；退出续玩；旧版 5 个页面保留 |
+| 2048 合集 | `2048/index.html` | 手动 / AI / 自动 × 4×4 / 5×5；6 个本机排行榜；退出续玩；旧版 5 个页面保留 |
 | 贪吃蛇 | `贪吃蛇/贪吃蛇.html` | 基础版贪吃蛇 |
 | 人机版贪吃蛇 | `贪吃蛇/人机版贪吃蛇.html` | AI 对战版贪吃蛇 |
 | 人机版贪吃蛇2 | `贪吃蛇/人机版贪吃蛇2.html` | AI 对战版贪吃蛇（进阶版） |
@@ -25,7 +25,7 @@
 | 修仙天赋模拟器 | `修仙天赋模拟器/修仙天赋模拟器-v2.html` | 随机天赋模拟 |
 | 鹈鹕自由骑行 | `鹈鹕骑车3D/pelican-free-ride.html` | 3D 骑行游戏 · 需要键盘 |
 
-共有 14 个游戏卡片（2048 合集内含 6 种模式）。首页按「经典小游戏 / 人机贪吃蛇 / 策略·沙盒·模拟 / 3D 场景 / 实用工具」分组，支持搜索和类型筛选，手机端固定两列。
+首页共 18 张卡片：14 个游戏卡片（2048 合集内含 6 种模式）+ 3 个 3D 场景 + 1 个工具。按「经典小游戏 / 人机贪吃蛇 / 策略·沙盒·模拟 / 3D 场景 / 实用工具」分组，支持搜索和类型筛选，手机端固定两列。
 
 ### 其他游戏项目
 
@@ -52,31 +52,49 @@
 `2048/index.html` 把原来的 5 个 2048 页面合并成一个：
 
 - 手动 / AI / 自动 × 4×4 / 5×5，共 6 种组合
-- 本机排行榜：手动 / AI / 自动 × 4×4 / 5×5，6 个榜各存前 10 名
+- 本机排行榜：手动 / AI / 自动 × 4×4 / 5×5，6 个榜各存前 10 名；第 11 名起提示「未进前 10」
 - 每个组合独立自动保存；关闭页面/App 后重新打开会恢复上局（AI/自动恢复为暂停）
-- AI 使用 expectimax 搜索（4×4 深度 4，5×5 深度 3），带 650ms 时间上限，避免手机卡死
-- 旧版 `2048.html`、`2048-5x5.html`、`2048-ai.html`、`2048-ai-5x5.html`、`2048-auto.html` 保留，统一页底部有入口
+- AI 使用 expectimax 搜索（4×4 深度 4，5×5 深度 3），默认 650ms 时间上限；速度滑杆只在 60 以上压缩思考预算（最低 120ms），默认强度不变
+- 达成 2048 立即写入排行榜和历史；点「继续挑战」后，最终结束再记一条
+- 暂停、切后台、停在胜利层时不计时
+- 写入失败（隐私模式、空间不足）会明确提示，不会假装「已记录」
+- 多个标签页同时打开时，排行榜写入不会互相覆盖
 
-另有 `scripts/`（APK 打包与语法检查脚本）、`文档/`（设计文档与截图）两个辅助目录。各游戏的测试/模拟脚本统一放在其 `tests/` 子目录（如 `2048/tests/`、`塔防游戏/tests/`、`修仙天赋模拟器/tests/`）；共享库（`history.js`、`three.min.js`）统一放在根目录 `js/`。
+5×5 使用独立最高分键 `2048_5x5_best`；旧版困难模式（每步 2 块）保留自己的键和历史 id `2048-5x5-hard`，两套记录不再混在一起。
+
+旧版 `2048.html`、`2048-5x5.html`、`2048-ai.html`、`2048-ai-5x5.html`、`2048-auto.html` 保留（带 `noindex`），统一页底部有入口。
+
+### 离线与依赖
+
+- 4 个 three.js 页面（我的世界、泰坦尼克号、雨夜加油站、鹈鹕自由骑行）已全部改为本地加载：`js/three/0.160.0/`（ESM + addons）和 `js/three/r128/three.min.js`（minicraft 用的全局版）
+- 不再依赖 unpkg / jsdelivr / cdnjs，断网也能打开
+- 泰坦尼克号的音色包（tonejs-instruments MP3）和 Google Fonts 仍是外链，离线时自动用内置合成音频和系统字体
+- `scripts/`（打包、语法检查）、`文档/`（设计文档与截图）、`js/`（共享库与本地 three）为辅助目录；测试脚本在各游戏 `tests/` 子目录，不进 APK
 
 ## 📊 历史记录功能
 
-每个游戏自动记录：
-- 🎯 得分 / 最高分
-- ⏱️ 游戏时长
-- 🏆 胜利/失败/退出状态
-- 📅 游戏时间
+已接入统一历史记录：
 
-在主页点击「📊 历史记录」查看所有游戏的历史数据，支持按游戏筛选。
+- 2048 六种模式（手动 / AI / 自动 × 4×4 / 5×5）
+- 俄罗斯方块、贪吃蛇系列
+- 塔防 · 元素前哨（记录到达波次与得分）
+- 鹈鹕自由骑行（退出时记录本次里程）
+
+纯 3D 场景（泰坦尼克号、雨夜便利店、雨夜加油站）和「人生清单」不写历史记录。每个游戏最多保留 50 条。
+
+记录内容：得分 / 最高分、游戏时长、胜利/失败/退出、游戏时间。在主页点「📊 历史记录」查看，支持按游戏筛选。
 
 ## 📱 Android APK
 
-已打包为 Android 安装包，文件：`HTML游戏合集.apk`（约 5 MB，versionName `1.2.0`）。
+已打包为 Android 安装包 `HTML游戏合集.apk`（versionName `1.3.0`，约 4.4 MB，release 签名）。
 
 安装方式：
-1. 将 `HTML游戏合集.apk` 传到手机
+
+1. 从 [Releases](https://github.com/go-farther-and-farther/html_game/releases/latest) 下载 `html-game-collection.apk`（或使用仓库根目录的 `HTML游戏合集.apk`）
 2. 在手机上打开安装（需允许安装未知来源应用）
 3. 打开即可玩所有游戏
+
+> **首次升级注意**：1.3.0 起改用固定 release keystore 签名，和之前 debug 签名的包不兼容。已经装过 1.2.0 及更早版本的话，需要先卸载旧版再安装（卸载会清空本地排行榜和历史记录）。
 
 ### 应用内下载 / 更新
 
@@ -84,17 +102,14 @@
 
 - 从 GitHub Releases API 读取最新版本号、APK 大小和更新说明
 - 点「下载」会跳转系统浏览器，从最新 Release 下载 APK
-- 覆盖安装即可保留本地历史记录
-- 网络不可用时自动回退到 `releases/latest` 固定链接
-
-APK 内的 WebView 下载由 `MainActivity` 的 `DownloadListener` 交给系统浏览器处理。
+- 覆盖安装即可保留本地历史记录（同一签名）
+- 网络不可用 / 被限流时自动回退到 `releases/latest` 固定链接
 
 ### APK 里有什么
 
-- 首页、历史页、下载页、共享样式/脚本
-- 14 个游戏卡片，2048 内含 6 种模式、3 个 3D 场景、1 个工具
-- **不包含**：`animations.html` 和鹈鹕骑车的 3 个演示版本（仅网页）
-- 少数 3D 场景通过 CDN 加载 three.js，需要联网
+- 首页、历史页、下载页、共享样式/脚本、本地 three.js
+- 18 张卡片：14 个游戏（2048 内含 6 种模式）+ 3 个 3D 场景 + 1 个工具
+- **不包含**：`animations.html`、鹈鹕骑车的 3 个演示版本、`404.html`、`robots.txt`、`sitemap.xml`、`img/`、`LICENSE`（这些只在网页提供）
 
 ### 重新构建 APK
 
@@ -102,28 +117,30 @@ APK 内的 WebView 下载由 `MainActivity` 的 `DownloadListener` 交给系统�
 
 ```bash
 npm install
-npm run cap:sync        # 自动从根目录生成 www 并同步到安卓工程
-cd android && ./gradlew.bat assembleDebug
+npm run check        # 全站 HTML 内联脚本语法检查
+npm run cap:sync     # 生成 www → 校验版本号/首页链接 → 同步到安卓工程
+cd android && ./gradlew.bat assembleRelease
 ```
 
-APK 输出路径：`android/app/build/outputs/apk/debug/app-debug.apk`
+APK 输出路径：`android/app/build/outputs/apk/release/app-release.apk`
 
-> 注：`scripts/build-web.mjs` 的 `items` 决定哪些目录会被打进 APK，`skip` 列出仅网页的动画文件。新增游戏后在 `items` 补一行；新增仅网页内容时加到 `skip`。
+> `scripts/build-web.mjs` 会按 `items` 打包、排除 `tests/` / `docs/` / `backup/`，并校验首页 18 个链接和 `package.json` / `js/version.js` / `build.gradle` 三处版本号一致；任何一项不对会直接失败。
 
 ### 发布新版本（GitHub Releases）
 
 ```bash
-# 1. 改 android/app/build.gradle 的 versionCode / versionName
-# 2. 重新构建，并按固定的 ASCII 资源名发布（download.html 的兜底链接用这个名字）
-cd android && ./gradlew.bat assembleDebug
-Copy-Item android/app/build/outputs/apk/debug/app-debug.apk ../html-game-collection.apk
+# 1. 同步三处版本号：package.json、js/version.js、android/app/build.gradle（versionCode 记得 +1）
+# 2. 构建 release 包（需要 android/keystore.properties + htmlgame-release.jks）
+cd android && ./gradlew.bat assembleRelease
+Copy-Item android/app/build/outputs/apk/release/app-release.apk ../HTML游戏合集.apk
+Copy-Item ../HTML游戏合集.apk ../html-game-collection.apk
 
 # 3. 推送代码后发布 Release（download.html 自动读取 latest）
 git push origin master
-gh release create v1.2.0 "html-game-collection.apk" --title "v1.2.0" --notes "更新说明"
+gh release create v1.3.0 "html-game-collection.apk" --title "v1.3.0" --notes "更新说明"
 ```
 
-根目录的 `HTML游戏合集.apk` 是给人手动安装的副本；GitHub Release 里统一用 `html-game-collection.apk`，保证 `releases/latest/download/html-game-collection.apk` 这个固定链接始终可用。
+签名文件（`android/htmlgame-release.jks` 和 `android/keystore.properties`）已被 gitignore，**务必备份**：丢了就无法再给已安装用户做覆盖升级。根目录的 `HTML游戏合集.apk` 只是本地构建产物（也被 gitignore），clone 仓库不会带安装包，安装请走 Releases。
 
 ## 🐍 人机版贪吃蛇3（完整版）
 
@@ -220,4 +237,4 @@ git clone https://github.com/go-farther-and-farther/html_game.git
 
 ## 📜 License
 
-MIT
+[MIT](LICENSE) · 网页版带 `robots.txt` / `sitemap.xml` / `404.html`，分享时使用 `img/og-cover.png` 作为社交预览图。
