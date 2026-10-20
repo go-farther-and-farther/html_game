@@ -26,19 +26,13 @@ const items = [
   '鹈鹕骑车3D',
 ];
 
-// 仅网页内容：动画合集与鹈鹕骑车的 9 个演示版本不打进 APK（free-ride 游戏保留）
+// 仅网页内容：动画合集与鹈鹕骑车的 3 个演示版本不打进 APK（free-ride 游戏保留）
 const skip = new Set([
   'animations.html',
   '鹈鹕骑车3D/versions.html',
   '鹈鹕骑车3D/index.html',
-  '鹈鹕骑车3D/pelican-3d-cdn.html',
   '鹈鹕骑车3D/pelican-cycling-svg-v1.html',
   '鹈鹕骑车3D/pelican-bicycle-svg.html',
-  '鹈鹕骑车3D/鹈鹕5.3flash.html',
-  '鹈鹕骑车3D/pelican_bicycleqwen38fn.html',
-  '鹈鹕骑车3D/pelican-bike27B.html',
-  '鹈鹕骑车3D/qwen3.8_27b_nvfp4_pelican-riding-v2.html',
-  '鹈鹕骑车3D/deepseek_html_醍醐骑自行车.html',
   '鹈鹕骑车3D/pelican-bicycle.svg',
   '鹈鹕骑车3D/pelican_bicycle.svg',
   '鹈鹕骑车3D/pelican-bike.svg',

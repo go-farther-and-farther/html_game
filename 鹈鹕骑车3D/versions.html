@@ -107,13 +107,6 @@
     color: #fff;
   }
 
-  .game-card.test { background: rgba(255,255,255,0.045); }
-
-  .game-card.test .tag {
-    background: rgba(255,255,255,0.14);
-    color: rgba(255,255,255,0.7);
-  }
-
   footer {
     text-align: center;
     margin-top: 48px;
@@ -215,10 +208,10 @@
 
   <div class="header">
     <h1>🚲 鹈鹕骑车 · 版本导航</h1>
-    <p>共 10 个版本 · 按修改时间倒序 · 正式迭代与模型能力测试分组</p>
+    <p>共 4 个版本 · 按修改时间倒序</p>
   </div>
 
-  <div class="section-title">🛠 正式迭代（5）</div>
+  <div class="section-title">🛠 正式迭代（4）</div>
   <div class="section-note">持续打磨过的版本，玩这些</div>
   <div class="game-grid">
     <a class="game-card" href="pelican-free-ride.html">
@@ -243,13 +236,6 @@
       <div class="desc">3D 展示场景 · 拖拽旋转视角 · 滚轮/双指缩放 · 点一下鹈鹕逗逗它</div>
       <div class="meta">2026-09-25 · 20.1 KB</div>
     </a>
-    <a class="game-card" href="pelican-3d-cdn.html">
-      <div class="icon">🚲</div>
-      <div class="name">鹈鹕骑车 3D · CDN 版</div>
-      <div class="file">pelican-3d-cdn.html</div>
-      <div class="desc">three.js 走 unpkg importmap 加载 · 拖动旋转视角 · 滚轮缩放 · 与 qwen3.8_27b v2 同源</div>
-      <div class="meta">2026-09-22 · 18.3 KB</div>
-    </a>
     <a class="game-card" href="pelican-cycling-svg-v1.html">
       <div class="icon">🎨</div>
       <div class="name">鹈鹕骑自行车 · SVG 插画 v1</div>
@@ -259,54 +245,9 @@
     </a>
   </div>
 
-  <div class="section-title">🧪 模型能力测试（5）</div>
-  <div class="section-note">单轮生成的能力验证产物，未做后续打磨，也没有历史记录</div>
-  <div class="game-grid">
-    <a class="game-card test" href="鹈鹕5.3flash.html">
-      <div class="icon">🧪</div>
-      <div class="name">鹈鹕骑自行车 · 循环动画</div>
-      <div class="file">鹈鹕5.3flash.html</div>
-      <div class="desc">单轮生成测试</div>
-      <span class="tag">测试</span>
-      <div class="meta">2026-10-09 · 25.8 KB</div>
-    </a>
-    <a class="game-card test" href="pelican_bicycleqwen38fn.html">
-      <div class="icon">🧪</div>
-      <div class="name">鹈鹕骑自行车 · 循环动画</div>
-      <div class="file">pelican_bicycleqwen38fn.html</div>
-      <div class="desc">单轮生成测试</div>
-      <span class="tag">测试</span>
-      <div class="meta">2026-10-09 · 18.7 KB</div>
-    </a>
-    <a class="game-card test" href="pelican-bike27B.html">
-      <div class="icon">🧪</div>
-      <div class="name">鹈鹕骑自行车</div>
-      <div class="file">pelican-bike27B.html</div>
-      <div class="desc">单轮生成测试</div>
-      <span class="tag">测试</span>
-      <div class="meta">2026-10-09 · 17.1 KB</div>
-    </a>
-    <a class="game-card test" href="qwen3.8_27b_nvfp4_pelican-riding-v2.html">
-      <div class="icon">🧪</div>
-      <div class="name">鹈鹕骑车 · Pelican on a Bicycle</div>
-      <div class="file">qwen3.8_27b_nvfp4_pelican-riding-v2.html</div>
-      <div class="desc">单轮生成测试</div>
-      <span class="tag">测试</span>
-      <div class="meta">2026-09-24 · 20.1 KB</div>
-    </a>
-    <a class="game-card test" href="deepseek_html_醍醐骑自行车.html">
-      <div class="icon">🧪</div>
-      <div class="name">鹈鹕骑车 · Pelican Riding a Bicycle</div>
-      <div class="file">deepseek_html_醍醐骑自行车.html</div>
-      <div class="desc">单轮生成测试</div>
-      <span class="tag">测试</span>
-      <div class="meta">2026-09-22 · 17.8 KB</div>
-    </a>
-  </div>
-
   <footer>
-    <strong>新增版本规则</strong>：照仓库 README 的「🧪 模型 × Agent 记录规则」命名 —— <code>&lt;模型&gt;_&lt;agent&gt;_&lt;内容&gt;.html</code>，并在 <code>&lt;head&gt;</code> 里写生成记录（模型 / agent / 日期 / 轮次 / 结果 / 评价）。<br>
-    命名约定：手打带模型标识的名字（<code>鹈鹕5.3flash</code> / <code>pelican-bike27B</code> / <code>pelican_bicycleqwen38fn</code> 等）= 一次性生成测试；其余按内容命名（<code>pelican-3d-cdn</code> / <code>pelican-cycling-svg-v1</code> / <code>pelican-bicycle-svg</code>）。<br>
+    新增版本一律按内容命名（如 <code>pelican-cycling-svg-v1</code> / <code>pelican-bicycle-svg</code> / <code>pelican-free-ride</code>）；若沿用 README 的「模型 × Agent 记录规则」，仍在 <code>&lt;head&gt;</code> 里写生成记录。<br>
+    一次性模型测试产物不再长期入库：需要对比时本地生成，确认值得保留再入库并在这里登记。<br>
     同目录还有 <code>pelican-bike.svg</code> / <code>pelican_bicycle.svg</code> 两个素材文件，不是可玩版本；3D 场景版依赖仓库根的 <code>js/three.min.js</code>。
   </footer>
 </div>
