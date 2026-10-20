@@ -2,222 +2,146 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>HTML 游戏合集</title>
-<style>
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  body {
-    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-    min-height: 100vh;
-    padding: 32px 16px;
-    color: #fff;
-  }
-
-  .container {
-    max-width: 960px;
-    margin: 0 auto;
-  }
-
-  .header {
-    text-align: center;
-    margin-bottom: 24px;
-  }
-
-  .header h1 {
-    font-size: 36px;
-    font-weight: 800;
-    background: linear-gradient(135deg, #f5af19, #f12711);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 8px;
-  }
-
-  .header p {
-    font-size: 14px;
-    color: rgba(255,255,255,0.5);
-  }
-
-  .actions {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    margin-bottom: 8px;
-  }
-
-  .actions button {
-    padding: 10px 24px;
-    border: none;
-    border-radius: 12px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .btn-history {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: #fff;
-  }
-
-  .btn-history:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(102,126,234,0.4);
-  }
-
-  .btn-clear {
-    background: rgba(255,255,255,0.1);
-    color: rgba(255,255,255,0.7);
-    border: 1px solid rgba(255,255,255,0.15) !important;
-  }
-
-  .btn-clear:hover {
-    background: rgba(255,0,0,0.2);
-  }
-
-  .section-title {
-    font-size: 18px;
-    font-weight: 700;
-    margin: 32px 0 16px;
-    padding-left: 12px;
-    border-left: 4px solid #f5af19;
-  }
-
-  .game-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px;
-  }
-
-  .game-card {
-    display: block;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 16px;
-    padding: 22px 16px;
-    text-align: center;
-    text-decoration: none;
-    color: #fff;
-    transition: all 0.25s;
-  }
-
-  .game-card:hover {
-    background: rgba(255,255,255,0.14);
-    border-color: rgba(245,175,25,0.5);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-  }
-
-  .game-card .icon {
-    font-size: 36px;
-    margin-bottom: 10px;
-  }
-
-  .game-card .name {
-    font-size: 16px;
-    font-weight: 700;
-    margin-bottom: 6px;
-  }
-
-  .game-card .desc {
-    font-size: 12px;
-    color: rgba(255,255,255,0.55);
-    line-height: 1.5;
-  }
-
-  .game-card .tag {
-    display: inline-block;
-    margin-top: 8px;
-    padding: 2px 10px;
-    border-radius: 999px;
-    font-size: 11px;
-    background: linear-gradient(135deg, #f5af19, #f12711);
-    color: #fff;
-  }
-
-  .game-card .last-play {
-    font-size: 11px;
-    color: rgba(255,255,255,0.35);
-    margin-top: 8px;
-  }
-
-  footer {
-    text-align: center;
-    margin-top: 48px;
-    font-size: 12px;
-    color: rgba(255,255,255,0.35);
-  }
-</style>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="description" content="纯 HTML / CSS / JavaScript 小游戏合集：2048、贪吃蛇、俄罗斯方块、塔防、我的世界、修仙模拟器，以及 3D 场景与实用工具。">
+<link rel="stylesheet" href="css/site.css">
+<script>
+  // 判断是否运行在 Capacitor APK 内：APK 内隐藏「仅网页」内容
+  (function () {
+    var isApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())
+      || (location.protocol === 'https:' && location.hostname === 'localhost');
+    if (isApp) document.documentElement.classList.add('is-app');
+  })();
+</script>
 </head>
 <body>
 <div class="container">
-  <div class="header">
-    <h1>HTML 游戏合集</h1>
-    <p>纯 HTML / CSS / JavaScript 实现 · 浏览器直接打开即玩</p>
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <span class="brand-mark">🎮</span>
+      <span class="brand-text">HTML 游戏合集</span>
+    </a>
+    <nav class="topnav" aria-label="快捷入口">
+      <a class="nav-btn" href="history.html">📊 历史</a>
+      <a class="nav-btn primary" href="download.html">⬇️ 下载</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <p class="eyebrow">HTML 游戏合集 · LOCAL ARCADE</p>
+    <h1>今天玩点什么？</h1>
+    <p class="hero-sub">纯 HTML / CSS / JavaScript，打开即玩。游戏、3D 场景和工具分开摆放，手机上也只占两列。</p>
+    <div class="stats" aria-label="内容统计">
+      <span class="stat"><b id="stat-games">18</b> 个游戏</span>
+      <span class="stat"><b id="stat-scenes">3</b> 个 3D 场景</span>
+      <span class="stat"><b id="stat-tools">1</b> 个工具</span>
+    </div>
+  </section>
+
+  <div class="toolbar">
+    <label class="search">
+      <span class="search-icon" aria-hidden="true">🔍</span>
+      <input id="search" type="search" inputmode="search" autocomplete="off"
+             placeholder="搜索游戏、场景或工具…" aria-label="搜索">
+    </label>
+    <div class="filters" id="filters" role="tablist" aria-label="内容筛选">
+      <button class="chip active" data-filter="all" type="button">全部</button>
+      <button class="chip" data-filter="game" type="button">游戏</button>
+      <button class="chip" data-filter="scene" type="button">3D 场景</button>
+      <button class="chip" data-filter="tool" type="button">工具</button>
+    </div>
   </div>
 
-  <div class="actions">
-    <button class="btn-history" onclick="location.href='history.html'">📊 历史记录</button>
-    <button class="btn-clear" onclick="clearAllHistory()">🗑️ 清空记录</button>
-  </div>
+  <!-- 动画是网页专属内容，APK 内自动隐藏；也不参与 APK 打包 -->
+  <a class="banner web-only" href="animations.html">
+    <span class="banner-icon">🖼</span>
+    <span class="banner-text">
+      <strong>动画合集</strong>
+      <span>鹈鹕骑车 9 个演示版本 · 仅网页，不进 APK</span>
+    </span>
+    <span class="banner-arrow" aria-hidden="true">→</span>
+  </a>
 
   <!-- 卡片全部由下方 GAMES 清单生成 -->
-  <div id="catalog"></div>
+  <main id="catalog"></main>
 
-  <footer>HTML 游戏合集 · 本地运行 · 数据存储在本机 · MIT License</footer>
+  <div class="empty" id="empty" hidden>
+    <strong>没有找到</strong>
+    换个关键词，或点「全部」看看。
+  </div>
+
+  <footer>
+    <div class="footer-links">
+      <a href="history.html">历史记录</a>
+      <a href="download.html">下载 / 更新</a>
+      <a href="https://github.com/go-farther-and-farther/html_game" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/go-farther-and-farther/html_game/releases" target="_blank" rel="noopener">版本发布</a>
+      <button class="link-button" id="clear-history" type="button">清空记录</button>
+    </div>
+    HTML 游戏合集 · 本地运行 · 数据存储在本机 · MIT License
+  </footer>
 </div>
 
 <script src="js/history.js"></script>
 <script>
   /* ============================================================
-     游戏清单 —— 新增游戏只改这里
-     section : 分组标题，按首次出现的顺序生成分组
+     内容清单 —— 新增内容只改这里
+     section : 分组 id，见下方 SECTIONS
+     type    : game（游戏）/ scene（3D 场景）/ tool（工具）
      id      : 历史记录用的游戏 ID，留空则不显示「最近游玩」
-     tag     : 可选角标，如 推荐 / 导航
+     tag     : 可选角标；tagMuted 控制角标样式
      ============================================================ */
+
+  const SECTIONS = [
+    { id: 'classic', title: '🎮 经典小游戏', type: 'game' },
+    { id: 'snake',   title: '🐍 人机贪吃蛇系列', type: 'game' },
+    { id: 'more',    title: '🎲 策略 · 沙盒 · 模拟', type: 'game' },
+    { id: 'scene',   title: '🌌 3D 场景', type: 'scene', note: '可交互的 3D 场景，不是游戏。' },
+    { id: 'tool',    title: '🛠 实用工具', type: 'tool' },
+  ];
+
   const GAMES = [
     // ---------- 经典小游戏 ----------
-    { section: '🎮 经典小游戏', id: '2048',         icon: '🔢', name: '2048',          href: '2048/2048.html',             desc: '经典 4×4 数字合并' },
-    { section: '🎮 经典小游戏', id: '2048-5x5',     icon: '🔢', name: '2048 5×5 困难',   href: '2048/2048-5x5.html',         desc: '每步出 2 块 · 无脑循环失效' },
-    { section: '🎮 经典小游戏', id: '2048-ai',      icon: '🤖', name: '2048 AI',       href: '2048/2048-ai.html',          desc: '4×4 AI 自动对战' },
-    { section: '🎮 经典小游戏', id: '2048-ai-5x5',  icon: '🤖', name: '2048 AI 5×5',   href: '2048/2048-ai-5x5.html',      desc: '5×5 更容易冲 4096' },
-    { section: '🎮 经典小游戏', id: '2048-auto',    icon: '⚡', name: '2048 自动化',   href: '2048/2048-auto.html',        desc: '一直右下 · 纪律至上' },
-    { section: '🎮 经典小游戏', id: 'tetris',       icon: '🧱', name: '俄罗斯方块',    href: '俄罗斯方块/俄罗斯方块.html', desc: '经典方块消除' },
-    { section: '🎮 经典小游戏', id: 'snake',        icon: '🐍', name: '贪吃蛇',        href: '贪吃蛇/贪吃蛇.html',         desc: '基础版贪吃蛇' },
+    { section: 'classic', type: 'game', id: '2048',        icon: '🔢', name: '2048',         href: '2048/2048.html',             desc: '经典 4×4 数字合并' },
+    { section: 'classic', type: 'game', id: '2048-5x5',    icon: '🔢', name: '2048 5×5 困难', href: '2048/2048-5x5.html',         desc: '每步出 2 块 · 无脑循环失效' },
+    { section: 'classic', type: 'game', id: '2048-ai',     icon: '🤖', name: '2048 AI',      href: '2048/2048-ai.html',          desc: '4×4 AI 自动对战' },
+    { section: 'classic', type: 'game', id: '2048-ai-5x5', icon: '🤖', name: '2048 AI 5×5',  href: '2048/2048-ai-5x5.html',      desc: '5×5 更容易冲 4096' },
+    { section: 'classic', type: 'game', id: '2048-auto',   icon: '⚡', name: '2048 自动化',  href: '2048/2048-auto.html',        desc: '一直右下 · 纪律至上' },
+    { section: 'classic', type: 'game', id: 'tetris',      icon: '🧱', name: '俄罗斯方块',   href: '俄罗斯方块/俄罗斯方块.html', desc: '经典方块消除' },
+    { section: 'classic', type: 'game', id: 'snake',       icon: '🐍', name: '贪吃蛇',       href: '贪吃蛇/贪吃蛇.html',         desc: '基础版贪吃蛇' },
 
     // ---------- 人机贪吃蛇系列 ----------
-    { section: '🤖 人机贪吃蛇系列', id: 'snake-ai1',        icon: '⚔️', name: '人机版贪吃蛇',     href: '贪吃蛇/人机版贪吃蛇.html',      desc: 'AI 对战 · 初版' },
-    { section: '🤖 人机贪吃蛇系列', id: 'snake-ai2',        icon: '🧠', name: '人机版贪吃蛇2',    href: '贪吃蛇/人机版贪吃蛇2.html',     desc: 'AI 进阶版' },
-    { section: '🤖 人机贪吃蛇系列', id: 'snake-ai3',        icon: '⭐', name: '人机版贪吃蛇3',    href: '贪吃蛇/人机版贪吃蛇3.html',     desc: '完整版 · 队友/猎杀模式', tag: '推荐' },
-    { section: '🤖 人机贪吃蛇系列', id: 'snake-ai35',       icon: '🌟', name: '人机版贪吃蛇3.5',  href: '贪吃蛇/人机版贪吃蛇3.5.html',   desc: '增强版' },
-    { section: '🤖 人机贪吃蛇系列', id: 'snake-ai4',        icon: '🔥', name: '人机版贪吃蛇4',    href: '贪吃蛇/人机版贪吃蛇4.html',     desc: '高级 AI 版' },
-    { section: '🤖 人机贪吃蛇系列', id: 'snake-ai5',        icon: '💎', name: '人机版贪吃蛇5',    href: '贪吃蛇/人机版贪吃蛇5.html',     desc: '终极 AI 版' },
-    { section: '🤖 人机贪吃蛇系列', id: 'snake-adventure',  icon: '🗺️', name: '贪吃蛇大冒险V6',   href: '贪吃蛇/贪吃蛇大冒险V6.html',    desc: '冒险模式' },
+    { section: 'snake', type: 'game', id: 'snake-ai1',       icon: '⚔️', name: '人机版贪吃蛇',    href: '贪吃蛇/人机版贪吃蛇.html',     desc: 'AI 对战 · 初版' },
+    { section: 'snake', type: 'game', id: 'snake-ai2',       icon: '🧠', name: '人机版贪吃蛇2',   href: '贪吃蛇/人机版贪吃蛇2.html',    desc: 'AI 进阶版' },
+    { section: 'snake', type: 'game', id: 'snake-ai3',       icon: '⭐', name: '人机版贪吃蛇3',   href: '贪吃蛇/人机版贪吃蛇3.html',    desc: '完整版 · 队友/猎杀模式', tag: '推荐' },
+    { section: 'snake', type: 'game', id: 'snake-ai35',      icon: '🌟', name: '人机版贪吃蛇3.5', href: '贪吃蛇/人机版贪吃蛇3.5.html',  desc: '增强版' },
+    { section: 'snake', type: 'game', id: 'snake-ai4',       icon: '🔥', name: '人机版贪吃蛇4',   href: '贪吃蛇/人机版贪吃蛇4.html',    desc: '高级 AI 版' },
+    { section: 'snake', type: 'game', id: 'snake-ai5',       icon: '💎', name: '人机版贪吃蛇5',   href: '贪吃蛇/人机版贪吃蛇5.html',    desc: '终极 AI 版' },
+    { section: 'snake', type: 'game', id: 'snake-adventure', icon: '🗺️', name: '贪吃蛇大冒险V6',  href: '贪吃蛇/贪吃蛇大冒险V6.html',   desc: '冒险模式' },
 
-    // ---------- 3D 与大项目（这些游戏不接 HistoryManager，故无 id） ----------
-    { section: '🌌 3D 与大项目', icon: '🚢', name: '泰坦尼克号',        href: '泰坦尼克号/titanic.html',                    desc: '3D 泰坦尼克号体验 · three.js' },
-    { section: '🌌 3D 与大项目', icon: '🏪', name: '雨夜便利店',        href: '雨夜便利店/index.html',                      desc: '3D 雨夜便利店场景 · three.js' },
-    { section: '🌌 3D 与大项目', icon: '⛽', name: '雨夜加油站',        href: '雨夜加油站/index.html',                      desc: '3D 雨夜加油站场景' },
-    { section: '🌌 3D 与大项目', icon: '🚲', name: '鹈鹕骑车 · 版本导航', href: '鹈鹕骑车3D/versions.html',                 desc: '10 个版本 · 正式迭代与模型测试分组', tag: '导航' },
-    { section: '🌌 3D 与大项目', icon: '🏹', name: '塔防 · 元素前哨',   href: '塔防游戏/elemental_outpostV7.html',          desc: '元素塔防 V7 · 附设计文档与测试' },
-    { section: '🌌 3D 与大项目', icon: '⛏️', name: '我的世界',          href: '我的世界/minicraft3.html',                   desc: 'minicraft 类沙盒 · 第 3 版' },
-    { section: '🌌 3D 与大项目', icon: '🔮', name: '修仙天赋模拟器',    href: '修仙天赋模拟器/修仙天赋模拟器-v2.html',      desc: '修仙天赋随机模拟 · v2' },
+    // ---------- 策略 / 沙盒 / 模拟 ----------
+    { section: 'more', type: 'game', icon: '🏹', name: '塔防 · 元素前哨', href: '塔防游戏/elemental_outpostV7.html', desc: '元素塔防 V7 · 附设计文档与测试' },
+    { section: 'more', type: 'game', icon: '⛏️', name: '我的世界',       href: '我的世界/minicraft3.html',         desc: 'minicraft 类沙盒 · 第 3 版' },
+    { section: 'more', type: 'game', icon: '🔮', name: '修仙天赋模拟器', href: '修仙天赋模拟器/修仙天赋模拟器-v2.html', desc: '修仙天赋随机模拟 · v2' },
+    { section: 'more', type: 'game', icon: '🚴', name: '鹈鹕自由骑行',   href: '鹈鹕骑车3D/pelican-free-ride.html', desc: '3D 开放世界骑行 · 收集小鱼', tag: '需键盘', tagMuted: true },
+
+    // ---------- 3D 场景 ----------
+    { section: 'scene', type: 'scene', icon: '🚢', name: '泰坦尼克号', href: '泰坦尼克号/titanic.html', desc: '3D 泰坦尼克号体验 · three.js' },
+    { section: 'scene', type: 'scene', icon: '🏪', name: '雨夜便利店', href: '雨夜便利店/index.html',   desc: '3D 雨夜便利店场景 · three.js' },
+    { section: 'scene', type: 'scene', icon: '⛽', name: '雨夜加油站', href: '雨夜加油站/index.html',   desc: '3D 雨夜加油站场景' },
 
     // ---------- 实用工具 ----------
-    { section: '🛠 实用工具', icon: '✅', name: '人生清单 V3', href: '人生清单/人生清单_v3.html', desc: '400 条 · 核心100 · 分类分块 · 导出图片 · 自动读取 V2 进度' },
+    { section: 'tool', type: 'tool', icon: '✅', name: '人生清单 V3', href: '人生清单/人生清单_v3.html', desc: '400 条 · 核心 100 · 分类分块 · 导出图片 · 自动读取 V2 进度' },
   ];
 
   function makeCard(game) {
     const card = document.createElement('a');
     card.className = 'game-card';
     card.href = game.href;
+    card.dataset.type = game.type;
+    card.dataset.search = [game.name, game.desc, game.tag || ''].join(' ').toLowerCase();
 
     const icon = document.createElement('div');
     icon.className = 'icon';
@@ -235,7 +159,7 @@
 
     if (game.tag) {
       const tag = document.createElement('span');
-      tag.className = 'tag';
+      tag.className = 'tag' + (game.tagMuted ? ' muted' : '');
       tag.textContent = game.tag;
       card.append(tag);
     }
@@ -256,24 +180,46 @@
     let currentSection = null;
     let grid = null;
 
-    GAMES.forEach(game => {
-      if (game.section !== currentSection) {
-        currentSection = game.section;
-        const title = document.createElement('div');
-        title.className = 'section-title';
-        title.textContent = currentSection;
-        root.append(title);
+    SECTIONS.forEach(section => {
+      const games = GAMES.filter(game => game.section === section.id);
+      if (games.length === 0) return;
 
-        grid = document.createElement('div');
-        grid.className = 'game-grid';
-        root.append(grid);
+      const wrapper = document.createElement('section');
+      wrapper.className = 'catalog-section';
+      wrapper.dataset.type = section.type;
+
+      const head = document.createElement('div');
+      head.className = 'section-head';
+
+      const title = document.createElement('h2');
+      title.className = 'section-title';
+      title.textContent = section.title;
+
+      const count = document.createElement('span');
+      count.className = 'section-count';
+      count.textContent = games.length + ' 个';
+
+      head.append(title, count);
+      wrapper.append(head);
+
+      if (section.note) {
+        const note = document.createElement('p');
+        note.className = 'section-note';
+        note.textContent = section.note;
+        wrapper.append(note);
       }
-      grid.append(makeCard(game));
+
+      grid = document.createElement('div');
+      grid.className = 'game-grid';
+      games.forEach(game => grid.append(makeCard(game)));
+      wrapper.append(grid);
+      root.append(wrapper);
     });
   }
 
   // 显示每个游戏的最近游玩时间（游戏 ID 直接来自 GAMES 清单）
   function showLastPlayTimes() {
+    if (typeof HistoryManager === 'undefined') return;
     const games = HistoryManager.getAllGames();
 
     GAMES.filter(game => game.id).forEach(game => {
@@ -291,6 +237,29 @@
     });
   }
 
+  // 搜索 + 类型筛选
+  let activeFilter = 'all';
+
+  function applyFilters() {
+    const q = document.getElementById('search').value.trim().toLowerCase();
+    let total = 0;
+
+    document.querySelectorAll('.catalog-section').forEach(section => {
+      let visible = 0;
+      section.querySelectorAll('.game-card').forEach(card => {
+        const matchType = activeFilter === 'all' || card.dataset.type === activeFilter;
+        const matchText = !q || card.dataset.search.indexOf(q) !== -1;
+        const show = matchType && matchText;
+        card.hidden = !show;
+        if (show) visible++;
+      });
+      section.hidden = visible === 0;
+      total += visible;
+    });
+
+    document.getElementById('empty').hidden = total > 0;
+  }
+
   function clearAllHistory() {
     if (confirm('确定清空所有游戏历史记录？')) {
       HistoryManager.clearAll();
@@ -298,8 +267,31 @@
     }
   }
 
+  // 统计数字直接从清单算，避免写死
+  document.getElementById('stat-games').textContent = GAMES.filter(g => g.type === 'game').length;
+  document.getElementById('stat-scenes').textContent = GAMES.filter(g => g.type === 'scene').length;
+  document.getElementById('stat-tools').textContent = GAMES.filter(g => g.type === 'tool').length;
+
   renderCatalog();
   showLastPlayTimes();
+  window.addEventListener('pageshow', showLastPlayTimes);
+
+  document.getElementById('search').addEventListener('input', applyFilters);
+
+  document.getElementById('filters').addEventListener('click', e => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    activeFilter = chip.dataset.filter;
+    document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c === chip));
+    applyFilters();
+  });
+
+  document.getElementById('clear-history').addEventListener('click', clearAllHistory);
+
+  // Capacitor 注入较晚时再补一次判断
+  if (location.protocol === 'https:' && location.hostname === 'localhost') {
+    document.documentElement.classList.add('is-app');
+  }
 </script>
 </body>
 </html>

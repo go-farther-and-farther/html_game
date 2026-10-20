@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>下载 / 更新 · HTML 游戏合集</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="description" content="从 GitHub Releases 下载最新版 HTML 游戏合集 APK，查看版本号和更新内容。">
+<link rel="stylesheet" href="css/site.css">
+<style>
+  .version-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin: 18px 0 20px;
+  }
+
+  .version-item {
+    min-width: 0;
+    padding: 12px 13px;
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    background: rgba(255, 255, 255, 0.045);
+  }
+
+  .version-item label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 11px;
+    color: var(--faint);
+  }
+
+  .version-item strong {
+    display: block;
+    font-size: 15px;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+  }
+
+  .status-new {
+    color: #7ee787 !important;
+  }
+
+  .status-ok {
+    color: #9cb8ff !important;
+  }
+
+  .status-err {
+    color: #ff9b9b !important;
+  }
+
+  .download-btn {
+    display: flex;
+    width: 100%;
+    padding: 16px;
+    font-size: 16px;
+  }
+
+  .download-btn[aria-disabled="true"] {
+    opacity: 0.55;
+    pointer-events: none;
+    box-shadow: none;
+  }
+
+  .download-meta {
+    min-height: 20px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--faint);
+    text-align: center;
+  }
+
+  .links-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    margin-top: 12px;
+  }
+
+  .links-row a,
+  .links-row button {
+    padding: 0;
+    border: none;
+    background: none;
+    color: #ffd36e;
+    font: inherit;
+    font-size: 13px;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .links-row a:hover,
+  .links-row button:hover {
+    text-decoration: underline;
+  }
+
+  .steps {
+    margin: 0;
+    padding-left: 20px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.9;
+  }
+
+  .steps li::marker {
+    color: var(--accent);
+    font-weight: 800;
+  }
+
+  .release-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .release-head h2 {
+    margin: 0;
+  }
+
+  .release-date {
+    flex: 0 0 auto;
+    font-size: 11px;
+    color: var(--faint);
+  }
+
+  .release-notes {
+    max-height: 300px;
+    overflow: auto;
+    padding-right: 4px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.75;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .release-notes.is-empty {
+    color: var(--faint);
+    white-space: normal;
+  }
+
+  .tip {
+    margin-top: 12px;
+    padding: 11px 13px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.035);
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.7;
+  }
+
+  @media (max-width: 640px) {
+    .version-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin: 15px 0 17px;
+    }
+
+    .version-item {
+      padding: 10px;
+      border-radius: 11px;
+    }
+
+    .version-item label {
+      font-size: 10px;
+    }
+
+    .version-item strong {
+      font-size: 13px;
+    }
+
+    .download-btn {
+      padding: 14px;
+      font-size: 15px;
+    }
+
+    .release-notes {
+      max-height: 240px;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <span class="brand-mark">⬇️</span>
+      <span class="brand-text">下载 / 更新</span>
+    </a>
+    <nav class="topnav" aria-label="快捷入口">
+      <a class="nav-btn" href="index.html">← 返回</a>
+      <a class="nav-btn" href="history.html">📊 历史</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <p class="eyebrow">ANDROID APK · GITHUB RELEASES</p>
+    <h1>下载最新版</h1>
+    <p class="hero-sub">新版本通过 GitHub Releases 发布。下载后覆盖安装即可，历史记录保存在本机，不会被覆盖。</p>
+  </section>
+
+  <section class="panel">
+    <span class="badge">ANDROID · APK</span>
+
+    <div class="version-grid">
+      <div class="version-item">
+        <label>当前版本</label>
+        <strong id="current-version">v1.1.0</strong>
+      </div>
+      <div class="version-item">
+        <label>最新版本</label>
+        <strong id="latest-version">检查中…</strong>
+      </div>
+      <div class="version-item">
+        <label>状态</label>
+        <strong id="update-status">检查中…</strong>
+      </div>
+    </div>
+
+    <a class="btn-primary download-btn" id="download-btn" href="#" aria-disabled="true" rel="noopener">
+      ⬇️ 正在获取下载地址…
+    </a>
+    <div class="download-meta" id="download-meta">正在连接 GitHub Releases…</div>
+
+    <div class="links-row">
+      <a href="https://github.com/go-farther-and-farther/html_game/releases" target="_blank" rel="noopener">查看全部版本</a>
+      <button id="copy-link" type="button">复制下载链接</button>
+      <a href="https://github.com/go-farther-and-farther/html_game" target="_blank" rel="noopener">GitHub 仓库</a>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>安装说明</h2>
+    <ol class="steps">
+      <li>点上面的按钮下载 APK（在 App 内会跳到系统浏览器下载）。</li>
+      <li>如果提示「禁止安装未知应用」，在浏览器/文件管理里允许本次安装。</li>
+      <li>直接覆盖安装即可，本地历史记录会保留。</li>
+    </ol>
+    <div class="tip">iPhone 用户不需要安装 APK：直接用 Safari 打开合集网页就能玩。APK 只用于 Android 离线使用。</div>
+  </section>
+
+  <section class="panel">
+    <div class="release-head">
+      <h2>更新内容</h2>
+      <span class="release-date" id="release-date"></span>
+    </div>
+    <div class="release-notes is-empty" id="release-notes">正在读取最新版本的更新说明…</div>
+  </section>
+
+  <footer>
+    <div class="footer-links">
+      <a href="index.html">返回合集</a>
+      <a class="web-only" href="animations.html">动画合集</a>
+      <a href="history.html">历史记录</a>
+    </div>
+    HTML 游戏合集 · GitHub Releases · 覆盖安装保留数据
+  </footer>
+</div>
+
+<script>
+  (function () {
+    const REPO = 'go-farther-and-farther/html_game';
+    const CURRENT_VERSION = '1.1.0';
+    const API_URL = 'https://api.github.com/repos/' + REPO + '/releases/latest';
+    const RELEASES_URL = 'https://github.com/' + REPO + '/releases';
+    const LATEST_URL = RELEASES_URL + '/latest';
+    const DIRECT_APK = LATEST_URL + '/download/' + encodeURIComponent('HTML游戏合集.apk');
+
+    const CACHE_KEY = 'htmlgame.latestRelease.v1';
+    const CACHE_TTL = 30 * 60 * 1000;
+
+    const els = {
+      current: document.getElementById('current-version'),
+      latest: document.getElementById('latest-version'),
+      status: document.getElementById('update-status'),
+      btn: document.getElementById('download-btn'),
+      meta: document.getElementById('download-meta'),
+      date: document.getElementById('release-date'),
+      notes: document.getElementById('release-notes'),
+      copy: document.getElementById('copy-link'),
+    };
+
+    let downloadUrl = DIRECT_APK;
+
+    els.current.textContent = 'v' + CURRENT_VERSION;
+
+    function parseVersion(value) {
+      return String(value || '')
+        .replace(/^v/i, '')
+        .split(/[.+-]/)
+        .map(function (part) { return parseInt(part, 10) || 0; });
+    }
+
+    function isNewer(latest, current) {
+      const a = parseVersion(latest);
+      const b = parseVersion(current);
+      const len = Math.max(a.length, b.length);
+      for (let i = 0; i < len; i++) {
+        const x = a[i] || 0;
+        const y = b[i] || 0;
+        if (x !== y) return x > y;
+      }
+      return false;
+    }
+
+    function formatDate(value) {
+      if (!value) return '';
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return '';
+      return d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0');
+    }
+
+    function formatSize(bytes) {
+      if (!bytes) return '';
+      return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    function setDownload(url, label) {
+      downloadUrl = url;
+      els.btn.href = url;
+      els.btn.removeAttribute('aria-disabled');
+      els.btn.textContent = '⬇️ ' + label;
+    }
+
+    function renderRelease(release, fromCache) {
+      const tag = release.tag_name || '';
+      const apk = (release.assets || []).find(function (asset) {
+        return /\.apk$/i.test(asset.name || '');
+      });
+
+      els.latest.textContent = tag || '未知';
+      els.latest.className = isNewer(tag, CURRENT_VERSION) ? 'status-new' : '';
+
+      if (isNewer(tag, CURRENT_VERSION)) {
+        els.status.textContent = '有新版本';
+        els.status.className = 'status-new';
+      } else if (parseVersion(tag).join('.') === parseVersion(CURRENT_VERSION).join('.')) {
+        els.status.textContent = '已是最新';
+        els.status.className = 'status-ok';
+      } else {
+        els.status.textContent = '低于当前版本';
+        els.status.className = 'status-err';
+      }
+
+      const url = apk && apk.browser_download_url ? apk.browser_download_url : DIRECT_APK;
+      setDownload(url, '下载 ' + (tag || '最新版') + ' APK');
+
+      const bits = [];
+      if (apk) bits.push(formatSize(apk.size));
+      const published = formatDate(release.published_at);
+      if (published) bits.push(published);
+      if (fromCache) bits.push('缓存');
+      els.meta.textContent = bits.join(' · ') || '点击下载最新版 APK';
+
+      els.date.textContent = published;
+
+      const body = (release.body || '').trim();
+      els.notes.textContent = body || '这个版本没有写更新说明。';
+      els.notes.classList.toggle('is-empty', !body);
+    }
+
+    function renderFallback(message) {
+      els.latest.textContent = '—';
+      els.status.textContent = '离线';
+      els.status.className = 'status-err';
+      setDownload(DIRECT_APK, '打开最新版下载');
+      els.meta.textContent = message;
+      els.notes.textContent = '暂时读不到 GitHub Releases 的版本信息。点上面的按钮会打开最新版本下载；如果打不开，请检查网络后重试。';
+      els.notes.classList.add('is-empty');
+    }
+
+    function readCache() {
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        const cached = JSON.parse(raw);
+        if (!cached || !cached.data) return null;
+        if (Date.now() - cached.time > CACHE_TTL) return null;
+        return cached.data;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function writeCache(data) {
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ time: Date.now(), data: data }));
+      } catch (err) {
+        /* 忽略存储失败 */
+      }
+    }
+
+    async function loadRelease() {
+      const cached = readCache();
+      if (cached) renderRelease(cached, true);
+
+      const controller = new AbortController();
+      const timer = setTimeout(function () { controller.abort(); }, 9000);
+
+      try {
+        const response = await fetch(API_URL, {
+          headers: { 'Accept': 'application/vnd.github+json' },
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+
+        if (response.status === 404) {
+          els.latest.textContent = '暂无';
+          els.status.textContent = '还没有发布';
+          els.status.className = 'status-err';
+          setDownload(RELEASES_URL, '打开 GitHub Releases');
+          els.meta.textContent = '还没有发布版本，先去 GitHub 看看。';
+          els.notes.textContent = '仓库里还没有 Release。发布第一个版本后，这里会自动显示版本号和下载按钮。';
+          els.notes.classList.add('is-empty');
+          return;
+        }
+
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+
+        const release = await response.json();
+        renderRelease(release, false);
+        writeCache(release);
+      } catch (err) {
+        if (!cached) renderFallback('网络不可用，无法检查更新。');
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    els.copy.addEventListener('click', async function () {
+      try {
+        await navigator.clipboard.writeText(downloadUrl);
+        els.copy.textContent = '已复制';
+        setTimeout(function () { els.copy.textContent = '复制下载链接'; }, 1600);
+      } catch (err) {
+        window.prompt('复制下面的下载链接：', downloadUrl);
+      }
+    });
+
+    loadRelease();
+  })();
+</script>
+</body>
+</html>

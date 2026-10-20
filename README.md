@@ -20,6 +20,12 @@
 | 人机版贪吃蛇5 | `贪吃蛇/人机版贪吃蛇5.html` | 终极AI版 |
 | 贪吃蛇大冒险V6 | `贪吃蛇/贪吃蛇大冒险V6.html` | 冒险模式 |
 | 俄罗斯方块 | `俄罗斯方块/俄罗斯方块.html` | 经典俄罗斯方块 |
+| 塔防 · 元素前哨 | `塔防游戏/elemental_outpostV7.html` | 元素塔防 V7 |
+| 我的世界 | `我的世界/minicraft3.html` | minicraft 类沙盒 |
+| 修仙天赋模拟器 | `修仙天赋模拟器/修仙天赋模拟器-v2.html` | 随机天赋模拟 |
+| 鹈鹕自由骑行 | `鹈鹕骑车3D/pelican-free-ride.html` | 3D 骑行游戏 · 需要键盘 |
+
+共有 18 个游戏。首页按「经典小游戏 / 人机贪吃蛇 / 策略·沙盒·模拟 / 3D 场景 / 实用工具」分组，支持搜索和类型筛选，手机端固定两列。
 
 ### 其他游戏项目
 
@@ -35,6 +41,12 @@
 | 人生清单 V3 | `人生清单/人生清单_v3.html` | 400 条（核心 100 + 非核心 300）、11 个分类分块、已完成/未完成筛选、导出 PNG 海报；自动迁移 V2 进度 |
 | 人生已完成清单 | `人生清单/人生清单_v2.html` | V2 旧版，185 条，进度可被 V3 自动读取 |
 
+### 动画合集（仅网页，不进 APK）
+
+`animations.html` 收录鹈鹕骑车的 9 个 SVG / 3D 演示版本，包括正式演示和模型能力测试。它们没有游戏玩法，所以只在网页提供，不打包进 APK；首页保留一个「动画合集」入口。
+
+`鹈鹕骑车3D/versions.html` 是更早的版本导航页，保留作为完整版本历史。
+
 另有 `scripts/`（APK 打包与语法检查脚本）、`文档/`（设计文档与截图）两个辅助目录。各游戏的测试/模拟脚本统一放在其 `tests/` 子目录（如 `2048/tests/`、`塔防游戏/tests/`、`修仙天赋模拟器/tests/`）；共享库（`history.js`、`three.min.js`）统一放在根目录 `js/`。
 
 ## 📊 历史记录功能
@@ -49,12 +61,30 @@
 
 ## 📱 Android APK
 
-已打包为 Android 安装包，文件：`HTML游戏合集.apk`（约 3.7MB）
+已打包为 Android 安装包，文件：`HTML游戏合集.apk`（约 5 MB，versionName `1.1.0`）。
 
 安装方式：
 1. 将 `HTML游戏合集.apk` 传到手机
 2. 在手机上打开安装（需允许安装未知来源应用）
 3. 打开即可玩所有游戏
+
+### 应用内下载 / 更新
+
+首页右上角「⬇️ 下载」和页脚都能进入 `download.html`：
+
+- 从 GitHub Releases API 读取最新版本号、APK 大小和更新说明
+- 点「下载」会跳转系统浏览器，从最新 Release 下载 APK
+- 覆盖安装即可保留本地历史记录
+- 网络不可用时自动回退到 `releases/latest` 固定链接
+
+APK 内的 WebView 下载由 `MainActivity` 的 `DownloadListener` 交给系统浏览器处理。
+
+### APK 里有什么
+
+- 首页、历史页、下载页、共享样式/脚本
+- 18 个游戏、3 个 3D 场景、1 个工具
+- **不包含**：`animations.html` 和鹈鹕骑车的 9 个演示版本（仅网页）
+- 少数 3D 场景通过 CDN 加载 three.js，需要联网
 
 ### 重新构建 APK
 
@@ -68,7 +98,20 @@ cd android && ./gradlew.bat assembleDebug
 
 APK 输出路径：`android/app/build/outputs/apk/debug/app-debug.apk`
 
-> 注：`scripts/build-web.mjs` 决定哪些目录会被打进 APK，新增游戏后在其中的 `items` 列表补一行即可。
+> 注：`scripts/build-web.mjs` 的 `items` 决定哪些目录会被打进 APK，`skip` 列出仅网页的动画文件。新增游戏后在 `items` 补一行；新增仅网页内容时加到 `skip`。
+
+### 发布新版本（GitHub Releases）
+
+```bash
+# 1. 改 android/app/build.gradle 的 versionCode / versionName
+# 2. 重新构建并把 APK 复制到根目录
+cd android && ./gradlew.bat assembleDebug
+Copy-Item android/app/build/outputs/apk/debug/app-debug.apk ../HTML游戏合集.apk
+
+# 3. 推送代码后发布 Release（download.html 自动读取 latest）
+git push origin master
+gh release create v1.1.0 "HTML游戏合集.apk" --title "v1.1.0" --notes "更新说明"
+```
 
 ## 🐍 人机版贪吃蛇3（完整版）
 

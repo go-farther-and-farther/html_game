@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>动画合集 · HTML 游戏合集</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="description" content="鹈鹕骑车的 9 个动画/3D 演示版本，仅网页提供，不打包进 APK。">
+<link rel="stylesheet" href="css/site.css">
+<style>
+  .anim-card .file {
+    margin-top: 3px;
+    font-size: 10px;
+    line-height: 1.4;
+    color: var(--faint);
+    word-break: break-all;
+  }
+
+  .anim-card .meta {
+    margin-top: 7px;
+    font-size: 10px;
+    color: var(--faint);
+  }
+
+  .anim-card .tag {
+    margin-top: 7px;
+  }
+
+  .notice {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin: 20px 0 4px;
+    padding: 15px 17px;
+    border: 1px solid rgba(102, 126, 234, 0.35);
+    border-radius: 16px;
+    background: rgba(102, 126, 234, 0.1);
+  }
+
+  .notice-icon {
+    flex: 0 0 auto;
+    font-size: 20px;
+    line-height: 1.2;
+  }
+
+  .notice p {
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+
+  .notice a {
+    color: #ffd36e;
+    text-decoration: none;
+  }
+
+  .notice a:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 640px) {
+    .anim-card .file {
+      font-size: 9px;
+    }
+
+    .notice {
+      padding: 13px 14px;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <span class="brand-mark">🖼</span>
+      <span class="brand-text">动画合集</span>
+    </a>
+    <nav class="topnav" aria-label="快捷入口">
+      <a class="nav-btn" href="index.html">← 返回</a>
+      <a class="nav-btn primary" href="download.html">⬇️ 下载</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <p class="eyebrow">WEB ONLY · 网页专属</p>
+    <h1>鹈鹕骑车动画</h1>
+    <p class="hero-sub">9 个 SVG / 3D 演示版本：循环动画、模型测试和 3D 展示。它们不是游戏，所以只在网页提供，不打包进 APK。</p>
+    <div class="stats">
+      <span class="stat"><b>9</b> 个版本</span>
+      <span class="stat"><b>SVG</b> + <b>3D</b></span>
+      <span class="stat">不进 APK</span>
+    </div>
+  </section>
+
+  <div class="notice">
+    <span class="notice-icon">🚴</span>
+    <p>想玩能操作的版本？<a href="鹈鹕骑车3D/pelican-free-ride.html">→ 鹈鹕自由骑行</a>（需要键盘，建议电脑上玩）。</p>
+  </div>
+
+  <main id="catalog"></main>
+
+  <footer>
+    <div class="footer-links">
+      <a href="index.html">返回游戏合集</a>
+      <a href="download.html">下载 / 更新</a>
+      <a href="https://github.com/go-farther-and-farther/html_game" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    动画合集 · 仅网页 · 不占用 APK 体积
+  </footer>
+</div>
+
+<script>
+  const GROUPS = [
+    { id: 'demo', title: '🎬 正式演示', note: '反复打磨过的展示版本，观感最好。' },
+    { id: 'test', title: '🧪 模型能力测试', note: '单轮生成的能力验证产物，未做后续打磨。' },
+  ];
+
+  const ANIMS = [
+    {
+      group: 'demo', icon: '🐦', tag: '3D',
+      name: '3D 鹈鹕骑自行车',
+      file: '鹈鹕骑车3D/index.html',
+      href: '鹈鹕骑车3D/index.html',
+      desc: '3D 展示场景 · 拖拽旋转 · 双指缩放 · 点一下鹈鹕逗逗它',
+      meta: '2026-09-25 · 20.1 KB',
+    },
+    {
+      group: 'demo', icon: '🎞️', tag: 'SVG',
+      name: '鹈鹕骑自行车 · SVG 循环动画',
+      file: '鹈鹕骑车3D/pelican-bicycle-svg.html',
+      href: '鹈鹕骑车3D/pelican-bicycle-svg.html',
+      desc: '纯 HTML + SVG 循环动画 · 远景视差层 · 程序生成的辐条与太阳光芒',
+      meta: '2026-10-10 · 33.3 KB',
+    },
+    {
+      group: 'demo', icon: '🎨', tag: 'SVG',
+      name: '鹈鹕骑自行车 · SVG 插画 v1',
+      file: '鹈鹕骑车3D/pelican-cycling-svg-v1.html',
+      href: '鹈鹕骑车3D/pelican-cycling-svg-v1.html',
+      desc: '单个内联 SVG 静态插画 + 简单动画 · 这个项目的第一版',
+      meta: '2026-08-17 · 19.2 KB',
+    },
+    {
+      group: 'demo', icon: '🚲', tag: '3D',
+      name: '鹈鹕骑车 3D · CDN 版',
+      file: '鹈鹕骑车3D/pelican-3d-cdn.html',
+      href: '鹈鹕骑车3D/pelican-3d-cdn.html',
+      desc: 'three.js 走 unpkg importmap 加载 · 拖动旋转视角 · 滚轮/双指缩放',
+      meta: '2026-09-22 · 18.3 KB',
+    },
+    {
+      group: 'test', icon: '🧪', tag: '测试', tagMuted: true,
+      name: '鹈鹕骑自行车 · 循环动画',
+      file: '鹈鹕骑车3D/鹈鹕5.3flash.html',
+      href: '鹈鹕骑车3D/鹈鹕5.3flash.html',
+      desc: '单轮生成测试',
+      meta: '2026-10-09 · 25.8 KB',
+    },
+    {
+      group: 'test', icon: '🧪', tag: '测试', tagMuted: true,
+      name: '鹈鹕骑自行车 · 循环动画',
+      file: '鹈鹕骑车3D/pelican_bicycleqwen38fn.html',
+      href: '鹈鹕骑车3D/pelican_bicycleqwen38fn.html',
+      desc: '单轮生成测试',
+      meta: '2026-10-09 · 18.7 KB',
+    },
+    {
+      group: 'test', icon: '🧪', tag: '测试', tagMuted: true,
+      name: '鹈鹕骑自行车',
+      file: '鹈鹕骑车3D/pelican-bike27B.html',
+      href: '鹈鹕骑车3D/pelican-bike27B.html',
+      desc: '单轮生成测试',
+      meta: '2026-10-09 · 17.1 KB',
+    },
+    {
+      group: 'test', icon: '🧪', tag: '测试', tagMuted: true,
+      name: '鹈鹕骑车 · Pelican on a Bicycle',
+      file: '鹈鹕骑车3D/qwen3.8_27b_nvfp4_pelican-riding-v2.html',
+      href: '鹈鹕骑车3D/qwen3.8_27b_nvfp4_pelican-riding-v2.html',
+      desc: '单轮生成测试',
+      meta: '2026-09-24 · 20.1 KB',
+    },
+    {
+      group: 'test', icon: '🧪', tag: '测试', tagMuted: true,
+      name: '鹈鹕骑车 · Pelican Riding a Bicycle',
+      file: '鹈鹕骑车3D/deepseek_html_醍醐骑自行车.html',
+      href: '鹈鹕骑车3D/deepseek_html_醍醐骑自行车.html',
+      desc: '单轮生成测试',
+      meta: '2026-09-22 · 17.8 KB',
+    },
+  ];
+
+  function makeAnimCard(item) {
+    const card = document.createElement('a');
+    card.className = 'game-card anim-card';
+    card.href = encodeURI(item.href);
+
+    const icon = document.createElement('div');
+    icon.className = 'icon';
+    icon.textContent = item.icon;
+
+    const name = document.createElement('div');
+    name.className = 'name';
+    name.textContent = item.name;
+
+    const desc = document.createElement('div');
+    desc.className = 'desc';
+    desc.textContent = item.desc;
+
+    const file = document.createElement('div');
+    file.className = 'file';
+    file.textContent = item.file;
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = item.meta;
+
+    card.append(icon, name, desc);
+
+    if (item.tag) {
+      const tag = document.createElement('span');
+      tag.className = 'tag' + (item.tagMuted ? ' muted' : '');
+      tag.textContent = item.tag;
+      card.append(tag);
+    }
+
+    card.append(file, meta);
+    return card;
+  }
+
+  const root = document.getElementById('catalog');
+  GROUPS.forEach(group => {
+    const items = ANIMS.filter(item => item.group === group.id);
+    if (items.length === 0) return;
+
+    const section = document.createElement('section');
+    section.className = 'catalog-section';
+
+    const head = document.createElement('div');
+    head.className = 'section-head';
+
+    const title = document.createElement('h2');
+    title.className = 'section-title';
+    title.textContent = group.title;
+
+    const count = document.createElement('span');
+    count.className = 'section-count';
+    count.textContent = items.length + ' 个';
+
+    head.append(title, count);
+    section.append(head);
+
+    if (group.note) {
+      const note = document.createElement('p');
+      note.className = 'section-note';
+      note.textContent = group.note;
+      section.append(note);
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'game-grid';
+    items.forEach(item => grid.append(makeAnimCard(item)));
+    section.append(grid);
+    root.append(section);
+  });
+</script>
+</body>
+</html>
