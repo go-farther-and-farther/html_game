@@ -20,7 +20,8 @@ var HistoryManager = (function() {
     'snake-ai35': '人机贪吃蛇3.5',
     'snake-ai4': '人机贪吃蛇4',
     'snake-ai5': '人机贪吃蛇5',
-    'snake-adventure': '贪吃蛇大冒险'
+    'snake-adventure': '贪吃蛇大冒险',
+    '2048-auto-5x5': '2048 自动 5×5'
   };
 
   var GAME_ICONS = {
@@ -37,7 +38,8 @@ var HistoryManager = (function() {
     'snake-ai35': '🌟',
     'snake-ai4': '🔥',
     'snake-ai5': '💎',
-    'snake-adventure': '🗺️'
+    'snake-adventure': '🗺️',
+    '2048-auto-5x5': '⚡'
   };
 
   function _loadAll() {

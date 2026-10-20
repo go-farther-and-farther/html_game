@@ -10,7 +10,7 @@
 
 | 游戏 | 文件 | 说明 |
 |------|------|------|
-| 2048 | `2048/2048.html` | 经典数字合并游戏，另有 5×5 / AI / AI 5×5 / 自动化 4 个变体 |
+| 2048 合集 | `2048/index.html` | 手动 / AI / 自动 × 4×4 / 5×5；本机排行榜；退出续玩；旧版 5 个页面保留 |
 | 贪吃蛇 | `贪吃蛇/贪吃蛇.html` | 基础版贪吃蛇 |
 | 人机版贪吃蛇 | `贪吃蛇/人机版贪吃蛇.html` | AI 对战版贪吃蛇 |
 | 人机版贪吃蛇2 | `贪吃蛇/人机版贪吃蛇2.html` | AI 对战版贪吃蛇（进阶版） |
@@ -25,7 +25,7 @@
 | 修仙天赋模拟器 | `修仙天赋模拟器/修仙天赋模拟器-v2.html` | 随机天赋模拟 |
 | 鹈鹕自由骑行 | `鹈鹕骑车3D/pelican-free-ride.html` | 3D 骑行游戏 · 需要键盘 |
 
-共有 18 个游戏。首页按「经典小游戏 / 人机贪吃蛇 / 策略·沙盒·模拟 / 3D 场景 / 实用工具」分组，支持搜索和类型筛选，手机端固定两列。
+共有 14 个游戏卡片（2048 合集内含 6 种模式）。首页按「经典小游戏 / 人机贪吃蛇 / 策略·沙盒·模拟 / 3D 场景 / 实用工具」分组，支持搜索和类型筛选，手机端固定两列。
 
 ### 其他游戏项目
 
@@ -47,6 +47,16 @@
 
 `鹈鹕骑车3D/versions.html` 是更早的版本导航页，保留作为完整版本历史。
 
+### 2048 合集（统一入口）
+
+`2048/index.html` 把原来的 5 个 2048 页面合并成一个：
+
+- 手动 / AI / 自动 × 4×4 / 5×5，共 6 种组合
+- 本机排行榜：手动 / AI / 自动 × 4×4 / 5×5，6 个榜各存前 10 名
+- 每个组合独立自动保存；关闭页面/App 后重新打开会恢复上局（AI/自动恢复为暂停）
+- AI 使用 expectimax 搜索（4×4 深度 4，5×5 深度 3），带 650ms 时间上限，避免手机卡死
+- 旧版 `2048.html`、`2048-5x5.html`、`2048-ai.html`、`2048-ai-5x5.html`、`2048-auto.html` 保留，统一页底部有入口
+
 另有 `scripts/`（APK 打包与语法检查脚本）、`文档/`（设计文档与截图）两个辅助目录。各游戏的测试/模拟脚本统一放在其 `tests/` 子目录（如 `2048/tests/`、`塔防游戏/tests/`、`修仙天赋模拟器/tests/`）；共享库（`history.js`、`three.min.js`）统一放在根目录 `js/`。
 
 ## 📊 历史记录功能
@@ -61,7 +71,7 @@
 
 ## 📱 Android APK
 
-已打包为 Android 安装包，文件：`HTML游戏合集.apk`（约 5 MB，versionName `1.1.0`）。
+已打包为 Android 安装包，文件：`HTML游戏合集.apk`（约 5 MB，versionName `1.2.0`）。
 
 安装方式：
 1. 将 `HTML游戏合集.apk` 传到手机
@@ -82,7 +92,7 @@ APK 内的 WebView 下载由 `MainActivity` 的 `DownloadListener` 交给系统�
 ### APK 里有什么
 
 - 首页、历史页、下载页、共享样式/脚本
-- 18 个游戏、3 个 3D 场景、1 个工具
+- 14 个游戏卡片，2048 内含 6 种模式、3 个 3D 场景、1 个工具
 - **不包含**：`animations.html` 和鹈鹕骑车的 9 个演示版本（仅网页）
 - 少数 3D 场景通过 CDN 加载 three.js，需要联网
 
@@ -110,7 +120,7 @@ Copy-Item android/app/build/outputs/apk/debug/app-debug.apk ../html-game-collect
 
 # 3. 推送代码后发布 Release（download.html 自动读取 latest）
 git push origin master
-gh release create v1.1.0 "html-game-collection.apk" --title "v1.1.0" --notes "更新说明"
+gh release create v1.2.0 "html-game-collection.apk" --title "v1.2.0" --notes "更新说明"
 ```
 
 根目录的 `HTML游戏合集.apk` 是给人手动安装的副本；GitHub Release 里统一用 `html-game-collection.apk`，保证 `releases/latest/download/html-game-collection.apk` 这个固定链接始终可用。

@@ -34,7 +34,7 @@
     <h1>今天玩点什么？</h1>
     <p class="hero-sub">纯 HTML / CSS / JavaScript，打开即玩。游戏、3D 场景和工具分开摆放，手机上也只占两列。</p>
     <div class="stats" aria-label="内容统计">
-      <span class="stat"><b id="stat-games">18</b> 个游戏</span>
+      <span class="stat"><b id="stat-games">14</b> 个游戏</span>
       <span class="stat"><b id="stat-scenes">3</b> 个 3D 场景</span>
       <span class="stat"><b id="stat-tools">1</b> 个工具</span>
     </div>
@@ -104,13 +104,9 @@
 
   const GAMES = [
     // ---------- 经典小游戏 ----------
-    { section: 'classic', type: 'game', id: '2048',        icon: '🔢', name: '2048',         href: '2048/2048.html',             desc: '经典 4×4 数字合并' },
-    { section: 'classic', type: 'game', id: '2048-5x5',    icon: '🔢', name: '2048 5×5 困难', href: '2048/2048-5x5.html',         desc: '每步出 2 块 · 无脑循环失效' },
-    { section: 'classic', type: 'game', id: '2048-ai',     icon: '🤖', name: '2048 AI',      href: '2048/2048-ai.html',          desc: '4×4 AI 自动对战' },
-    { section: 'classic', type: 'game', id: '2048-ai-5x5', icon: '🤖', name: '2048 AI 5×5',  href: '2048/2048-ai-5x5.html',      desc: '5×5 更容易冲 4096' },
-    { section: 'classic', type: 'game', id: '2048-auto',   icon: '⚡', name: '2048 自动化',  href: '2048/2048-auto.html',        desc: '一直右下 · 纪律至上' },
-    { section: 'classic', type: 'game', id: 'tetris',      icon: '🧱', name: '俄罗斯方块',   href: '俄罗斯方块/俄罗斯方块.html', desc: '经典方块消除' },
-    { section: 'classic', type: 'game', id: 'snake',       icon: '🐍', name: '贪吃蛇',       href: '贪吃蛇/贪吃蛇.html',         desc: '基础版贪吃蛇' },
+    { section: 'classic', type: 'game', id: '2048',   icon: '🔢', name: '2048 合集',    href: '2048/index.html',            desc: '手动 / AI / 自动 · 4×4 / 5×5 · 排行榜 · 自动续玩', tag: '6 种模式' },
+    { section: 'classic', type: 'game', id: 'tetris', icon: '🧱', name: '俄罗斯方块',   href: '俄罗斯方块/俄罗斯方块.html', desc: '经典方块消除' },
+    { section: 'classic', type: 'game', id: 'snake',  icon: '🐍', name: '贪吃蛇',       href: '贪吃蛇/贪吃蛇.html',         desc: '基础版贪吃蛇' },
 
     // ---------- 人机贪吃蛇系列 ----------
     { section: 'snake', type: 'game', id: 'snake-ai1',       icon: '⚔️', name: '人机版贪吃蛇',    href: '贪吃蛇/人机版贪吃蛇.html',     desc: 'AI 对战 · 初版' },
